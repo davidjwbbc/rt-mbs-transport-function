@@ -30,6 +30,7 @@ libmbstf_dist_sources = files('''
     EventHandler.hh
     MBSTFEventHandler.cc
     MBSTFEventHandler.hh
+    MBSTFNetworkFunction.hh
     Open5GSEvent.hh
     Open5GSFSM.hh
     Open5GSNetworkFunction.cc

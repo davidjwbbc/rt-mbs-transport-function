@@ -17,7 +17,7 @@
 #include "common.hh"
 #include "Context.hh"
 #include "MBSTFEventHandler.hh"
-#include "Open5GSNetworkFunction.hh"
+#include "MBSTFNetworkFunction.hh"
 #include "Open5GSFSM.hh"
 #include "Open5GSEvent.hh"
 
@@ -75,7 +75,7 @@ App::App(const char *const argv[])
     ,m_context() // initialise logging first
 {
     initialise_logging();
-    m_app.reset(new Open5GSNetworkFunction());
+    m_app.reset(new MBSTFNetworkFunction());
     m_context.reset(new Context());
 
     m_app->configureLoggingDomain();
