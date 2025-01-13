@@ -17,6 +17,9 @@
 #include "Open5GSEvent.hh"
 #include "Open5GSFSM.hh"
 
+#define mbstf_sm_debug(__pe) \
+    ogs_debug("%s(): %s", __func__, ogs_event_get_name(__pe))
+
 MBSTF_NAMESPACE_START
 
 class MBSTFEventHandler : public EventHandler {

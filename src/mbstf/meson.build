@@ -17,8 +17,12 @@ python3_exe = open5gs_project.get_variable('python3_exe')
 mkdir_p = open5gs_project.get_variable('mkdir_p')
 install_conf = open5gs_project.get_variable('install_conf')
 sbi_openapi_inc = open5gs_project.get_variable('libsbi_openapi_model_inc')
+libinc = open5gs_project.get_variable('libinc')
 app_type = 'MBSTF'
 
+latest_apis = get_option('latest_apis')
+fiveg_api_approval = get_option('fiveg_api_approval')
+fiveg_api_release = get_option('fiveg_api_release')
 
 fs = import('fs')
 
@@ -31,6 +35,8 @@ libmbstf_dist_sources = files('''
     MBSTFEventHandler.cc
     MBSTFEventHandler.hh
     MBSTFNetworkFunction.hh
+    MBSTFDistributionSession.hh
+    MBSTFDistributionSession.cc
     Open5GSEvent.hh
     Open5GSFSM.hh
     Open5GSNetworkFunction.cc
@@ -43,26 +49,46 @@ libmbstf_dist_sources = files('''
     Open5GSSBIResponse.hh
     Open5GSSBIServer.cc
     Open5GSSBIServer.hh
-    Open5GSStateMachine.cc
-    Open5GSStateMachine.hh
     Open5GSTimer.hh
     Open5GSYamlDocument.hh
     Open5GSYamlIter.cc
     Open5GSYamlIter.hh
     TimerFunc.hh
+    Utilities.cc
+    Utilities.hh
+    hash.hh
+    hash.cc
+    server.hh
+    server.cc
+    openapi/model/CreateReqData.h
+    openapi/model/CreateReqData.cc
+
 '''.split())
+
+api_tag = latest_apis?'REL-'+fiveg_api_release:'TSG'+fiveg_api_approval+'-Rel'+fiveg_api_release
+
+gen_5gmbstf_sh = find_program('sh')
+openapi_dep_file = meson.current_source_dir() / '.openapi.srcs'
+message('Generating OpenAPI bindings for version '+api_tag+' of the 5G APIs...')
+openapi_gen_result = run_command([gen_5gmbstf_sh,'-c','"$MESON_SOURCE_ROOT/$MESON_SUBDIR/generator-mbstf" -M "'+openapi_dep_file+'" -b '+api_tag], capture: true, check: true)
+libmbstf_openapi_gen_sources = files(fs.read(openapi_dep_file).split())
 
 version_conf = configuration_data()
 version_conf.set_quoted('MBSTF_NAME', meson.project_name())
 version_conf.set_quoted('MBSTF_VERSION', meson.project_version())
 version_conf.set_quoted('MBSTF_TYPE', app_type)
+version_conf.set_quoted('FIVEG_API_RELEASE', fiveg_api_release)
+
 libmbstf_gen_sources = [configure_file(output : 'mbstf-version.h', configuration : version_conf)]
 
-libmbstf_sources = libmbstf_dist_sources + libmbstf_gen_sources
+libmbstf_sources = libmbstf_dist_sources + libmbstf_gen_sources + libmbstf_openapi_gen_sources
+
+libmbstf_libinc = include_directories('.')
+libmbstf_lib_openapiinc = include_directories('openapi/model')
 
 libmbstf = static_library('mbstf',
     sources : libmbstf_sources,
-    include_directories : [sbi_openapi_inc],
+    include_directories : [libmbstf_libinc, libmbstf_lib_openapiinc, sbi_openapi_inc, libinc],
     dependencies : [libsbi_dep,
                     libsbi_openapi_dep,
                     libapp_dep,

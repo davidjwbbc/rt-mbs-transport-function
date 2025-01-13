@@ -16,11 +16,14 @@
 
 #include "common.hh"
 #include "Context.hh"
+#include "server.hh"
 #include "EventHandler.hh"
 #include "Open5GSEvent.hh"
 #include "Open5GSFSM.hh"
+#include "MBSTFNetworkFunction.hh"
 #include "Open5GSNetworkFunction.hh"
 #include "Open5GSYamlDocument.hh"
+#include "mbstf-version.h"
 
 extern "C" {
     extern int app_initialize(const char *const argv[]);
@@ -43,12 +46,23 @@ public:
 
     void initialise();
     void startEventHandler();
+    void stopEventHandler();
+    void appSbiClose();
 
     const std::shared_ptr<Open5GSNetworkFunction> &ogsApp() const { return m_app; };
     const std::shared_ptr<Context> &context() const { return m_context; };
 
     EventHandler *registerEventHandler(EventHandler *event_handler);
     Open5GSYamlDocument configDocument() const;
+    ogs_sockaddr_t *getMBSTFDistributionSessionServerAddress();
+
+    static char *nf_name;
+    static nf_server_app_metadata_t app_metadata;
+    //nf_server_app_metadata_t App::app_metadata = { MBSTF_NAME, MBSTF_VERSION, NULL };
+    //static nf_server_app_metadata_t app_metadata = { MBSTF_NAME, MBSTF_VERSION, NULL };
+    const nf_server_app_metadata_t* MBSTFAppMetadata() const;
+    //const nf_server_app_metadata_t *MBSTFAppMetadata();
+
 
 protected:
     friend class Open5GSNetworkFunction;

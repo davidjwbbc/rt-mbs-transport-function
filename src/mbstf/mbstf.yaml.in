@@ -171,6 +171,9 @@ mbstf:
     sbi:
       - addr: 127.0.0.59
         port: 7777
+    distSessionAPI:
+      - addr: 127.0.0.62
+        port: 7777
     provisioningSbi:
       - addr: 127.0.0.60
         port: 7777
@@ -180,6 +183,10 @@ mbstf:
     httpPushIngest:
       - addr: 127.0.0.61
         port: 0 # ephemeral
+    serverResponseCacheControl:
+      - distMaxAge: 60
+        ObjectMaxAge: 60
+      
 
 # nrf:
 #

@@ -23,11 +23,16 @@ MBSTF_NAMESPACE_START
 class Open5GSSBIServer {
 public:
     Open5GSSBIServer();
+    Open5GSSBIServer(ogs_socknode_t *node,  ogs_sockopt_t *option);
     Open5GSSBIServer(Open5GSSBIServer &&other) = delete;
     Open5GSSBIServer(const Open5GSSBIServer &other) = delete;
     Open5GSSBIServer &operator=(Open5GSSBIServer &&other) = delete;
     Open5GSSBIServer &operator=(const Open5GSSBIServer &other) = delete;
     virtual ~Open5GSSBIServer();
+
+    ogs_sockaddr_t *ogsSockaddr(std::shared_ptr<Open5GSSBIServer> &server);
+    void ogsSBIServerAdvertise(ogs_sockaddr_t *addr);
+    ogs_sbi_server_t *ogsSBIServer() { return m_ogsServer; };
 
 private:
     ogs_sbi_server_t *m_ogsServer;

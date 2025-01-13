@@ -16,7 +16,9 @@
 #include <memory>
 
 #include "common.hh"
+#include "Open5GSYamlIter.hh"
 #include "Open5GSSBIServer.hh"
+#include "MBSTFDistributionSession.hh"
 
 MBSTF_NAMESPACE_START
 
@@ -31,20 +33,39 @@ public:
 
     bool parseConfig();
 
+    ogs_sockaddr_t *MBSTFDistributionSessionServerAddress();
+
+    const std::map<std::string, std::shared_ptr<MBSTFDistributionSession>>& getDistributionSessions() const {
+        return distributionSessions;
+    }
+/*
+    void addDistributionSession(const std::string &distributionSessionid, std::shared_ptr<MBSTFDistributionSession> MBSTFDistributionSession) {
+        distributionSessions[distributionSessionid] = MBSTFDistributionSession;
+    }
+*/
+    void addDistributionSession(const std::string &distributionSessionid, std::shared_ptr<MBSTFDistributionSession> MBSTFDistributionSession);
+    void deleteDistributionSession(const std::string &distributionSessionid);
+
     enum ServerType {
-        SERVER_PROVISIONING,
+	SERVER_DISTRIBUTION_SESSION,
         SERVER_OBJECT_PUSH,
+	SERVER_RTP,
         SERVER_MAX_NUM
     };
 
     //std::map<std::shared_ptr<ProvisioningSession> > provisioningSessions;
+    std::map<std::string, std::shared_ptr<MBSTFDistributionSession> > distributionSessions;
     std::shared_ptr<Open5GSSBIServer> servers[SERVER_MAX_NUM];
     struct {
-        unsigned int provisioningMaxAge;
+        unsigned int distMaxAge;
         unsigned int defaultObjectMaxAge; // Use if not given by push/pull resource Cache-Control.
     } cacheControl;
     
 private:
+    void parseCacheControl(Open5GSYamlIter &iter);
+    void parseConfiguration(std::string &pc_key, Open5GSYamlIter &iter);
+
+
 };
 
 MBSTF_NAMESPACE_STOP
