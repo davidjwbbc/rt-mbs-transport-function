@@ -15,14 +15,19 @@
 #include "ogs-sbi.h"
 
 #include <memory>
+#include <optional>
 
 #include "common.hh"
 
 MBSTF_NAMESPACE_START
 
+class Open5GSSBIStream;
+class Open5GSSBIMessage;
+
 class Open5GSSBIServer {
 public:
     Open5GSSBIServer();
+    Open5GSSBIServer(ogs_sbi_server_t *server);
     Open5GSSBIServer(ogs_socknode_t *node,  ogs_sockopt_t *option);
     Open5GSSBIServer(Open5GSSBIServer &&other) = delete;
     Open5GSSBIServer(const Open5GSSBIServer &other) = delete;
@@ -33,6 +38,11 @@ public:
     ogs_sockaddr_t *ogsSockaddr(std::shared_ptr<Open5GSSBIServer> &server);
     void ogsSBIServerAdvertise(ogs_sockaddr_t *addr);
     ogs_sbi_server_t *ogsSBIServer() { return m_ogsServer; };
+
+    static bool sendError(Open5GSSBIStream &stream, int status_code, std::optional<Open5GSSBIMessage> message, const char *reason, const char *value);
+    static bool sendResponse(Open5GSSBIStream &stream, Open5GSSBIResponse &response);
+
+    operator bool() const { return !!m_ogsServer; };
 
 private:
     ogs_sbi_server_t *m_ogsServer;

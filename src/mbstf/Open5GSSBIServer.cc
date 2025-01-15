@@ -21,6 +21,7 @@
 #include "Open5GSEvent.hh"
 #include "Open5GSTimer.hh"
 #include "Open5GSYamlDocument.hh"
+#include "Open5GSSBIStream.hh"
 
 #include "Open5GSSBIServer.hh"
 
@@ -28,7 +29,11 @@ MBSTF_NAMESPACE_START
 
 Open5GSSBIServer::Open5GSSBIServer()
 {
-    
+}
+
+Open5GSSBIServer::Open5GSSBIServer(ogs_sbi_server_t *server)
+    :m_ogsServer(server)
+{
 }
 
 Open5GSSBIServer::Open5GSSBIServer(ogs_socknode_t *node,  ogs_sockopt_t *option)
@@ -39,7 +44,6 @@ Open5GSSBIServer::Open5GSSBIServer(ogs_socknode_t *node,  ogs_sockopt_t *option)
 
 Open5GSSBIServer::~Open5GSSBIServer()
 {
-
 }
 
 void Open5GSSBIServer::ogsSBIServerAdvertise(ogs_sockaddr_t *addr) {
@@ -48,7 +52,16 @@ void Open5GSSBIServer::ogsSBIServerAdvertise(ogs_sockaddr_t *addr) {
     }
 }
 
+bool Open5GSSBIServer::sendError(Open5GSSBIStream &stream, int status_code, std::optional<Open5GSSBIMessage> message,
+                                 const char *reason, const char *value)
+{
+    return ogs_sbi_server_send_error(stream.ogsSBIStream(), status_code, message.has_value()?message->ogsSBIMessage():nullptr, reason, value);
+}
 
+bool Open5GSSBIServer::sendResponse(Open5GSSBIStream &stream, Open5GSSBIResponse &response)
+{
+    return ogs_sbi_server_send_response(stream.ogsSBIStream(), response.ogsSBIResponse());
+}
 
 MBSTF_NAMESPACE_STOP
 

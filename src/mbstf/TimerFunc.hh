@@ -22,12 +22,12 @@ MBSTF_NAMESPACE_START
 
 class TimerFunc {
 public:
-    TimerFunc();
+    TimerFunc() {};
     TimerFunc(TimerFunc &&other) = delete;
     TimerFunc(const TimerFunc &other) = delete;
     TimerFunc &operator=(TimerFunc &&other) = delete;
     TimerFunc &operator=(const TimerFunc &other) = delete;
-    virtual ~TimerFunc();
+    virtual ~TimerFunc() {};
 
     virtual void trigger() = 0;
 

@@ -16,11 +16,13 @@
 #include <memory>
 
 #include "common.hh"
-#include "Open5GSYamlIter.hh"
-#include "Open5GSSBIServer.hh"
-#include "MBSTFDistributionSession.hh"
 
 MBSTF_NAMESPACE_START
+
+class MBSTFDistributionSession;
+class Open5GSSBIServer;
+class Open5GSSockAddr;
+class Open5GSYamlIter;
 
 class Context {
 public:
@@ -33,17 +35,14 @@ public:
 
     bool parseConfig();
 
-    ogs_sockaddr_t *MBSTFDistributionSessionServerAddress();
+    std::shared_ptr<Open5GSSockAddr> MBSTFDistributionSessionServerAddress();
 
-    const std::map<std::string, std::shared_ptr<MBSTFDistributionSession>>& getDistributionSessions() const {
-        return distributionSessions;
-    }
 /*
-    void addDistributionSession(const std::string &distributionSessionid, std::shared_ptr<MBSTFDistributionSession> MBSTFDistributionSession) {
-        distributionSessions[distributionSessionid] = MBSTFDistributionSession;
+    void addDistributionSession(const std::string &session_id, const std::shared_ptr<MBSTFDistributionSession> &session) {
+        distributionSessions.insert(std::make_pair(session_id, std::shared_ptr<MBSTFDistributionSession>(session)));
     }
 */
-    void addDistributionSession(const std::string &distributionSessionid, std::shared_ptr<MBSTFDistributionSession> MBSTFDistributionSession);
+    void addDistributionSession(const std::shared_ptr<MBSTFDistributionSession> &MBSTFDistributionSession);
     void deleteDistributionSession(const std::string &distributionSessionid);
 
     enum ServerType {
@@ -53,7 +52,6 @@ public:
         SERVER_MAX_NUM
     };
 
-    //std::map<std::shared_ptr<ProvisioningSession> > provisioningSessions;
     std::map<std::string, std::shared_ptr<MBSTFDistributionSession> > distributionSessions;
     std::shared_ptr<Open5GSSBIServer> servers[SERVER_MAX_NUM];
     struct {
@@ -64,7 +62,6 @@ public:
 private:
     void parseCacheControl(Open5GSYamlIter &iter);
     void parseConfiguration(std::string &pc_key, Open5GSYamlIter &iter);
-
 
 };
 

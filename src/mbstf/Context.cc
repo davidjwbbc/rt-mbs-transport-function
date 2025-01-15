@@ -20,10 +20,13 @@
 
 #include "common.hh"
 #include "App.hh"
-#include "Open5GSYamlDocument.hh"
-#include "Utilities.hh"
-#include "Open5GSSBIServer.hh"
+#include "MBSTFDistributionSession.hh"
 #include "Open5GSNetworkFunction.hh"
+#include "Open5GSSBIServer.hh"
+#include "Open5GSSockAddr.hh"
+#include "Open5GSYamlDocument.hh"
+#include "Open5GSYamlIter.hh"
+#include "Utilities.hh"
 
 #include "Context.hh"
 
@@ -99,8 +102,10 @@ bool Context::parseConfig()
     return true;
 }
 
-void Context::addDistributionSession(const std::string &distributionSessionid, std::shared_ptr<MBSTFDistributionSession> MBSTFDistributionSession) {
-        distributionSessions[distributionSessionid] = MBSTFDistributionSession;
+void Context::addDistributionSession(const std::shared_ptr<MBSTFDistributionSession> &session)
+{
+    std::shared_ptr<MBSTFDistributionSession> map_session(session);
+    distributionSessions.insert(std::make_pair<std::string, std::shared_ptr<MBSTFDistributionSession> >(std::string(map_session->distributionSessionId()), std::move(map_session)));
 }
 
 
@@ -241,11 +246,11 @@ void Context::parseConfiguration(std::string &pc_key, Open5GSYamlIter &iter)   {
     if (node) {
         int i;
         int matches = 0;
-        ogs_sbi_server_t *server;
+        //ogs_sbi_server_t *server;
 	for (i=0; i<SERVER_MAX_NUM; i++) {
 	    auto ogsServer = servers[i];
             if (ogsServer && ogs_sockaddr_is_equal(node->addr, ogsServer->ogsSBIServer()->node.addr)) {
-                server = ogsServer->ogsSBIServer();
+                //server = ogsServer->ogsSBIServer();
                 matches = 1;
                 break;
             }
@@ -267,33 +272,30 @@ void Context::parseConfiguration(std::string &pc_key, Open5GSYamlIter &iter)   {
                 if (pem) server->tls.pem = pem;
             */
         }
-	node6 = (ogs_socknode_t *)ogs_list_first(&list6);
-	if (node6) {
-            int i;
-            int matches = 0;
-            ogs_sbi_server_t *server;
+    }
+    node6 = (ogs_socknode_t *)ogs_list_first(&list6);
+    if (node6) {
+        int i;
+        int matches = 0;
 
-	    for (i=0; i<SERVER_MAX_NUM; i++) {
-                auto ogsServer = servers[i];
-                if (ogsServer && ogs_sockaddr_is_equal(node->addr, ogsServer->ogsSBIServer()->node.addr)) {
-                    server = ogsServer->ogsSBIServer();
-                    matches = 1;
-                    break;
-                }
+        for(i=0; i<SERVER_MAX_NUM; i++) {
+            auto ogsServer = servers[i];
+            if (ogsServer && ogs_sockaddr_is_equal(node->addr, ogsServer->ogsSBIServer()->node.addr)) {
+                matches = 1;
+                break;
             }
-            if(!matches) {
-                if (pc_key == "distSessionAPI") {
-                    (servers[SERVER_DISTRIBUTION_SESSION]).reset(new Open5GSSBIServer(node, is_option ? &option : NULL));
-                    (servers[SERVER_DISTRIBUTION_SESSION])->ogsSBIServerAdvertise(addr);
-                } else if (pc_key == "httpPushIngest") {
-                    (servers[SERVER_OBJECT_PUSH]).reset(new Open5GSSBIServer(node, is_option ? &option : NULL));
-                    (servers[SERVER_OBJECT_PUSH])->ogsSBIServerAdvertise(addr);
-                } else if (pc_key == "rtpIngest") {
-                    (servers[SERVER_RTP]).reset(new Open5GSSBIServer(node, is_option ? &option : NULL));
-                    (servers[SERVER_RTP])->ogsSBIServerAdvertise(addr);
-                }
-	    }
-
+        }
+        if(!matches) {
+            if (pc_key == "distSessionAPI") {
+                (servers[SERVER_DISTRIBUTION_SESSION]).reset(new Open5GSSBIServer(node, is_option ? &option : NULL));
+                (servers[SERVER_DISTRIBUTION_SESSION])->ogsSBIServerAdvertise(addr);
+            } else if (pc_key == "httpPushIngest") {
+                (servers[SERVER_OBJECT_PUSH]).reset(new Open5GSSBIServer(node, is_option ? &option : NULL));
+                (servers[SERVER_OBJECT_PUSH])->ogsSBIServerAdvertise(addr);
+            } else if (pc_key == "rtpIngest") {
+                (servers[SERVER_RTP]).reset(new Open5GSSBIServer(node, is_option ? &option : NULL));
+                (servers[SERVER_RTP])->ogsSBIServerAdvertise(addr);
+            }
 	}
     }
     if (addr) ogs_freeaddrinfo(addr);
@@ -301,12 +303,11 @@ void Context::parseConfiguration(std::string &pc_key, Open5GSYamlIter &iter)   {
     ogs_socknode_remove_all(&list6);
 }
 
-ogs_sockaddr_t *Context::MBSTFDistributionSessionServerAddress()
+std::shared_ptr<Open5GSSockAddr> Context::MBSTFDistributionSessionServerAddress()
 {
     auto mbstfServer = servers[SERVER_DISTRIBUTION_SESSION];
     ogs_assert(mbstfServer);
-    return mbstfServer->ogsSBIServer()->node.addr;
-
+    return std::shared_ptr<Open5GSSockAddr>(new Open5GSSockAddr(mbstfServer->ogsSBIServer()->node.addr));
 }
 
 

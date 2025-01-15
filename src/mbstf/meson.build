@@ -32,23 +32,30 @@ libmbstf_dist_sources = files('''
     Context.cc
     Context.hh
     EventHandler.hh
+    hash.hh
+    MBSTFDistributionSession.hh
+    MBSTFDistributionSession.cc
     MBSTFEventHandler.cc
     MBSTFEventHandler.hh
     MBSTFNetworkFunction.hh
-    MBSTFDistributionSession.hh
-    MBSTFDistributionSession.cc
+    NfServer.cc
+    NfServer.hh
     Open5GSEvent.hh
     Open5GSFSM.hh
     Open5GSNetworkFunction.cc
     Open5GSNetworkFunction.hh
     Open5GSSBIClient.cc
     Open5GSSBIClient.hh
+    Open5GSSBIMessage.cc
+    Open5GSSBIMessage.hh
     Open5GSSBIRequest.cc
     Open5GSSBIRequest.hh
     Open5GSSBIResponse.cc
     Open5GSSBIResponse.hh
     Open5GSSBIServer.cc
     Open5GSSBIServer.hh
+    Open5GSSBIStream.hh
+    Open5GSSockAddr.hh
     Open5GSTimer.hh
     Open5GSYamlDocument.hh
     Open5GSYamlIter.cc
@@ -56,13 +63,6 @@ libmbstf_dist_sources = files('''
     TimerFunc.hh
     Utilities.cc
     Utilities.hh
-    hash.hh
-    hash.cc
-    server.hh
-    server.cc
-    openapi/model/CreateReqData.h
-    openapi/model/CreateReqData.cc
-
 '''.split())
 
 api_tag = latest_apis?'REL-'+fiveg_api_release:'TSG'+fiveg_api_approval+'-Rel'+fiveg_api_release

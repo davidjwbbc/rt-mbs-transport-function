@@ -13,6 +13,7 @@
  */
 
 #include "ogs-proto.h"
+#include "ogs-core.h"
 
 #include <memory>
 
@@ -32,6 +33,8 @@ public:
 
     ogs_timer_t *ogsTimer() { return m_ogsTimer; };
     const ogs_timer_t *ogsTimer() const { return m_ogsTimer; };
+
+    void start(int milliseconds) { if (!m_ogsTimer) return; ogs_timer_start(m_ogsTimer, ogs_time_from_msec(milliseconds)); };
 
 private:
     ogs_timer_t *m_ogsTimer;

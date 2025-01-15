@@ -15,21 +15,30 @@
 #include "ogs-proto.h"
 #include "ogs-sbi.h"
 
+#include <chrono>
 #include <memory>
 
 #include "common.hh"
 
-#include "openapi/model/CJson.hh"
-#include "openapi/model/CreateReqData.h"
+namespace fiveg_mag_reftools {
+    class CJson;
+}
+
+namespace reftools::mbstf {
+    class CreateReqData;
+}
 
 using fiveg_mag_reftools::CJson; 
 using reftools::mbstf::CreateReqData;
 
 MBSTF_NAMESPACE_START
 
+class Open5GSEvent;
+
 class MBSTFDistributionSession {
 public:
-    MBSTFDistributionSession(CJson *json, bool as_request);
+    using SysTimeMS = std::chrono::system_clock::time_point;
+    MBSTFDistributionSession(CJson &json, bool as_request);
     MBSTFDistributionSession(const std::shared_ptr<CreateReqData> &create_req_data);
     MBSTFDistributionSession() = delete;
     MBSTFDistributionSession(MBSTFDistributionSession &&other) = delete;
@@ -39,27 +48,22 @@ public:
 
     virtual ~MBSTFDistributionSession();
 
-    CJson *json(bool as_request) const;
-    const std::string &id() const;
+    CJson json(bool as_request) const;
 
     static const std::shared_ptr<MBSTFDistributionSession> &find(const std::string &id); // throws std::out_of_range if id does not exist
-    char *calculate_DistributionSessionHash(CJson *json);
-    std::string distributionSessionId() { return m_distributionSessionId; };
-    std::shared_ptr<CreateReqData> distributionSessionReqData() {return m_createReqData;};
-    ogs_time_t generated() {return m_generated;};
-    std::string hash() {return m_hash;};
+    const std::string &distributionSessionId() const { return m_distributionSessionId; };
+    const std::shared_ptr<CreateReqData> &distributionSessionReqData() const {return m_createReqData;};
+    const SysTimeMS &generated() const {return m_generated;};
+    const std::string &hash() const {return m_hash;};
 
-    static bool processEvent(ogs_event_t *e);
-
-    
+    static bool processEvent(Open5GSEvent &event);
 
 private:
     std::shared_ptr<CreateReqData> m_createReqData;
-    ogs_time_t m_generated;
-    ogs_time_t m_lastUsed;
+    SysTimeMS m_generated;
+    SysTimeMS m_lastUsed;
     std::string m_hash;
     std::string m_distributionSessionId;
-
 };
 
 MBSTF_NAMESPACE_STOP

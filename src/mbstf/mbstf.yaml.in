@@ -174,9 +174,6 @@ mbstf:
     distSessionAPI:
       - addr: 127.0.0.62
         port: 7777
-    provisioningSbi:
-      - addr: 127.0.0.60
-        port: 7777
     rtpIngest:
       - addr: 127.0.0.61
         port: 0 # ephemeral

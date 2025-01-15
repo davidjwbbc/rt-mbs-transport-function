@@ -13,7 +13,7 @@ project('rt-5gms-mbs-transport-function', 'c', 'cpp',
     meson_version : '>= 1.4.0',
     default_options : [
         'c_std=gnu99',
-        'cpp_std=gnu++17',
+        'cpp_std=gnu++20',
     ],
 )
 

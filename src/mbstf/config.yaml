@@ -1,0 +1,47 @@
+enablePostProcessFile: true
+templateDir: "/data/davidjw/Sources/rt-5gc-data-collection-application-function/subprojects/open5gs/lib/sbi/support/r17-20230301-openapitools-6.4.0/openapi-generator/templates"
+reservedWordsMappings:
+  3GPP_ACCESS: "3GPP_ACCESS"
+  5G_EIR: "5G_EIR"
+  5G_AKA: "5G_AKA"
+  5G_HE_AKA: "5G_HE_AKA"
+  5GMM: "5GMM"
+files:
+  any_type.h:
+    folder: model
+  any_type.c:
+    folder: model
+importMappings:
+  set: set
+  any_type: any_type
+  dc_api_set: set
+  dc_api_any_type: any_type
+typeMappings:
+  set: set
+  any_type: any_type
+  dc_api_set: set
+  dc_api_any_type: any_type
+files:
+  api-info-head.mustache:
+    templateType: API
+    destinationFilename: -info.h
+  set.h.mustache:
+    templateType: SupportingFiles
+    folder: include
+    destinationFilename: set.h
+  any_type.c.mustache:
+    templateType: SupportingFiles
+    folder: src
+    destinationFilename: any_type.c
+  any_type.h.mustache:
+    templateType: SupportingFiles
+    folder: include
+    destinationFilename: any_type.h
+  OpenAPI_regex.c.mustache:
+    templateType: SupportingFiles
+    folder: src
+    destinationFilename: OpenAPI_regex.c
+  OpenAPI_regex.h.mustache:
+    templateType: SupportingFiles
+    folder: include
+    destinationFilename: OpenAPI_regex.h

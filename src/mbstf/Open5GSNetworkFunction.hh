@@ -27,6 +27,7 @@ MBSTF_NAMESPACE_START
 
 class Open5GSEvent;
 class Open5GSTimer;
+class Open5GSSockAddr;
 class TimerFunc;
 
 class Open5GSNetworkFunction {
@@ -56,31 +57,31 @@ public:
     bool startEventHandler();
     void stopEventHandler();
 
-    bool setNFServiceInfo(const char *serviceName, const char *supportedFeatures, const char *apiVersion, ogs_sockaddr_t *addr);
+    bool setNFServiceInfo(const char *serviceName, const char *supportedFeatures, const char *apiVersion, const std::shared_ptr<Open5GSSockAddr> &addr);
     int setNFService();
-    int setServerName();
 
     void initialise() {ogs_sbi_context_init(nfType());};
 
     virtual OpenAPI_nf_type_e nfType() const { return OpenAPI_nf_type_AF; };
-    char  *serverName() { return m_serverName; };
+    const std::string &serverName();
+    const std::string &serverName() const { return m_serverName; };
 
    
 private:
+    int setServerName();
     static void eventThread(void *data);
-    static void addAddressesToNFService(ogs_sbi_nf_service_t *nf_service, ogs_sockaddr_t *addrs);
+    static void addAddressesToNFService(ogs_sbi_nf_service_t *nf_service, const std::shared_ptr<Open5GSSockAddr> &addrs);
 
     static void stateInitial(ogs_fsm_t *s, ogs_event_t *e);
     static void stateFunctional(ogs_fsm_t *s, ogs_event_t *e);
     static void stateFinal(ogs_fsm_t *s, ogs_event_t *e);
 
     ogs_thread_t *m_eventThread;
-    char *m_serviceName;
-    char *m_supportedFeatures;
-    char *m_apiVersion;
-    char *m_serverName;
-    ogs_sockaddr_t *m_addr;
-
+    const char *m_serviceName;
+    const char *m_supportedFeatures;
+    const char *m_apiVersion;
+    std::string m_serverName;
+    std::shared_ptr<Open5GSSockAddr> m_addr;
 };
 
 MBSTF_NAMESPACE_STOP

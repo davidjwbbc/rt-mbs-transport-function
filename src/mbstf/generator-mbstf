@@ -41,7 +41,7 @@ if [ $? -ne 0 ]; then
 fi
 
 print_syntax() {
-    echo "Syntax: $scriptname [-h] [-b <release-branch>] [-a <API-name>] [-M <model-deps-file>"
+    echo "Syntax: $scriptname [-hD] [-b <release-branch>] [-a <API-name>] [-M <model-deps-file>] [-C <cache-dir>]"
 }
 
 print_help() {
@@ -65,6 +65,7 @@ Options:
                                    repository. [default: $default_branch]
   -C DIR     --cache-dir DIR       Use the directory to cache working files.
                                    [default: ${default_cache_dir:-use temporary dir}]
+  -D         --debug               Add debug output.
   -M DEPFILE --model-deps DEPFILE  File to store the list of generated model
                                    source files.
 EOF
@@ -149,45 +150,6 @@ else
 fi
 mkdir -p "$templates_dir"
 
-# sed "s@^templateDir:.*@templateDir: \"${templates_dir}\"@" "$openapi_gen_dir/config.yaml" > "$templates_dir/config"
-# cp "${rt_common_shared_dir}/open5gs-tools/openapi-generator-templates/c/"*.mustache "$templates_dir/"
-# cat >> "$templates_dir/config.yaml" << EOF
-#importMappings:
-#  set: set
-#  any_type: any_type
-#  dc_api_set: set
-#  dc_api_any_type: any_type
-#typeMappings:
-#  set: set
-#  any_type: any_type
-#  dc_api_set: set
-#  dc_api_any_type: any_type
-#files:
-#  api-info-head.mustache:
-#    templateType: API
-#    destinationFilename: -info.h
-#  set.h.mustache:
-#    templateType: SupportingFiles
-#    folder: include
-#    destinationFilename: set.h
-#  any_type.c.mustache:
-#    templateType: SupportingFiles
-#    folder: src
-#    destinationFilename: any_type.c
-#  any_type.h.mustache:
-#    templateType: SupportingFiles
-#    folder: include
-#    destinationFilename: any_type.h
-#  OpenAPI_regex.c.mustache:
-#    templateType: SupportingFiles
-#    folder: src
-#    destinationFilename: OpenAPI_regex.c
-#  OpenAPI_regex.h.mustache:
-#    templateType: SupportingFiles
-#    folder: include
-#    destinationFilename: OpenAPI_regex.h
-#EOF
-
 cp -v "${rt_common_shared_dir}/open5gs-tools/openapi-generator-templates/cpp-restbed-server/"* "${templates_dir}/"
 cp -v "${scriptdir}/openapi-generator-templates/"* "${templates_dir}/"
 sed -i "s@^templateDir:.*@templateDir: .@;/^files:/ a \\
@@ -198,7 +160,9 @@ sed -i "s@^templateDir:.*@templateDir: .@;/^files:/ a \\
     templateType: API \\
     destinationFilename: -info.h
 " "$templates_dir/config.yaml"
-cat "$templates_dir/config.yaml"
+if [ -n "$DEBUG" ]; then
+    cat "$templates_dir/config.yaml"
+fi
 
 # call the common generate_openapi script
 if [ ! -d "$scriptdir/openapi" ]; then
@@ -209,7 +173,6 @@ if [ -x "$scriptdir/post-process.sh" ]; then
     CPP_POST_PROCESS_FILE="$scriptdir/post-process.sh" export CPP_POST_PROCESS_FILE
 fi
 
-# if ! "$rt_common_shared_dir/open5gs-tools/scripts/generate_openapi" -a "${APIS}" -o "$rt_common_shared_dir/mbstf/5G_APIs-overrides" -b "${BRANCH}" -c "$templates_dir/config.yaml" -l c -d "$scriptdir/openapi" -g 6.4.0 -y "$scriptdir/fix_openapi_yaml.py" -p "DC_API" $DEBUG_FLAG ${CACHE_DIR:+-C "$CACHE_DIR"}; then
 if ! "$rt_common_shared_dir/open5gs-tools/scripts/generate_openapi" -a "${APIS}" -o "$rt_common_shared_dir/mbstf/5G_APIs-overrides" -b "${BRANCH}" -c "$templates_dir/config.yaml" -l cpp-restbed-server -d "$scriptdir/openapi" -g 6.4.0 -P "reftools.mbstf" $DEBUG_FLAG ${CACHE_DIR:+-C "$CACHE_DIR"}; then
     echo "Error: Failed to generate OpenAPI model" 1>&2
     exit 1
