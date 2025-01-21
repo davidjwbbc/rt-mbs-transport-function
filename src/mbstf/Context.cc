@@ -5,9 +5,16 @@
  * Author(s): David Waring <david.waring2@bbc.co.uk>
  * License: 5G-MAG Public License v1
  *
- * For full license terms please see the LICENSE file distributed with this
- * program. If this file is missing then the license can be retrieved from
- * https://drive.google.com/file/d/1cinCiA778IErENZ3JN52VFW-1ffHpx7Z/view
+ * Licensed under the License terms and conditions for use, reproduction, and
+ * distribution of 5G-MAG software (the “License”).  You may not use this file
+ * except in compliance with the License.  You may obtain a copy of the License at
+ * https://www.5g-mag.com/reference-tools.  Unless required by applicable law or
+ * agreed to in writing, software distributed under the License is distributed on
+ * an “AS IS” BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+ * or implied.
+ *
+ * See the License for the specific language governing permissions and limitations
+ * under the License.
  */
 
 #include <map>
@@ -26,7 +33,6 @@
 #include "Open5GSSockAddr.hh"
 #include "Open5GSYamlDocument.hh"
 #include "Open5GSYamlIter.hh"
-#include "Utilities.hh"
 
 #include "Context.hh"
 
@@ -121,17 +127,21 @@ void Context::deleteDistributionSession(const std::string &distributionSessionid
 
 
 void Context::parseCacheControl(Open5GSYamlIter &iter) {
-     while (iter.next()) {
-
-         std::string cc_key(iter.key());
-         if (cc_key == "distMaxAge") {
-             cacheControl.distMaxAge = ascii_to_long(iter.value());
-         } else if (cc_key == "ObjectMaxAge") {
-             cacheControl.defaultObjectMaxAge = ascii_to_long(iter.value());
-         }
-
-     }
-
+    while (iter.next()) {
+        std::string cc_key(iter.key());
+        std::string cc_val(iter.value());
+        try {
+            if (cc_key == "distMaxAge") {
+                cacheControl.distMaxAge = std::stol(cc_val);
+            } else if (cc_key == "ObjectMaxAge") {
+                cacheControl.defaultObjectMaxAge = std::stol(cc_val);
+            }
+        } catch (std::out_of_range &ex) {
+            ogs_error("Cache control value for %s of \"%s\" is too big for integer storage.", cc_key.c_str(), cc_val.c_str());
+        } catch (std::invalid_argument &ex) {
+            ogs_error("Cache control value for %s of \"%s\" is not understood as an integer.", cc_key.c_str(), cc_val.c_str());
+        }
+    }
 }
 
 void Context::parseConfiguration(std::string &pc_key, Open5GSYamlIter &iter)   {
