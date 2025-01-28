@@ -134,14 +134,14 @@ bool MBSTFDistributionSession::processEvent(Open5GSEvent &event)
             ogs_debug("OGS_EVENT_SBI_SERVER: service=%s, component[0]=%s", service_name.c_str(), resource0.c_str());
             if (service_name == "nmbstf-distsession") {
                 api.emplace(nmbstf_distributionsession_api);
-	    } else {
+	        } else {
                 return false;
             }
 
             if (api.value() == nmbstf_distributionsession_api) {
                 /******** nmbstf-distsession ********/
                 std::string api_version(message.apiVersion());
-		if (api_version != OGS_SBI_API_V1) {
+		        if (api_version != OGS_SBI_API_V1) {
                     ogs_error("Unsupported API version [%s]", api_version.c_str());
                     ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST, 0, message, app_meta,
                                                            api, "Unsupported API version"));
@@ -150,164 +150,167 @@ bool MBSTFDistributionSession::processEvent(Open5GSEvent &event)
 
                 if (resource0 == "dist-sessions") {
                     std::string method(message.method());
+                    const char *ptr_resource1 = message.resourceComponent(1);
                     if (method == OGS_SBI_HTTP_METHOD_POST) {
-			ogs_debug("POST response: status = %i", message.resStatus());
-                        const char *ptr_resource1 = message.resourceComponent(1);
-                        const char *ptr_resource2 = nullptr;
+			            ogs_debug("POST response: status = %i", message.resStatus());
+                        //const char *ptr_resource1 = message.resourceComponent(1);
+                        /*
+		        const char *ptr_resource2 = nullptr;
                         if (ptr_resource1) ptr_resource2 = message.resourceComponent(2);
                         if (ptr_resource2) {
                             std::string resource2(ptr_resource2);
 			    if (resource2 != "dist-session") {
+			    */
 		                ogs_debug("In MBSTF Distribution session");
-
 				std::shared_ptr<MBSTFDistributionSession> distributionSession;
-
 				ogs_debug("Request body: %s", request.content());
-
-				if (request.headerValue(OGS_SBI_CONTENT_TYPE, std::string()) != "application/json") {
+    				if (request.headerValue(OGS_SBI_CONTENT_TYPE, std::string()) != "application/json") {
                                     ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE,
                                                                     3, message, app_meta, api, "Unsupported Media Type",
                                                                     "Expected content type: application/json"));
-                                    break;
+                                 break;
                                 }
+				
 
                                 CJson distSession(CJson::Null);
                                 try {
-			            distSession = CJson::parse(request.content());
+			                        distSession = CJson::parse(request.content());
                                 } catch (std::exception &ex) {
                                     static const char *err = "Unable to parse MBSTF Distribution Session as JSON.";
                                     ogs_error("%s", err);
                                     ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST, 1, message,
                                                                            app_meta, api, "Bad Data Reporting Session", err));
-        			    break;
+        			                break;
                                 }
 
                                 {
                                     std::string txt(distSession.serialise());
-	    			    ogs_debug("Parsed JSON: %s", txt.c_str());
+	    			                ogs_debug("Parsed JSON: %s", txt.c_str());
                                 }
 
- 				try {
-				    distributionSession = std::make_shared<MBSTFDistributionSession>(distSession, true);
-				} catch (std::exception &err) {
+                                try {
+                                    distributionSession = std::make_shared<MBSTFDistributionSession>(distSession, true);
+                                } catch (std::exception &err) {
                                     ogs_error("Error while populating MBSTF Distribution Session: %s", err.what());
-				    char *error = ogs_msprintf("Bad request [%s]", err.what());
+                                    char *error = ogs_msprintf("Bad request [%s]", err.what());
                                     ogs_error("%s", error);
                                     ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST, 0, message,
-                                                                           app_meta, api, "Bad Request", error));
+                                                                            app_meta, api, "Bad Request", error));
                                     ogs_free(error);
                                     break;
                                 }
 
                                 App::self().context()->addDistributionSession(distributionSession);
 
-                                /*
-				std::shared_ptr<MBSTFDistributionSession> distributionSession = std::make_shared<MBSTFDistributionSession>(distSession, true);
-				App::self().context()->addDistributionSession(distributionSession);
-                                */
+                                    /*
+                                std::shared_ptr<MBSTFDistributionSession> distributionSession = std::make_shared<MBSTFDistributionSession>(distSession, true);
+                                App::self().context()->addDistributionSession(distributionSession);
+                                    */
 
-				CJson createdReqData_json(distributionSession->json(false));
-				std::string body(createdReqData_json.serialise());
+                                CJson createdReqData_json(distributionSession->json(false));
+                                std::string body(createdReqData_json.serialise());
                                 ogs_debug("Parsed JSON: %s", body.c_str());
                                 std::ostringstream location;
                                 location << request.uri() << "/" << distributionSession->distributionSessionId();
                                 std::shared_ptr<Open5GSSBIResponse> response(NfServer::newResponse(location.str(),
-                                                                                  body.empty()?nullptr:"application/json",
-                                                                                  distributionSession->generated(),
-                                                                                  distributionSession->hash().c_str(),
-                                                                                  App::self().context()->cacheControl.distMaxAge,
-                                                                                  nullptr, api, app_meta));
+                                                                                    body.empty()?nullptr:"application/json",
+                                                                                    distributionSession->generated(),
+                                                                                    distributionSession->hash().c_str(),
+                                                                                    App::self().context()->cacheControl.distMaxAge,
+                                                                                    std::nullopt/*nullptr*/, api, app_meta));
                                 ogs_assert(response);
                                 NfServer::populateResponse(response, body, OGS_SBI_HTTP_STATUS_CREATED);
                                 ogs_assert(true == Open5GSSBIServer::sendResponse(stream, *response));
                                 break;
+                            //}
+                        //}
 
-		            } else if (method == OGS_SBI_HTTP_METHOD_GET) {
-                                if (!ptr_resource1) {
-                                    std::ostringstream err;
-                                    err << "Invalid resource [" << message.uri() << "]";
-                                    ogs_error("%s", err.str().c_str());
-                                    ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST, 1, message,
-                                                                           app_meta, api, "Bad Request", err.str()));
-                                    break;
-                                }
-                                std::string dist_session_id(ptr_resource1);
-				try {
-		        	    int response_code = 200;
-
-				    std::shared_ptr<MBSTFDistributionSession> distSess = MBSTFDistributionSession::find(dist_session_id);
-			            CJson createdReqData_json(distSess->json(false));
-                                    std::string body(createdReqData_json.serialise());
-                                    ogs_debug("Parsed JSON: %s", body.c_str());
-                                    std::ostringstream location;
-                                    location << request.uri() << "/" << distSess->distributionSessionId();
-                                    std::shared_ptr<Open5GSSBIResponse> response(NfServer::newResponse(location.str(),
-                                                        body.empty()?nullptr:"application/json",
-                                                        distSess->generated(),
-                                                        distSess->hash().c_str(),
-                                                        App::self().context()->cacheControl.distMaxAge,
-                                                        nullptr, api, app_meta));
-                                    ogs_assert(response);
-                                    NfServer::populateResponse(response, body, response_code);
-                                    ogs_assert(true == Open5GSSBIServer::sendResponse(stream, *response));
-				} catch (const std::out_of_range &e) {
-                                    std::ostringstream err;
-                                    err << "MBSTF Distribution Session [" << dist_session_id << "] does not exist.";
-                                    ogs_error("%s", err.str().c_str());
-
-                                    static const std::string param("{sessionId}");
-                                    std::ostringstream reason;
-                                    reason << "Invalid MBSTF Distribution Session identifier [" << dist_session_id << "]";
-                                    std::map<std::string, std::string> invalid_params(
-                                                                                NfServer::makeInvalidParams(param, reason.str()));
-
-                                    ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_NOT_FOUND, 2, message,
-                                                                           app_meta, api, "MBSTF Distribution Session not found",
-                                                                           err.str(), std::nullopt, invalid_params));
-                                }
-			    } else if (method == OGS_SBI_HTTP_METHOD_DELETE) {
-				if (message.resourceComponent(1) && !message.resourceComponent(2)) {
-                                    std::string dist_session_id(message.resourceComponent(1));
-                                    try {
-					App::self().context()->deleteDistributionSession(dist_session_id);
-					std::shared_ptr<Open5GSSBIResponse> response(NfServer::newResponse(std::nullopt, std::nullopt, std::nullopt, std::nullopt, 0, std::nullopt, api, app_meta));
-                                        NfServer::populateResponse(response, "", OGS_SBI_HTTP_STATUS_NO_CONTENT);
-                                        ogs_assert(true == Open5GSSBIServer::sendResponse(stream, *response));
-
-				    } catch (const std::out_of_range &e) {
-                                        std::ostringstream err;
-                                        err << "MBSTF Distribution Session [" << dist_session_id << "] does not exist.";
-                                        ogs_error("%s", err.str().c_str());
-
-                                        static const std::string param("{sessionId}");
-                                        std::ostringstream reason;
-                                        reason << "Invalid MBSTF Distribution Session identifier [" << dist_session_id << "]";
-                                        std::map<std::string, std::string> invalid_params(
-                                                                                NfServer::makeInvalidParams(param, reason.str()));
-
-                                        ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_NOT_FOUND, 2, message,
-                                                                app_meta, api, "MBSTF Distribution Session not found", err.str(),
-                                                                std::nullopt, invalid_params));
-                                    }
-				}
-			    } else {
-                                std::ostringstream err;
-
-                                err << "Invalid method [" << message.method() << "] for " << message.serviceName() << "/"
-                                     << message.apiVersion() << "/" << message.resourceComponent(0);
-                                ogs_error("%s", err.str().c_str());
-                                ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST, 1, message,
-                                                                       app_meta, api, "Bad request", err.str()));
-                            }
-			} else {
+	    	    } else if (method == OGS_SBI_HTTP_METHOD_GET) {
+                        if (!ptr_resource1) {
                             std::ostringstream err;
-                            err << "Unknown object type \"" << message.resourceComponent(0) << "\" in Data Reporting request";
+                            err << "Invalid resource [" << message.uri() << "]";
                             ogs_error("%s", err.str().c_str());
-                            ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST, 1, message, app_meta,
-                                                                   api, "Bad request", err.str()));
-			}
-		    }
-                }
+                            ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST, 1, message,
+                                                                    app_meta, api, "Bad Request", err.str()));
+                            break;
+                        }
+                        std::string dist_session_id(ptr_resource1);
+                        try {
+                            int response_code = 200;
+
+                            std::shared_ptr<MBSTFDistributionSession> distSess = MBSTFDistributionSession::find(dist_session_id);
+                            CJson createdReqData_json(distSess->json(false));
+                            std::string body(createdReqData_json.serialise());
+                            ogs_debug("Parsed JSON: %s", body.c_str());
+                            std::ostringstream location;
+                            location << request.uri() << "/" << distSess->distributionSessionId();
+                            std::shared_ptr<Open5GSSBIResponse> response(NfServer::newResponse(location.str(),
+                                                    body.empty()?nullptr:"application/json",
+                                                    distSess->generated(),
+                                                    distSess->hash().c_str(),
+                                                    App::self().context()->cacheControl.distMaxAge,
+                                                    std::nullopt/*nullptr*/, api, app_meta));
+                            ogs_assert(response);
+                            NfServer::populateResponse(response, body, response_code);
+                            ogs_assert(true == Open5GSSBIServer::sendResponse(stream, *response));
+                        } catch (const std::out_of_range &e) {
+                            std::ostringstream err;
+                            err << "MBSTF Distribution Session [" << dist_session_id << "] does not exist.";
+                            ogs_error("%s", err.str().c_str());
+
+                            static const std::string param("{sessionId}");
+                            std::ostringstream reason;
+                            reason << "Invalid MBSTF Distribution Session identifier [" << dist_session_id << "]";
+                            std::map<std::string, std::string> invalid_params(
+                                                                        NfServer::makeInvalidParams(param, reason.str()));
+
+                            ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_NOT_FOUND, 2, message,
+                                                                    app_meta, api, "MBSTF Distribution Session not found",
+                                                                    err.str(), std::nullopt, invalid_params));
+                        }
+		    } else if (method == OGS_SBI_HTTP_METHOD_DELETE) {
+		        if (message.resourceComponent(1) && !message.resourceComponent(2)) {
+                            std::string dist_session_id(message.resourceComponent(1));
+                            try {
+			        App::self().context()->deleteDistributionSession(dist_session_id);
+	                        std::shared_ptr<Open5GSSBIResponse> response(NfServer::newResponse(std::nullopt, std::nullopt, std::nullopt, std::nullopt, 0, std::nullopt, api, app_meta));
+                                NfServer::populateResponse(response, "", OGS_SBI_HTTP_STATUS_NO_CONTENT);
+                                ogs_assert(true == Open5GSSBIServer::sendResponse(stream, *response));
+
+		            } catch (const std::out_of_range &e) {
+                                std::ostringstream err;
+                                err << "MBSTF Distribution Session [" << dist_session_id << "] does not exist.";
+                                ogs_error("%s", err.str().c_str());
+
+                                static const std::string param("{sessionId}");
+                                std::ostringstream reason;
+                                reason << "Invalid MBSTF Distribution Session identifier [" << dist_session_id << "]";
+                                std::map<std::string, std::string> invalid_params(
+                                                                        NfServer::makeInvalidParams(param, reason.str()));
+
+                                ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_NOT_FOUND, 2, message,
+                                                        app_meta, api, "MBSTF Distribution Session not found", err.str(),
+                                                        std::nullopt, invalid_params));
+                            }
+		        }
+		    } else {
+                        std::ostringstream err;
+
+                        err << "Invalid method [" << message.method() << "] for " << message.serviceName() << "/"
+                                << message.apiVersion() << "/" << message.resourceComponent(0);
+                        ogs_error("%s", err.str().c_str());
+                        ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST, 1, message,
+                                                                app_meta, api, "Bad request", err.str()));
+                    }
+	        } else {
+                    std::ostringstream err;
+                    err << "Unknown object type \"" << message.resourceComponent(0) << "\" in MBSTF Distribution Session";
+                    ogs_error("%s", err.str().c_str());
+                    ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST, 1, message, app_meta,
+                                                            api, "Bad request", err.str()));
+	        }
+		//    }
+        //        }
 	    } else {
                 static const char *err = "Missing service name from URL path";
                 ogs_error("%s", err);
@@ -315,7 +318,7 @@ bool MBSTFDistributionSession::processEvent(Open5GSEvent &event)
                                                 "Missing service name", err));
             }
             return true;
-	}
+	    }
 	default:
         break;
     }

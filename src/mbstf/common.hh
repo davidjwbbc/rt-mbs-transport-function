@@ -19,7 +19,7 @@
  * under the License.
  */
 
-#define MBSTF_NAMESPACE com::fiveg_mag::ref_tools
+#define MBSTF_NAMESPACE com::fiveg_mag::ref_tools::mbstf
 #define MBSTF_NAMESPACE_START namespace MBSTF_NAMESPACE {
 #define MBSTF_NAMESPACE_STOP  }
 #define MBSTF_NAMESPACE_USING using namespace MBSTF_NAMESPACE

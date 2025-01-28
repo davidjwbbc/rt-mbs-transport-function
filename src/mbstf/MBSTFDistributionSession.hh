@@ -71,6 +71,7 @@ private:
     SysTimeMS m_lastUsed;
     std::string m_hash;
     std::string m_distributionSessionId;
+    ObjectStore m_objectStore;
 };
 
 MBSTF_NAMESPACE_STOP

@@ -43,6 +43,10 @@ libmbstf_dist_sources = files('''
     hash.hh
     MBSTFDistributionSession.hh
     MBSTFDistributionSession.cc
+    ObjectStore.hh
+    ObjectStore.cc
+    TestObjectStore.hh
+    TestObjectStore.cc
     MBSTFEventHandler.cc
     MBSTFEventHandler.hh
     MBSTFNetworkFunction.hh
