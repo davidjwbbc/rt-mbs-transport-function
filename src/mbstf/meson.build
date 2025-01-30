@@ -47,6 +47,9 @@ libmbstf_dist_sources = files('''
     ObjectStore.cc
     TestObjectStore.hh
     TestObjectStore.cc
+    ObjectIngester.hh
+    PullObjectIngester.hh
+    PullObjectIngester.cc
     MBSTFEventHandler.cc
     MBSTFEventHandler.hh
     MBSTFNetworkFunction.hh

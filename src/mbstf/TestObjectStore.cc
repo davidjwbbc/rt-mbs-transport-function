@@ -26,8 +26,8 @@ MBSTF_NAMESPACE_START
 int TestObjectStore::testObjectStore() {
     std::string object1 = "object1";
     std::string object2 = "object2";
-    const std::string type1 = "type1";
-    const std::string type2 = "type2";
+    const std::string mediaType1 = "mediaType1";
+    const std::string mediaType2 = "mediaType2";
 
     ObjectStore store;
 
@@ -37,8 +37,8 @@ int TestObjectStore::testObjectStore() {
 
     // Create threads for adding, retrieving, and deleting objects
     std::vector<std::thread> threads;
-    threads.emplace_back(addObject, std::ref(store), object1, testData1, type1);
-    threads.emplace_back(addObject, std::ref(store), object2, testData2, type2);
+    threads.emplace_back(addObject, std::ref(store), object1, testData1, mediaType1);
+    threads.emplace_back(addObject, std::ref(store), object2, testData2, mediaType2);
     threads.emplace_back(getObject, std::ref(store), object1);
     threads.emplace_back(getMetadata, std::ref(store), object1);
     threads.emplace_back(getObject, std::ref(store), object2);
@@ -57,8 +57,8 @@ int TestObjectStore::testObjectStore() {
 }
 
 
-void TestObjectStore::addObject(ObjectStore& store, const std::string& object_id, const ObjectStore::ObjectData& data, const std::string& type) {
-    store.addObject(object_id, ObjectStore::ObjectData(data), type);
+void TestObjectStore::addObject(ObjectStore& store, const std::string& object_id, const ObjectStore::ObjectData& data, const std::string& mediaType) {
+    store.addObject(object_id, ObjectStore::ObjectData(data), mediaType);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
 
@@ -94,7 +94,7 @@ void TestObjectStore::getMetadata(ObjectStore& store, const std::string& object_
     std::ostringstream meta;
    // Get metadata from the object store
     ObjectStore::Metadata metadata = store.getMetadata(object_id);
-    meta << "Metadata - Type: " << metadata.type
+    meta << "Metadata - Type: " << metadata.mediaType
               << ", Created: " << timePointToString(metadata.created)
               << ", Modified: " << timePointToString(metadata.modified)
               << std::endl;

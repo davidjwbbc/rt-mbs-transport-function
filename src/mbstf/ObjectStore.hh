@@ -1,7 +1,7 @@
 #ifndef _MBS_TF_MBSTF_OBJECT_STORE_HH_
 #define _MBS_TF_MBSTF_OBJECT_STORE_HH_
 /******************************************************************************
- * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF Network Function class
+ * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF Object store class
  ******************************************************************************
  * Copyright: (C)2024 British Broadcasting Corporation
  * License: 5G-MAG Public License v1

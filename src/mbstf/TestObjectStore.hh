@@ -32,7 +32,7 @@ class TestObjectStore: public ObjectStore {
 public:
     TestObjectStore() : ObjectStore() {};
     virtual ~TestObjectStore() {};
-    static void addObject(ObjectStore& store, const std::string& object_id, const ObjectStore::ObjectData& data, const std::string& type);
+    static void addObject(ObjectStore& store, const std::string& object_id, const ObjectStore::ObjectData& data, const std::string& mediaType);
     static void getObject(ObjectStore& store, const std::string& object_id);
     static void getMetadata(ObjectStore& store, const std::string& object_id);
     static void deleteObject(ObjectStore& store, const std::string& object_id); 

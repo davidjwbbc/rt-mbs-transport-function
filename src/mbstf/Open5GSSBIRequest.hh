@@ -22,6 +22,7 @@
 #include "ogs-sbi.h"
 
 #include <string>
+#include <optional>
 
 #include "common.hh"
 
@@ -30,6 +31,7 @@ MBSTF_NAMESPACE_START
 class Open5GSSBIRequest {
 public:
     Open5GSSBIRequest(ogs_sbi_request_t *request) :m_request(request) {};
+    Open5GSSBIRequest(const std::string &method, const std::string &uri, const std::string &apiVersion, const std::optional<std::string> &data, const std::optional<std::string> &type);
     Open5GSSBIRequest() = delete;
     Open5GSSBIRequest(Open5GSSBIRequest &&other) = delete;
     Open5GSSBIRequest(const Open5GSSBIRequest &other) = delete;

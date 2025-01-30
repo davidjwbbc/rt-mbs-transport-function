@@ -1,5 +1,5 @@
 /******************************************************************************
- * 5G-MAG Reference Tools: MBS Traffic Function: Open5GS Application interface
+ * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF Object store
  ******************************************************************************
  * Copyright: (C)2024 British Broadcasting Corporation
  * License: 5G-MAG Public License v1

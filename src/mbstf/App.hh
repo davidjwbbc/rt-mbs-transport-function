@@ -63,6 +63,7 @@ public:
     const NfServer::AppMetadata &mbstfAppMetadata() const;
     const std::string &serverName();
     const std::string &serverName() const { return m_appMetadata.serverName(); };
+    int queuePush(const std::shared_ptr<Open5GSEvent> &event) const;
 
 protected:
     friend class Open5GSNetworkFunction;

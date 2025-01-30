@@ -54,7 +54,7 @@ public:
 
     Open5GSYamlDocument configFileDocument() const;
 
-    void pushEvent(const std::shared_ptr<Open5GSEvent> &event);
+    int pushEvent(const std::shared_ptr<Open5GSEvent> &event);
 
     bool configureLoggingDomain();
     bool sbiParseConfig(const char *app_section, const char *nrf_section = "nrf", const char *scp_section = "scp");

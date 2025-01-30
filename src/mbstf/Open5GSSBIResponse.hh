@@ -50,9 +50,11 @@ public:
     Open5GSSBIResponse &content(char *content) { if (m_response) m_response->http.content = content; return *this; };
 
     bool headerSet(const std::string &field, const std::string &value);
+    void setOwner(bool owner) { m_owner = owner; };
 
 private:
     ogs_sbi_response_t *m_response;
+    bool m_owner;
 };
 
 MBSTF_NAMESPACE_STOP

@@ -129,9 +129,18 @@ Open5GSYamlDocument Open5GSNetworkFunction::configFileDocument() const
     return Open5GSYamlDocument(ogs_app()->document);
 }
 
-void Open5GSNetworkFunction::pushEvent(const std::shared_ptr<Open5GSEvent> &event)
+int Open5GSNetworkFunction::pushEvent(const std::shared_ptr<Open5GSEvent> &event)
 {
-    ogs_queue_push(ogs_app()->queue, event->ogsEvent());
+    int rv = 0;
+    rv = ogs_queue_push(ogs_app()->queue, event->ogsEvent());
+    if (rv !=OGS_OK) {
+        ogs_error("OGS Queue Push failed %d", rv);
+        //ogs_sbi_response_free(response);
+        ogs_event_free(event->ogsEvent());
+        return OGS_ERROR;
+    }
+    return OGS_OK;
+
 }
 
 bool Open5GSNetworkFunction::configureLoggingDomain()

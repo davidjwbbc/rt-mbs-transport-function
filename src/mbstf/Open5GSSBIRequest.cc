@@ -36,6 +36,31 @@ public:
     static bool lt(CharT a, CharT b) { return std::tolower(a) < std::tolower(b); };
 };
 
+Open5GSSBIRequest::Open5GSSBIRequest(const std::string &method, const std::string &uri, const std::string &apiVersion, const std::optional<std::string> &data, const std::optional<std::string> &type)
+    : m_request(ogs_sbi_request_new()) 
+{
+
+    m_request = ogs_sbi_request_new();
+    m_request->h.method = (char *)method.c_str();
+    m_request->h.uri = (char *)uri.c_str();
+    m_request->h.api.version = (char *)apiVersion.c_str();
+    
+    if (data) {
+        m_request->http.content = const_cast<char*>(data->c_str());
+        m_request->http.content_length = data->size();
+    } else {
+        m_request->http.content = nullptr;
+        m_request->http.content_length = 0;
+    }
+
+    if (type) {
+        ogs_sbi_header_set(m_request->http.headers, "Content-Type", type->c_str());
+    } else {
+        ogs_sbi_header_set(m_request->http.headers, "Content-Type", nullptr);
+    }
+
+}
+
 std::string Open5GSSBIRequest::headerValue(const std::string &field, const std::string &defval) const
 {
     typedef std::string::value_type C;
