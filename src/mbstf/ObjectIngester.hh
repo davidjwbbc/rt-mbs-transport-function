@@ -13,15 +13,40 @@
 
 
 #include "common.hh"
+#include <thread>
 
 MBSTF_NAMESPACE_START
 
+class ObjectStore;
+class Controller;
+
 class ObjectIngester {
 public:
-    virtual void abort() = 0;
-    virtual ~ObjectIngester() {};
-	
+    ObjectIngester() = delete;
+    ObjectIngester(ObjectStore &objectStore, Controller &controller)
+        : m_objectStore(objectStore), m_controller(controller), m_workerThread(&ObjectIngester::doObjectIngest, this) {}
+
+    void abort() {
+    }
+
+    virtual ~ObjectIngester() {
+        if (m_workerThread.joinable()) {
+            m_workerThread.join();
+        }
+    }
+
+protected:
+    ObjectStore &objectStore() { return m_objectStore; }
+    const ObjectStore &objectStore() const { return m_objectStore; }
+    Controller &controller() { return m_controller; }
+    const Controller &controller() const { return m_controller; }
+
+    virtual void doObjectIngest() = 0;
+
 private:
+    ObjectStore &m_objectStore;
+    Controller &m_controller;
+    std::thread m_workerThread;
 };
 
 MBSTF_NAMESPACE_STOP

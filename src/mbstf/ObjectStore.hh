@@ -29,6 +29,8 @@
 
 MBSTF_NAMESPACE_START
 
+class MBSTFDistributionSession;
+
 class ObjectStore {
 public:
     class Metadata {
@@ -58,6 +60,7 @@ public:
     using Object = std::pair<ObjectData, Metadata>;
 
     ObjectStore();
+    ObjectStore(MBSTFDistributionSession &distributionSession);
     ~ObjectStore();
     void addObject(const std::string& object_id, ObjectData &&object, Metadata &&metadata);
     const ObjectData& getObjectData(const std::string& object_id) const;
@@ -71,6 +74,7 @@ public:
 	
 private:
     std::recursive_mutex m_mutex;
+    MBSTFDistributionSession &m_distributionSession;
     std::map<std::string, Object> m_store;
 };
 

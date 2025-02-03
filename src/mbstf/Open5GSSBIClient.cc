@@ -88,12 +88,9 @@ Open5GSSBIClient::~Open5GSSBIClient()
 {
 }
 
-bool Open5GSSBIClient::sendRequest(ogs_sbi_client_cb_f client_notify_cb, Open5GSSBIRequest &request, std::optional<std::vector<unsigned char>> &data)
+bool Open5GSSBIClient::sendRequest(ogs_sbi_client_cb_f client_notify_cb, Open5GSSBIRequest &request, void *data)
 {
-    void *requestContextData = NULL;
-    if(data)
-	requestContextData = static_cast<void*>(data->data());     
-    ogs_sbi_client_send_request(this->ogsSBIClient(), client_notify_cb, request.ogsSBIRequest(), (void *)requestContextData);
+    ogs_sbi_client_send_request(this->ogsSBIClient(), client_notify_cb, request.ogsSBIRequest(), (void *)data);
     ogs_sbi_request_free(request.ogsSBIRequest());
 
     return 1;

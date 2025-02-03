@@ -28,6 +28,11 @@ MBSTF_NAMESPACE_START
 
 ObjectStore::ObjectStore() {}
 
+ObjectStore::ObjectStore(MBSTFDistributionSession &distributionSession) 
+    :m_distributionSession(distributionSession)
+{
+}
+
 ObjectStore::~ObjectStore() {}
 
 void ObjectStore::addObject(const std::string& object_id, ObjectData&& object, const std::string& mediaType) {

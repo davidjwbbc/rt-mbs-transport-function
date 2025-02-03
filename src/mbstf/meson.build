@@ -45,8 +45,12 @@ libmbstf_dist_sources = files('''
     DistributionSession.cc
     ObjectStore.hh
     ObjectStore.cc
+    Controller.hh
+    Controller.cc
     TestObjectStore.hh
     TestObjectStore.cc
+    ObjectStore.hh
+    ObjectStore.cc
     ObjectIngester.hh
     PullObjectIngester.hh
     PullObjectIngester.cc

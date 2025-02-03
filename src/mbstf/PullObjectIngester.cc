@@ -26,10 +26,19 @@
 #include "Open5GSSBIClient.hh"
 #include "Open5GSSBIResponse.hh"
 #include "Open5GSEvent.hh"
+#include "ObjectStore.hh"
 
 MBSTF_NAMESPACE_START
 
-PullObjectIngester::PullObjectIngester() {}
+class ObjectStore;
+
+//PullObjectIngester::PullObjectIngester() {}
+
+PullObjectIngester::PullObjectIngester(ObjectStore& objectStore)
+    :m_objectStore(objectStore)
+{
+
+}
 
 PullObjectIngester::~PullObjectIngester() {}
 
@@ -42,9 +51,15 @@ bool PullObjectIngester::addObjectPull(const std::string &object_id, const std::
 
     Open5GSSBIClient client(url);
     Open5GSSBIRequest request(method, url, apiVersion, std::nullopt, std::nullopt);
-    //Open5GSSBIRequest request = createPullObjectIngestorRequest(url);
-    //std::optional<std::vector<unsigned char>> optData = std::nullopt;
+    /*
+    Open5GSSBIRequest request = createPullObjectIngestorRequest(url);
+    std::optional<std::vector<unsigned char>> optData = std::nullopt;
     std::optional<std::vector<unsigned char>> data = stringToVector(object_id);
+    */
+    auto* storage = new std::pair<const std::string&, ObjectStore&>(object_id, this->objectStore());
+
+    void* data = reinterpret_cast<void*>(storage);
+
     bool rv = client.sendRequest(client_notify_cb, request, data);
     return rv;
 
@@ -54,6 +69,10 @@ int PullObjectIngester::client_notify_cb(int status, ogs_sbi_response_t *respons
 {
     ogs_info("In client_notify_cb");
 
+    int rv;
+    const char *content;
+    const char *contentType;
+    size_t contentLength;
 
     if (status != OGS_OK) {
         ogs_log_message(
@@ -63,27 +82,37 @@ int PullObjectIngester::client_notify_cb(int status, ogs_sbi_response_t *respons
         return OGS_ERROR;
     }
 
-    int rv;
-
-    const App &app = App::self();
-
-
-    std::string *objectIdPtr = reinterpret_cast<std::string*>(data); // Cast void* to std::string*
-    std::string objectId = *objectIdPtr;
-
     Open5GSSBIResponse resp(response);
-    std::shared_ptr<Open5GSEvent> event = std::make_shared<Open5GSEvent>(ogs_event_new(OGS_EVENT_SBI_CLIENT));
-    //std::shared_ptr<Open5GSEvent> event(ogs_event_new(OGS_EVENT_SBI_CLIENT));
-    event->sbiResponse(resp);
-    event->setSbiData(data);
+    
+    contentLength = resp.contentLength(); 
+    if(contentLength) {
+        content =  resp.content();
+    }
 
-    rv = app.queuePush(event);
-    if (rv !=OGS_OK) {
-        ogs_error("App Event Push failed %d", rv);
-        ogs_sbi_response_free(response);
+    if (!content) {
+        ogs_error("No content in response");
+        if (response) ogs_sbi_response_free(response);
         return OGS_ERROR;
     }
 
+    Open5GSSBIMessage message;
+
+    try {
+        message.parseHeader(resp);
+    } catch (std::exception &ex) {
+        ogs_error("Parsing response header failed");
+	if (response) ogs_sbi_response_free(response);
+        return OGS_ERROR;
+    }
+    contentType = message.contentType();
+
+    auto* storage = reinterpret_cast<std::pair<const std::string&, ObjectStore&>*>(data);
+    
+    const std::string& objectId = storage->first;
+    ObjectStore& objectStore = storage->second;
+    std::vector<unsigned char> objectData = stringToVector(std::string(content)); 
+    objectStore.addObject(objectId, std::move(objectData), std::string(contentType));
+    
     return OGS_OK;    
 }
 

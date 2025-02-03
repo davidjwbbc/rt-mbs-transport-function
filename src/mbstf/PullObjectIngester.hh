@@ -17,21 +17,25 @@
 #include <string>
 
 #include "common.hh"
+#include "ObjectStore.hh"
 #include "ObjectIngester.hh"
 
 MBSTF_NAMESPACE_START
 
+class ObjectStore;
+
 class PullObjectIngester : public ObjectIngester{
 public:
 
-    PullObjectIngester();
+    PullObjectIngester() = delete;
+    PullObjectIngester(ObjectStore& objectStore);
     ~PullObjectIngester();	
     bool addObjectPull(const std::string &object_id, const std::string &url);
     void abort() override;
     static int client_notify_cb(int status, ogs_sbi_response_t *response, void *data);
 	
 private:
-    std::vector<unsigned char> stringToVector(const std::string &str);
+    static std::vector<unsigned char> stringToVector(const std::string &str);
     //Open5GSSBIRequest createPullObjectIngestorRequest(const std::string &url);
 
 };
