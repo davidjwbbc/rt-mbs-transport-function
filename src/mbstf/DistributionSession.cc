@@ -48,7 +48,7 @@
 #include "TimerFunc.hh"
 
 // Header include for this class
-#include "MBSTFDistributionSession.hh"
+#include "DistributionSession.hh"
 
 using fiveg_mag_reftools::CJson;
 using reftools::mbstf::CreateReqData;
@@ -61,7 +61,7 @@ static const NfServer::InterfaceMetadata g_nmbstf_distributionsession_api_metada
     NMBSTF_DISTSESSION_API_VERSION
 );
 
-MBSTFDistributionSession::MBSTFDistributionSession(CJson &json, bool as_request)
+DistributionSession::DistributionSession(CJson &json, bool as_request)
     : m_createReqData(std::make_shared<CreateReqData>(json, as_request)) {
 
     ogs_uuid_t uuid;
@@ -81,23 +81,23 @@ MBSTFDistributionSession::MBSTFDistributionSession(CJson &json, bool as_request)
     m_hash = calculate_hash(std::vector<std::string::value_type>(json_str.begin(), json_str.end()));
     m_distributionSessionId = id;
 
-    //App::self().context()->addDistributionSession(m_distributionSessionId, std::shared_ptr<MBSTFDistributionSession> MBSTFDistributionSession)
+    //App::self().context()->addDistributionSession(m_distributionSessionId, std::shared_ptr<DistributionSession> DistributionSession)
 
 }
 
-MBSTFDistributionSession::~MBSTFDistributionSession()
+DistributionSession::~DistributionSession()
 {
 
 }
 
-CJson MBSTFDistributionSession::json(bool as_request = false) const
+CJson DistributionSession::json(bool as_request = false) const
 {
     return m_createReqData->toJSON(as_request);	
 }
 
-const std::shared_ptr<MBSTFDistributionSession> &MBSTFDistributionSession::find(const std::string &id)
+const std::shared_ptr<DistributionSession> &DistributionSession::find(const std::string &id)
 {
-    const std::map<std::string, std::shared_ptr<MBSTFDistributionSession> > &distributionSessions = App::self().context()->distributionSessions;
+    const std::map<std::string, std::shared_ptr<DistributionSession> > &distributionSessions = App::self().context()->distributionSessions;
     auto it = distributionSessions.find(id);
     if (it == distributionSessions.end()) {
 	throw std::out_of_range("MBST Distribution session not found");
@@ -105,7 +105,7 @@ const std::shared_ptr<MBSTFDistributionSession> &MBSTFDistributionSession::find(
     return it->second;
 }
 
-bool MBSTFDistributionSession::processEvent(Open5GSEvent &event)
+bool DistributionSession::processEvent(Open5GSEvent &event)
 {
     const NfServer::InterfaceMetadata &nmbstf_distributionsession_api = g_nmbstf_distributionsession_api_metadata;
     const NfServer::AppMetadata &app_meta = App::self().mbstfAppMetadata();
@@ -162,7 +162,7 @@ bool MBSTFDistributionSession::processEvent(Open5GSEvent &event)
 			    if (resource2 != "dist-session") {
 			    */
 		                ogs_debug("In MBSTF Distribution session");
-				std::shared_ptr<MBSTFDistributionSession> distributionSession;
+				std::shared_ptr<DistributionSession> distributionSession;
 				ogs_debug("Request body: %s", request.content());
     				if (request.headerValue(OGS_SBI_CONTENT_TYPE, std::string()) != "application/json") {
                                     ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE,
@@ -189,7 +189,7 @@ bool MBSTFDistributionSession::processEvent(Open5GSEvent &event)
                                 }
 
                                 try {
-                                    distributionSession = std::make_shared<MBSTFDistributionSession>(distSession, true);
+                                    distributionSession = std::make_shared<DistributionSession>(distSession, true);
                                 } catch (std::exception &err) {
                                     ogs_error("Error while populating MBSTF Distribution Session: %s", err.what());
                                     char *error = ogs_msprintf("Bad request [%s]", err.what());
@@ -203,7 +203,7 @@ bool MBSTFDistributionSession::processEvent(Open5GSEvent &event)
                                 App::self().context()->addDistributionSession(distributionSession);
 
                                     /*
-                                std::shared_ptr<MBSTFDistributionSession> distributionSession = std::make_shared<MBSTFDistributionSession>(distSession, true);
+                                std::shared_ptr<DistributionSession> distributionSession = std::make_shared<DistributionSession>(distSession, true);
                                 App::self().context()->addDistributionSession(distributionSession);
                                     */
 
@@ -238,7 +238,7 @@ bool MBSTFDistributionSession::processEvent(Open5GSEvent &event)
                         try {
                             int response_code = 200;
 
-                            std::shared_ptr<MBSTFDistributionSession> distSess = MBSTFDistributionSession::find(dist_session_id);
+                            std::shared_ptr<DistributionSession> distSess = DistributionSession::find(dist_session_id);
                             CJson createdReqData_json(distSess->json(false));
                             std::string body(createdReqData_json.serialise());
                             ogs_debug("Parsed JSON: %s", body.c_str());

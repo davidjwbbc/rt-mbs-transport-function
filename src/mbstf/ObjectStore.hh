@@ -20,6 +20,7 @@
 #include <memory>
 #include <utility>
 #include <chrono>
+#include <optional>
 #include <vector>
 #include <map>
 #include <mutex>
@@ -30,10 +31,27 @@ MBSTF_NAMESPACE_START
 
 class ObjectStore {
 public:
-    struct Metadata {
-        std::string mediaType;
-	std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds> created;
-	std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds> modified;
+    class Metadata {
+    public:
+        Metadata();
+        Metadata(const std::string &media_type, const std::string &url, const std::string &fetched_url,
+                 const std::chrono::system_clock::time_point last_modified,
+                 const std::optional<std::chrono::system_clock::time_point> &cache_expires = std::nullopt);
+        Metadata(const Metadata &other);
+        Metadata(Metadata &&other);
+        virtual ~Metadata() {};
+
+        const std::string &mediaType() const {return m_mediaType};
+        Metadata &mediaType(const std::string &media_type) {m_mediaType = media_type; return *this;};
+        Metadata &mediaType(std::string &&media_type) {m_mediaType = std::move(media_type); return *this;};
+
+    private:
+        std::string m_mediaType;
+        std::string m_originalUrl;
+        std::string m_fetchedUrl;
+        std::optional<std::chrono::system_clock::time_point> m_cacheExpires;
+	std::chrono::system_clock::time_point m_created;
+	std::chrono::system_clock::time_point m_modified;
     };
 
     using ObjectData = std::vector<unsigned char>;
@@ -41,14 +59,18 @@ public:
 
     ObjectStore();
     ~ObjectStore();
-    void addObject(const std::string& object_id, ObjectData &&object,const std::string& mediaType);
-    const ObjectData& getObject(const std::string& object_id) const;
+    void addObject(const std::string& object_id, ObjectData &&object, Metadata &&metadata);
+    const ObjectData& getObjectData(const std::string& object_id) const;
     const Metadata& getMetadata(const std::string& object_id) const;
     void deleteObject(const std::string& object_id);
+
+    const Object &operator[](const std::string& object_id) const;
+    using getObject = operator[];
+
+    bool hasExpired(const std::string& object_id) const;
 	
 private:
-    Metadata populateMetadata(const std::string& mediaType);
-    mutable std::recursive_mutex m_mutex;
+    std::recursive_mutex m_mutex;
     std::map<std::string, Object> m_store;
 };
 

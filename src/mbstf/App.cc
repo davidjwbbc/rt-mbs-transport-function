@@ -109,7 +109,7 @@ void App::initialise()
         throw std::runtime_error("Open5GS parse SBI configuration failed!");
     }
 
-    std::shared_ptr<Open5GSSockAddr> addr(m_context->MBSTFDistributionSessionServerAddress());
+    std::shared_ptr<Open5GSSockAddr> addr(m_context->DistributionSessionServerAddress());
     m_app->setNFServiceInfo(serviceName, supportedFeatures, apiVersion, addr);
 
     std::string nf_name("MBSTF-");

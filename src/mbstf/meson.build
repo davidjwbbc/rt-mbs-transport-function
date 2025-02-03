@@ -41,8 +41,8 @@ libmbstf_dist_sources = files('''
     Context.hh
     EventHandler.hh
     hash.hh
-    MBSTFDistributionSession.hh
-    MBSTFDistributionSession.cc
+    DistributionSession.hh
+    DistributionSession.cc
     ObjectStore.hh
     ObjectStore.cc
     TestObjectStore.hh

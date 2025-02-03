@@ -26,7 +26,7 @@
 
 MBSTF_NAMESPACE_START
 
-class MBSTFDistributionSession;
+class DistributionSession;
 class Open5GSSBIServer;
 class Open5GSSockAddr;
 class Open5GSYamlIter;
@@ -42,14 +42,14 @@ public:
 
     bool parseConfig();
 
-    std::shared_ptr<Open5GSSockAddr> MBSTFDistributionSessionServerAddress();
+    std::shared_ptr<Open5GSSockAddr> DistributionSessionServerAddress();
 
 /*
-    void addDistributionSession(const std::string &session_id, const std::shared_ptr<MBSTFDistributionSession> &session) {
-        distributionSessions.insert(std::make_pair(session_id, std::shared_ptr<MBSTFDistributionSession>(session)));
+    void addDistributionSession(const std::string &session_id, const std::shared_ptr<DistributionSession> &session) {
+        distributionSessions.insert(std::make_pair(session_id, std::shared_ptr<DistributionSession>(session)));
     }
 */
-    void addDistributionSession(const std::shared_ptr<MBSTFDistributionSession> &MBSTFDistributionSession);
+    void addDistributionSession(const std::shared_ptr<DistributionSession> &DistributionSession);
     void deleteDistributionSession(const std::string &distributionSessionid);
 
     enum ServerType {
@@ -59,7 +59,7 @@ public:
         SERVER_MAX_NUM
     };
 
-    std::map<std::string, std::shared_ptr<MBSTFDistributionSession> > distributionSessions;
+    std::map<std::string, std::shared_ptr<DistributionSession> > distributionSessions;
     std::shared_ptr<Open5GSSBIServer> servers[SERVER_MAX_NUM];
     struct {
         unsigned int distMaxAge;

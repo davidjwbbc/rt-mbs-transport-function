@@ -24,7 +24,7 @@
 #include <string>
 
 #include "common.hh"
-#include "MBSTFDistributionSession.hh"
+#include "DistributionSession.hh"
 #include "Open5GSEvent.hh"
 #include "Open5GSFSM.hh"
 #include "Open5GSSBIServer.hh"
@@ -39,7 +39,7 @@ void MBSTFEventHandler::dispatch(Open5GSFSM &fsm, Open5GSEvent &event)
     // Handle Open5GS FSM events here
     ogs_debug("MBSTF Event: %s", ogs_event_get_name(event.ogsEvent()));
 
-    if (MBSTFDistributionSession::processEvent(event)) return;
+    if (DistributionSession::processEvent(event)) return;
 
     switch (event.id()) {
     case OGS_FSM_ENTRY_SIG:

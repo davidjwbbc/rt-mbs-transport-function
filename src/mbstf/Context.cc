@@ -27,7 +27,7 @@
 
 #include "common.hh"
 #include "App.hh"
-#include "MBSTFDistributionSession.hh"
+#include "DistributionSession.hh"
 #include "Open5GSNetworkFunction.hh"
 #include "Open5GSSBIServer.hh"
 #include "Open5GSSockAddr.hh"
@@ -108,10 +108,10 @@ bool Context::parseConfig()
     return true;
 }
 
-void Context::addDistributionSession(const std::shared_ptr<MBSTFDistributionSession> &session)
+void Context::addDistributionSession(const std::shared_ptr<DistributionSession> &session)
 {
-    std::shared_ptr<MBSTFDistributionSession> map_session(session);
-    distributionSessions.insert(std::make_pair<std::string, std::shared_ptr<MBSTFDistributionSession> >(std::string(map_session->distributionSessionId()), std::move(map_session)));
+    std::shared_ptr<DistributionSession> map_session(session);
+    distributionSessions.insert(std::make_pair<std::string, std::shared_ptr<DistributionSession> >(std::string(map_session->distributionSessionId()), std::move(map_session)));
 }
 
 
@@ -313,7 +313,7 @@ void Context::parseConfiguration(std::string &pc_key, Open5GSYamlIter &iter)   {
     ogs_socknode_remove_all(&list6);
 }
 
-std::shared_ptr<Open5GSSockAddr> Context::MBSTFDistributionSessionServerAddress()
+std::shared_ptr<Open5GSSockAddr> Context::DistributionSessionServerAddress()
 {
     auto mbstfServer = servers[SERVER_DISTRIBUTION_SESSION];
     ogs_assert(mbstfServer);

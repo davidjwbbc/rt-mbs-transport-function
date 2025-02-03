@@ -42,22 +42,22 @@ MBSTF_NAMESPACE_START
 
 class Open5GSEvent;
 
-class MBSTFDistributionSession {
+class DistributionSession {
 public:
     using SysTimeMS = std::chrono::system_clock::time_point;
-    MBSTFDistributionSession(CJson &json, bool as_request);
-    MBSTFDistributionSession(const std::shared_ptr<CreateReqData> &create_req_data);
-    MBSTFDistributionSession() = delete;
-    MBSTFDistributionSession(MBSTFDistributionSession &&other) = delete;
-    MBSTFDistributionSession(const MBSTFDistributionSession &other) = delete;
-    MBSTFDistributionSession &operator=(MBSTFDistributionSession &&other) = delete;
-    MBSTFDistributionSession &operator=(const MBSTFDistributionSession &other) = delete;
+    DistributionSession(CJson &json, bool as_request);
+    DistributionSession(const std::shared_ptr<CreateReqData> &create_req_data);
+    DistributionSession() = delete;
+    DistributionSession(DistributionSession &&other) = delete;
+    DistributionSession(const DistributionSession &other) = delete;
+    DistributionSession &operator=(DistributionSession &&other) = delete;
+    DistributionSession &operator=(const DistributionSession &other) = delete;
 
-    virtual ~MBSTFDistributionSession();
+    virtual ~DistributionSession();
 
     CJson json(bool as_request) const;
 
-    static const std::shared_ptr<MBSTFDistributionSession> &find(const std::string &id); // throws std::out_of_range if id does not exist
+    static const std::shared_ptr<DistributionSession> &find(const std::string &id); // throws std::out_of_range if id does not exist
     const std::string &distributionSessionId() const { return m_distributionSessionId; };
     const std::shared_ptr<CreateReqData> &distributionSessionReqData() const {return m_createReqData;};
     const SysTimeMS &generated() const {return m_generated;};
