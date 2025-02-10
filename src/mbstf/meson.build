@@ -47,8 +47,6 @@ libmbstf_dist_sources = files('''
     ObjectStore.cc
     Controller.hh
     Controller.cc
-    TestObjectStore.hh
-    TestObjectStore.cc
     ObjectStore.hh
     ObjectStore.cc
     ObjectIngester.hh

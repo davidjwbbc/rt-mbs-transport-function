@@ -18,12 +18,12 @@
 MBSTF_NAMESPACE_START
 
 class ObjectStore;
-class Controller;
+class ObjectController;
 
 class ObjectIngester {
 public:
     ObjectIngester() = delete;
-    ObjectIngester(ObjectStore &objectStore, Controller &controller)
+    ObjectIngester(ObjectStore &objectStore, ObjectController &controller)
         : m_objectStore(objectStore), m_controller(controller), m_workerThread(&ObjectIngester::doObjectIngest, this) {}
 
     void abort() {
@@ -38,14 +38,14 @@ public:
 protected:
     ObjectStore &objectStore() { return m_objectStore; }
     const ObjectStore &objectStore() const { return m_objectStore; }
-    Controller &controller() { return m_controller; }
-    const Controller &controller() const { return m_controller; }
+    ObjectController &controller() { return m_controller; }
+    const ObjectController &controller() const { return m_controller; }
 
     virtual void doObjectIngest() = 0;
 
 private:
     ObjectStore &m_objectStore;
-    Controller &m_controller;
+    ObjectController &m_controller;
     std::thread m_workerThread;
 };
 

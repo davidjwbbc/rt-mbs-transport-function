@@ -48,7 +48,7 @@ public:
     const char *content() const { return m_response?m_response->http.content:nullptr; };
     Open5GSSBIResponse &content(std::string &content) { if (m_response) m_response->http.content = content.data(); return *this; };
     Open5GSSBIResponse &content(char *content) { if (m_response) m_response->http.content = content; return *this; };
-
+    const char *getHeader(const char *header);
     bool headerSet(const std::string &field, const std::string &value);
     void setOwner(bool owner) { m_owner = owner; };
 

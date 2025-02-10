@@ -88,10 +88,10 @@ Open5GSSBIClient::~Open5GSSBIClient()
 {
 }
 
-bool Open5GSSBIClient::sendRequest(ogs_sbi_client_cb_f client_notify_cb, Open5GSSBIRequest &request, void *data)
+bool Open5GSSBIClient::sendRequest(ogs_sbi_client_cb_f client_notify_cb,  std::shared_ptr<Open5GSSBIRequest> request, void *data)
 {
-    ogs_sbi_client_send_request(this->ogsSBIClient(), client_notify_cb, request.ogsSBIRequest(), (void *)data);
-    ogs_sbi_request_free(request.ogsSBIRequest());
+    ogs_sbi_client_send_request(this->ogsSBIClient(), client_notify_cb, request->ogsSBIRequest(), (void *)data);
+    //ogs_sbi_request_free(request->ogsSBIRequest());
 
     return 1;
 }

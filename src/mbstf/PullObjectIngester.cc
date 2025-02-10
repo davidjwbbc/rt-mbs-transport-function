@@ -26,50 +26,106 @@
 #include "Open5GSSBIClient.hh"
 #include "Open5GSSBIResponse.hh"
 #include "Open5GSEvent.hh"
+#include "hash.hh"
 #include "ObjectStore.hh"
 
 MBSTF_NAMESPACE_START
 
 class ObjectStore;
 
-//PullObjectIngester::PullObjectIngester() {}
-
-PullObjectIngester::PullObjectIngester(ObjectStore& objectStore)
-    :m_objectStore(objectStore)
+PullObjectIngester::IngestItem::IngestItem(const std::string &object_id, const std::string &url, const std::optional<time_type> &download_deadline)
+    :m_objectId(object_id)
+    ,m_url(url)
+    ,m_deadline(download_deadline)
 {
 
 }
+
+PullObjectIngester::IngestItem::IngestItem(const IngestItem &other)
+    :m_objectId(other.m_objectId)
+    ,m_url(other.m_url)
+    ,m_deadline(other.m_deadline)
+{
+
+}
+
+PullObjectIngester::IngestItem::IngestItem(IngestItem &&other)
+    :m_objectId(std::move(other.m_objectId))
+    ,m_url(std::move(other.m_url))
+    ,m_deadline(std::move(other.m_deadline)) 
+{
+
+}
+
 
 PullObjectIngester::~PullObjectIngester() {}
 
-bool PullObjectIngester::addObjectPull(const std::string &object_id, const std::string &url)
-{
-    //std::shared_ptr<Open5GSSBIClient> client;
-    //client.reset(new Open5GSSBIClient(url));
+bool PullObjectIngester::add(const std::string &object_id, const std::string &url, const time_type &download_deadline) {
+    IngestItem newItem(object_id, url, download_deadline);
+    m_fetchList.push_back(std::move(newItem));
+    sortListIntoPriorityOrder();
+    return true;
+}
+
+bool PullObjectIngester::add(const IngestItem &item) {
+    m_fetchList.push_back(item);
+    sortListIntoPriorityOrder();
+    return true;
+}
+
+bool PullObjectIngester::add(IngestItem &&item) {
+    m_fetchList.push_back(std::move(item));
+    sortListIntoPriorityOrder();
+    return true;
+}
+
+void PullObjectIngester::sortListIntoPriorityOrder() {
+    m_fetchList.sort([](const IngestItem &a, const IngestItem &b) {
+        if (a.deadline().has_value() && b.deadline().has_value()) {
+            return a.deadline() < b.deadline();
+        }
+        return a.deadline().has_value();
+    });
+}
+
+void PullObjectIngester::doObjectIngest() {
     const std::string method = "GET";
     const std::string apiVersion = "v1";
+	
+    for (auto& item : m_fetchList) {
+        // Send request to the URL
+        std::string url = item.url();
+	/*std::shared_ptr<Open5GSSBIClient> */ item.client() = std::make_shared<Open5GSSBIClient>(url);
+	std::shared_ptr<Open5GSSBIRequest> request = std::make_shared<Open5GSSBIRequest>(method, url, apiVersion, std::nullopt, std::nullopt);
+        
+        auto *requestContext = new std::pair<IngestItem&, PullObjectIngester&>(item, *this);
+        void *data = reinterpret_cast<void*>(requestContext);
+        
 
-    Open5GSSBIClient client(url);
-    Open5GSSBIRequest request(method, url, apiVersion, std::nullopt, std::nullopt);
-    /*
-    Open5GSSBIRequest request = createPullObjectIngestorRequest(url);
-    std::optional<std::vector<unsigned char>> optData = std::nullopt;
-    std::optional<std::vector<unsigned char>> data = stringToVector(object_id);
-    */
-    auto* storage = new std::pair<const std::string&, ObjectStore&>(object_id, this->objectStore());
+        //const void *data = reinterpret_cast<const void*>(&item);
+        bool rv = item.client()->sendRequest(client_notify_cb, request, (void *)data);
+        if(!rv) ogs_error("Error while sending Request to %s", url.c_str());
+	//return rv;
 
-    void* data = reinterpret_cast<void*>(storage);
 
-    bool rv = client.sendRequest(client_notify_cb, request, data);
-    return rv;
-
+        // Implementation to send request to the URL goes here
+        std::cout << "Sending request to URL: " << url << std::endl;
+    }
+    m_fetchList.clear();
 }
+
+/*
+int PullObjectIngester::client_notify_cb(int status, ogs_sbi_response_t *response, void *data)
+{
+    return 0;	
+}
+*/
 
 int PullObjectIngester::client_notify_cb(int status, ogs_sbi_response_t *response, void *data) 
 {
     ogs_info("In client_notify_cb");
 
-    int rv;
+    //int rv;
     const char *content;
     const char *contentType;
     size_t contentLength;
@@ -105,32 +161,33 @@ int PullObjectIngester::client_notify_cb(int status, ogs_sbi_response_t *respons
         return OGS_ERROR;
     }
     contentType = message.contentType();
-
-    auto* storage = reinterpret_cast<std::pair<const std::string&, ObjectStore&>*>(data);
+    auto* retrievedContext = reinterpret_cast<std::pair<IngestItem&, PullObjectIngester&>*>(data);
+    //auto *ingestItem = reinterpret_cast<const IngestItem*>(data);
     
-    const std::string& objectId = storage->first;
-    ObjectStore& objectStore = storage->second;
-    std::vector<unsigned char> objectData = stringToVector(std::string(content)); 
-    objectStore.addObject(objectId, std::move(objectData), std::string(contentType));
+    IngestItem& ingestItem = retrievedContext->first;
+    PullObjectIngester& pullObjectIngester = retrievedContext->second;
+    
+    std::vector<unsigned char> objectData = convertToVector(std::string(content)); 
+    
+    auto lastModified = std::chrono::system_clock::now();
+    /*
+    std::optional<std::chrono::system_clock::time_point> cacheExpires = std::chrono::system_clock::now() + std::chrono::minutes(ObjectStore::Metadata::cacheExpiry());
+    ObjectStore::Metadata metadata(std::string(contentType), ingestItem.url(), ingestItem.url(), lastModified, cacheExpires);
+    */
+
+    ObjectStore::Metadata metadata(std::string(contentType), ingestItem.url(), ingestItem.url(), lastModified);
+    metadata.cacheExpires(std::chrono::system_clock::now() + std::chrono::minutes(ObjectStore::Metadata::cacheExpiry()));
+    const char *etag = resp.getHeader("ETag");
+    if(etag) metadata.entityTag(etag);
+    pullObjectIngester.objectStore().addObject(ingestItem.objectId(), std::move(objectData), std::move(metadata));
     
     return OGS_OK;    
 }
 
 // Utility function to convert std::string to std::vector<unsigned char>
-std::vector<unsigned char> PullObjectIngester::stringToVector(const std::string &str) {
+std::vector<unsigned char> PullObjectIngester::convertToVector(const std::string &str) {
     return std::vector<unsigned char>(str.begin(), str.end());
 }
-
-/*
-Open5GSSBIRequest PullObjectIngester::createPullObjectIngestorRequest(const std::string &url)
-{
-    const std::string method = "GET";
-    const std::string apiVersion = "v1";
-
-    Open5GSSBIRequest request(method, url, apiVersion, std::nullopt, std::nullopt);
-    return request;
-}
-*/
 
 
 MBSTF_NAMESPACE_STOP

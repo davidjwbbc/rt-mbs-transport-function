@@ -60,6 +60,22 @@ bool Open5GSSBIResponse::headerSet(const std::string &field, const std::string &
     return true;
 }
 
+const char *Open5GSSBIResponse::getHeader(const char *header)
+{
+    ogs_hash_index_t *hi;
+    for (hi = ogs_hash_first(this->ogsSBIResponse()->http.headers);
+            hi; hi = ogs_hash_next(hi)) {
+        if (!ogs_strcasecmp((const char*)ogs_hash_this_key(hi), header)) {
+            return (const char*)ogs_hash_this_val(hi);
+        } else {
+            ogs_debug( "Header not present %s", header);
+            return NULL;
+        }
+    }
+    return NULL;
+}
+
+
 MBSTF_NAMESPACE_STOP
 
 /* vim:ts=8:sts=4:sw=4:expandtab:

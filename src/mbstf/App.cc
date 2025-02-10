@@ -31,7 +31,7 @@
 #include "openapi/api/IndividualMBSDistributionSessionApi-info.h"
 #include "mbstf-version.h"
 
-#include "TestObjectStore.hh"
+//#include "TestObjectStore.hh"
 
 #include "App.hh"
 
@@ -53,7 +53,7 @@ extern "C" int app_initialize(const char *const argv[])
             ogs_error("Fatal error: %s", err.what());
             return OGS_ERROR;
         }
-	TestObjectStore::testObjectStore();
+//	TestObjectStore::testObjectStore();
         return OGS_OK;
     }
 

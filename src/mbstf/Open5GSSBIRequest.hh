@@ -37,7 +37,7 @@ public:
     Open5GSSBIRequest(const Open5GSSBIRequest &other) = delete;
     Open5GSSBIRequest &operator=(Open5GSSBIRequest &&other) = delete;
     Open5GSSBIRequest &operator=(const Open5GSSBIRequest &other) = delete;
-    virtual ~Open5GSSBIRequest() {};
+    virtual ~Open5GSSBIRequest() {ogs_sbi_request_free(m_request);};
 
     ogs_sbi_request_t *ogsSBIRequest() { return m_request; };
     const ogs_sbi_request_t *ogsSBIRequest() const { return m_request; };
