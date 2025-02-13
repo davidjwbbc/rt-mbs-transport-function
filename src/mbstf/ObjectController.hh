@@ -4,6 +4,7 @@
  * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF Object store class
  ******************************************************************************
  * Copyright: (C)2024 British Broadcasting Corporation
+ * Author(s): David Waring <david.waring2@bbc.co.uk>
  * License: 5G-MAG Public License v1
  *
  * For full license terms please see the LICENSE file distributed with this
@@ -11,46 +12,42 @@
  * https://drive.google.com/file/d/1cinCiA778IErENZ3JN52VFW-1ffHpx7Z/view
  */
 
-#pragma once
-
-#include "ogs-app.h"
-#include "ogs-proto.h"
-#include "ogs-sbi.h"
-
 #include <memory>
-#include <utility>
-#include <chrono>
-#include <vector>
-#include <map>
 #include <list>
 
 #include "common.hh"
-//#include "DistributionSession.hh"
-//#include "ObjectStore.hh"
-
+#include "Controller.hh"
+#include "ObjectStore.hh"
 
 MBSTF_NAMESPACE_START
 
-
 class DistributionSession;
-class ObjectStore;
 class PullObjectIngester;
 
-class ObjectController {
+class ObjectController : public Controller {
 public:
     ObjectController() = delete;
-    ~ObjectController() {};
-    ObjectController(DistributionSession &distributionSession, ObjectStore &objectStore);
-    ObjectStore& objectStore(DistributionSession &distributionSession);
+    ObjectController(DistributionSession &distributionSession)
+        :Controller(distributionSession)
+        ,m_objectStore()
+        ,m_pullIngesters()
+    {};
+    ObjectController(const ObjectController &) = delete;
+    ObjectController(ObjectController &&) = delete;
+
+    virtual ~ObjectController() {};
+
+    ObjectController &operator=(const ObjectController &) = delete;
+    ObjectController &operator=(ObjectController &&) = delete;
+
+    const ObjectStore &objectStore() const { return m_objectStore; };
 
 protected:
     std::shared_ptr<PullObjectIngester> &addPullObjectIngester(PullObjectIngester&&);
 	
 private:
-    DistributionSession &m_distributionSession;
-    ObjectStore &m_objectStore;
+    ObjectStore m_objectStore;
     std::list<std::shared_ptr<PullObjectIngester>> m_pullIngesters;
-
 };
 
 MBSTF_NAMESPACE_STOP

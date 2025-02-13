@@ -9,38 +9,17 @@
  * https://drive.google.com/file/d/1cinCiA778IErENZ3JN52VFW-1ffHpx7Z/view
  */
 
-#include "ogs-app.h"
-#include "ogs-sbi.h"
-
-#include <memory>
-#include <stdexcept>
-#include <utility>
-#include <chrono>
-#include <thread>
-#include <mutex>
-
 #include "common.hh"
-#include "App.hh"
-#include "Context.hh"
-#include "Controller.hh"
-#include "ObjectStore.hh"
 
-class Controller;
-class ObjectStore;
+#include "Controller.hh"
+
 
 MBSTF_NAMESPACE_START
 
-Controller::Controller(MBSTFDistributionSession &distributionSession, ObjectStore &objectStore)
+Controller::Controller(DistributionSession &distributionSession)
     :m_distributionSession(distributionSession)
-    ,m_objectStore(objectStore)	
 {
 }
-
-/*ObjectStore& objectStore(MBSTFDistributionSession &distributionSession)
-{
-    return m_distributionSession.m_objectStore;
-}
-*/
 
 MBSTF_NAMESPACE_STOP
 

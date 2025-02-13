@@ -4,6 +4,7 @@
  * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF Object store class
  ******************************************************************************
  * Copyright: (C)2024 British Broadcasting Corporation
+ * Author(s): Dev Audsin <dev.audsin@bbc.co.uk>
  * License: 5G-MAG Public License v1
  *
  * For full license terms please see the LICENSE file distributed with this
@@ -11,46 +12,29 @@
  * https://drive.google.com/file/d/1cinCiA778IErENZ3JN52VFW-1ffHpx7Z/view
  */
 
-#pragma once
-
-#include "ogs-app.h"
-#include "ogs-proto.h"
-#include "ogs-sbi.h"
-
-#include <memory>
-#include <utility>
-#include <chrono>
-#include <vector>
-#include <map>
-#include <list>
-
 #include "common.hh"
-//#include "MBSTFDistributionSession.hh"
-//#include "ObjectStore.hh"
-
 
 MBSTF_NAMESPACE_START
 
-
-class MBSTFDistributionSession;
-class ObjectStore;
-class PullObjectIngester;
+class DistributionSession;
 
 class Controller {
 public:
     Controller() = delete;
-    ~Controller() {};
-    Controller(MBSTFDistributionSession &distributionSession, ObjectStore &objectStore);
-    ObjectStore& objectStore(MBSTFDistributionSession &distributionSession);
+    Controller(DistributionSession &distributionSession);
+    Controller(const Controller &) = delete;
+    Controller(Controller &&) = delete;
 
-protected:
-    std::shared_ptr<PullObjectIngester> &addPullObjectIngester(PullObjectIngester&&);
-	
+    virtual ~Controller() {};
+
+    Controller &operator=(const Controller &) = delete;
+    Controller &operator=(Controller &&) = delete;
+
+    DistributionSession &distributionSession() {return m_distributionSession;};
+    const DistributionSession &distributionSession() const {return m_distributionSession;};
+
 private:
-    MBSTFDistributionSession &m_distributionSession;
-    ObjectStore &m_objectStore;
-    std::list<std::shared_ptr<PullObjectIngester>> m_pullIngesters;
-
+    DistributionSession &m_distributionSession;
 };
 
 MBSTF_NAMESPACE_STOP

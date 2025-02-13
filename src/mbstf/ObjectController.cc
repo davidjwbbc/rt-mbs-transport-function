@@ -2,6 +2,7 @@
  * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF ObjectController
  ******************************************************************************
  * Copyright: (C)2024 British Broadcasting Corporation
+ * Author(s): David Waring <david.waring2@bbc.co.uk>
  * License: 5G-MAG Public License v1
  *
  * For full license terms please see the LICENSE file distributed with this
@@ -9,38 +10,19 @@
  * https://drive.google.com/file/d/1cinCiA778IErENZ3JN52VFW-1ffHpx7Z/view
  */
 
-#include "ogs-app.h"
-#include "ogs-sbi.h"
-
 #include <memory>
-#include <stdexcept>
-#include <utility>
-#include <chrono>
-#include <thread>
-#include <mutex>
+#include <list>
 
 #include "common.hh"
-#include "App.hh"
-#include "Context.hh"
-#include "ObjectController.hh"
+#include "Controller.hh"
+#include "DistributionSession.hh"
 #include "ObjectStore.hh"
+#include "PullObjectIngester.hh"
 
-class ObjectController;
-class ObjectStore;
+#include "ObjectController.hh"
 
 MBSTF_NAMESPACE_START
 
-ObjectController::ObjectController(DistributionSession &distributionSession, ObjectStore &objectStore)
-    :m_distributionSession(distributionSession)
-    ,m_objectStore(objectStore)	
-{
-}
-
-/*ObjectStore& objectStore(DistributionSession &distributionSession)
-{
-    return m_distributionSession.m_objectStore;
-}
-*/
 
 MBSTF_NAMESPACE_STOP
 

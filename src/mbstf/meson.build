@@ -39,24 +39,22 @@ libmbstf_dist_sources = files('''
     common.hh
     Context.cc
     Context.hh
+    Controller.cc
+    Controller.hh
+    DistributionSession.cc
+    DistributionSession.hh
     EventHandler.hh
     hash.hh
-    DistributionSession.hh
-    DistributionSession.cc
-    ObjectStore.hh
-    ObjectStore.cc
-    Controller.hh
-    Controller.cc
-    ObjectStore.hh
-    ObjectStore.cc
-    ObjectIngester.hh
-    PullObjectIngester.hh
-    PullObjectIngester.cc
     MBSTFEventHandler.cc
     MBSTFEventHandler.hh
     MBSTFNetworkFunction.hh
     NfServer.cc
     NfServer.hh
+    ObjectController.cc
+    ObjectController.hh
+    ObjectStore.cc
+    ObjectStore.hh
+    ObjectIngester.hh
     Open5GSEvent.hh
     Open5GSFSM.hh
     Open5GSNetworkFunction.cc
@@ -77,6 +75,8 @@ libmbstf_dist_sources = files('''
     Open5GSYamlDocument.hh
     Open5GSYamlIter.cc
     Open5GSYamlIter.hh
+    PullObjectIngester.cc
+    PullObjectIngester.hh
     TimerFunc.hh
 '''.split())
 
