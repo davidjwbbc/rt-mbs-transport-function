@@ -13,10 +13,6 @@
 
 #pragma once
 
-#include "ogs-app.h"
-#include "ogs-proto.h"
-#include "ogs-sbi.h"
-
 #include <memory>
 #include <utility>
 #include <chrono>
@@ -31,7 +27,6 @@
 
 MBSTF_NAMESPACE_START
 
-class DistributionSession;
 class ObjectController;
 
 #define CACHE_EXPIRES 10
@@ -76,10 +71,9 @@ public:
 
     using ObjectData = std::vector<unsigned char>;
     using Object = std::pair<ObjectData, Metadata>;
-    using ExpiredCallback = std::function<void(const std::string &objectId, const Object &object)>;
 
     ObjectStore() = delete;
-    ObjectStore(DistributionSession &distributionSession, ObjectController &controller);
+    ObjectStore(ObjectController &controller);
     ~ObjectStore();
     void addObject(const std::string& object_id, ObjectData &&object, Metadata &&metadata);
     const ObjectData& getObjectData(const std::string& object_id) const;
@@ -89,20 +83,16 @@ public:
     bool removeObjects(const std::list<std::string>& objectIds);
     std::list<std::pair<const std::string*, const std::pair<std::vector<unsigned char>, ObjectStore::Metadata>*>> getExpired();
     const Object &operator[](const std::string& object_id) const;
-    //using getObject = operator[];
     
-    bool hasExpired(const std::string& object_id) const;
-    void setExpiredCallback(ExpiredCallback &&callback);
-    void startCheckingExpiredObjects();
+    bool isStale(const std::string& object_id) const;
+    std::map<std::string, const Object&> getStale() const;
+
 	
 private:
     void checkExpiredObjects();	
     mutable std::recursive_mutex m_mutex;
-    DistributionSession &m_distributionSession;
     ObjectController &m_controller;
     std::map<std::string, Object> m_store;
-    ExpiredCallback m_expiredCallback;
-    std::thread m_checkExpiryThread;
 };
 
 MBSTF_NAMESPACE_STOP

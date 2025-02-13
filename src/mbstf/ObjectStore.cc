@@ -9,9 +9,6 @@
  * https://drive.google.com/file/d/1cinCiA778IErENZ3JN52VFW-1ffHpx7Z/view
  */
 
-#include "ogs-app.h"
-#include "ogs-sbi.h"
-
 #include <memory>
 #include <stdexcept>
 #include <utility>
@@ -20,10 +17,7 @@
 #include <mutex>
 
 #include "common.hh"
-#include "App.hh"
-#include "Context.hh"
 #include "ObjectStore.hh"
-#include "hash.hh"
 
 MBSTF_NAMESPACE_START
 
@@ -72,19 +66,14 @@ ObjectStore::Metadata::Metadata(Metadata &&other)
 
 //ObjectStore::ObjectStore() {}
 
-ObjectStore::ObjectStore(DistributionSession &distributionSession, ObjectController &controller)
-    :m_distributionSession(distributionSession) 
-    ,m_controller(controller)
+ObjectStore::ObjectStore(ObjectController &controller)
+    :m_controller(controller)
 {
-    startCheckingExpiredObjects();	
 
 }
 
 ObjectStore::~ObjectStore() 
 {
-    if (m_checkExpiryThread.joinable()) {
-        m_checkExpiryThread.join();
-    }
 
 }
 
@@ -114,6 +103,7 @@ const ObjectStore::Object& ObjectStore::operator[](const std::string& object_id)
     return m_store.at(object_id);
 }
 
+/*
 bool ObjectStore::hasExpired(const std::string& object_id) const {
     std::lock_guard<std::recursive_mutex> lock(m_mutex);
     const auto& metadata = m_store.at(object_id).second;
@@ -122,30 +112,29 @@ bool ObjectStore::hasExpired(const std::string& object_id) const {
     }
     return false;
 }
+*/
 
-void ObjectStore::setExpiredCallback(ExpiredCallback &&callback) {
-    m_expiredCallback = std::move(callback);
+bool ObjectStore::isStale(const std::string& object_id) const {
+    auto it = m_store.find(object_id);
+    if (it == m_store.end()) {
+        return false;
+    }
+
+    const Metadata& metadata = it->second.second;
+    return metadata.cacheExpires().has_value() && metadata.cacheExpires().value() < std::chrono::system_clock::now();
 }
 
-void ObjectStore::startCheckingExpiredObjects() {
-    m_checkExpiryThread = std::thread([this]() {
-	checkExpiredObjects();
-        std::this_thread::sleep_for(std::chrono::minutes(ObjectStore::Metadata::cacheExpiryInterval())); 
-    });
-}
+std::map<std::string, const ObjectStore::Object&> ObjectStore::getStale() const {
+    std::map<std::string, const ObjectStore::Object&> staleObjects;
 
-std::list<std::pair<const std::string*, const std::pair<std::vector<unsigned char>, ObjectStore::Metadata>*>> ObjectStore::getExpired() {
-    std::lock_guard<std::recursive_mutex> lock(m_mutex);
-    std::list<std::pair<const std::string*, const std::pair<std::vector<unsigned char>, ObjectStore::Metadata>*>> expiredList;
-
-    for (auto obj = m_store.begin(); obj != m_store.end(); ++obj) {
-        if (hasExpired(obj->first)) {
-            // Add pointers to the expired object to the list
-            expiredList.emplace_back(&obj->first, &obj->second);
+    for (const auto& pair : m_store) {
+        const std::string& object_id = pair.first;
+        if (isStale(object_id)) {
+            staleObjects.emplace(object_id, pair.second);
         }
     }
 
-    return expiredList;
+    return staleObjects;
 }
 
 bool ObjectStore::removeObject(const std::string& objectId) {
@@ -174,25 +163,6 @@ bool ObjectStore::removeObjects(const std::list<std::string>& objectIds) {
     }
     return true;
 }
-
-
-
-
-void ObjectStore::checkExpiredObjects() {
-    std::lock_guard<std::recursive_mutex> lock(m_mutex);
-    for (auto obj = m_store.begin(); obj != m_store.end();) {
-        if (hasExpired(obj->first)) {
-            if (m_expiredCallback) {
-                m_expiredCallback(obj->first, obj->second);
-            }
-            //it = m_store.erase(obj); // Remove expired object
-        } /*else {
-            ++obj;
-        }
-	*/
-    }
-}
-
 
 
 MBSTF_NAMESPACE_STOP

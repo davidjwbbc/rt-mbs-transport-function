@@ -34,6 +34,11 @@ fiveg_api_release = get_option('fiveg_api_release')
 
 fs = import('fs')
 
+test_source_object_store = files('''
+  ObjectStore.cc
+  ObjectStore.hh
+  '''.split())
+
 libmbstf_dist_sources = files('''
     common.cc
     common.hh

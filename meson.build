@@ -27,4 +27,4 @@ subdir('src')
 #  subdir('systemd')
 #endif
 
-#subdir('tests')
+subdir('tests')
