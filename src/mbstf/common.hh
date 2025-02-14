@@ -23,7 +23,7 @@
 #define MBSTF_NAMESPACE_START namespace MBSTF_NAMESPACE {
 #define MBSTF_NAMESPACE_STOP  }
 #define MBSTF_NAMESPACE_USING using namespace MBSTF_NAMESPACE
-#define MBSTF_NAMESPACE_NAME(a) MBSTF_NAMESPACE ## a
+#define MBSTF_NAMESPACE_NAME(a) MBSTF_NAMESPACE::a
 
 extern int __mbstf_log_domain;
 #undef OGS_LOG_DOMAIN
