@@ -39,6 +39,15 @@ test_source_object_store = files('''
   ObjectStore.hh
   '''.split())
 
+test_source_subscriber_subscription = files('''
+  SubscriptionService.cc
+  SubscriptionService.hh
+  Subscriber.cc
+  Subscriber.hh
+  Event.cc
+  Event.hh
+  '''.split())
+
 libmbstf_dist_sources = files('''
     common.cc
     common.hh
