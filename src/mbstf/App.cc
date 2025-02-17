@@ -31,8 +31,6 @@
 #include "openapi/api/IndividualMBSDistributionSessionApi-info.h"
 #include "mbstf-version.h"
 
-//#include "TestObjectStore.hh"
-
 #include "App.hh"
 
 MBSTF_NAMESPACE_USING;
@@ -53,7 +51,6 @@ extern "C" int app_initialize(const char *const argv[])
             ogs_error("Fatal error: %s", err.what());
             return OGS_ERROR;
         }
-//	TestObjectStore::testObjectStore();
         return OGS_OK;
     }
 
