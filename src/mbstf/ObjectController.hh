@@ -1,7 +1,7 @@
-#ifndef _MBS_TF_MBSTF_CONTROLLER_HH_
-#define _MBS_TF_MBSTF_CONTROLLER_HH_
+#ifndef _MBS_TF_MBSTF_OBJECT_CONTROLLER_HH_
+#define _MBS_TF_MBSTF_OBJECT_CONTROLLER_HH_
 /******************************************************************************
- * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF Object store class
+ * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF Object Controller
  ******************************************************************************
  * Copyright: (C)2024 British Broadcasting Corporation
  * Author(s): David Waring <david.waring2@bbc.co.uk>
@@ -18,18 +18,21 @@
 #include "common.hh"
 #include "Controller.hh"
 #include "ObjectStore.hh"
+#include "ObjectPackager.hh"
 
 MBSTF_NAMESPACE_START
 
 class DistributionSession;
 class PullObjectIngester;
+class Controller;
+class ObjectStore;
 
 class ObjectController : public Controller {
 public:
     ObjectController() = delete;
     ObjectController(DistributionSession &distributionSession)
         :Controller(distributionSession)
-        ,m_objectStore()
+        ,m_objectStore(*this)
         ,m_pullIngesters()
     {};
     ObjectController(const ObjectController &) = delete;
@@ -41,17 +44,23 @@ public:
     ObjectController &operator=(ObjectController &&) = delete;
 
     const ObjectStore &objectStore() const { return m_objectStore; };
+    ObjectStore &objectStore() { return m_objectStore; };
 
 protected:
-    std::shared_ptr<PullObjectIngester> &addPullObjectIngester(PullObjectIngester&&);
+    std::shared_ptr<PullObjectIngester> &addPullObjectIngester(std::unique_ptr<PullObjectIngester>&&);
+    bool removePullObjectIngester(std::shared_ptr<PullObjectIngester> &);
+    std::shared_ptr<ObjectPackager> &setPackager(ObjectPackager&&);
+    void objectPushedEvent(const std::string &object_id);
+    void objectSentEvent(const std::string &object_id);
 	
 private:
     ObjectStore m_objectStore;
     std::list<std::shared_ptr<PullObjectIngester>> m_pullIngesters;
+    std::shared_ptr<ObjectPackager> m_packager;
 };
 
 MBSTF_NAMESPACE_STOP
 
 /* vim:ts=8:sts=4:sw=4:expandtab:
  */
-#endif /* _MBS_TF_MBSTF_CONTROLLER_HH_ */
+#endif /* _MBS_TF_MBSTF_OBJECT_CONTROLLER_HH_ */

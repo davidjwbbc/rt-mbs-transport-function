@@ -11,21 +11,19 @@
  * https://drive.google.com/file/d/1cinCiA778IErENZ3JN52VFW-1ffHpx7Z/view
  */
 
-#include "ogs-proto.h"
-#include "ogs-sbi.h"
-
 #include <string>
 #include <list>
 
 #include "common.hh"
 #include "ObjectStore.hh"
 #include "ObjectIngester.hh"
+#include "Curl.hh"
 
 MBSTF_NAMESPACE_START
 
 class ObjectStore;
 class ObjectController;
-class Open5GSSBIClient;
+class Curl;
 
 class PullObjectIngester : public ObjectIngester {
 public:
@@ -56,13 +54,11 @@ public:
         IngestItem &deadline(const time_type &dl_deadline) { m_deadline = time_type(dl_deadline); return *this; };
         IngestItem &deadline(time_type &&dl_deadline) { m_deadline = std::move(dl_deadline); return *this; };
 
-	std::shared_ptr<Open5GSSBIClient> client() {return m_client;};
 
     private:
         std::string m_objectId;
         std::string m_url;
         std::optional<time_type> m_deadline;
-	std::shared_ptr<Open5GSSBIClient> m_client;
     };
 
     PullObjectIngester() = delete;
@@ -76,11 +72,12 @@ public:
     { sortListIntoPriorityOrder(); };
     virtual ~PullObjectIngester();
 
-    bool add(const std::string &object_id, const std::string &url, const time_type &download_deadline);
-    bool add(const IngestItem &item);
-    bool add(IngestItem &&item);
-    static int client_notify_cb(int status, ogs_sbi_response_t *response, void *data);
+    bool fetch(const IngestItem &item);
+    bool fetch(IngestItem &&item);
+    bool fetch(const std::string &object_id, const std::optional<time_type> &download_deadline);
 
+    std::shared_ptr<Curl> curl() {return m_curl;};
+    //static int client_notify_cb(int status, ogs_sbi_response_t *response, void *data);
     static std::vector<unsigned char> convertToVector(const std::string &str);
 
 protected:
@@ -88,8 +85,8 @@ protected:
 
 private:
     void sortListIntoPriorityOrder();
-
     std::list<IngestItem> m_fetchList;
+    std::shared_ptr<Curl> m_curl;
 };
 
 MBSTF_NAMESPACE_STOP

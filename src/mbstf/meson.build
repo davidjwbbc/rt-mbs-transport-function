@@ -34,10 +34,7 @@ fiveg_api_release = get_option('fiveg_api_release')
 
 fs = import('fs')
 
-test_source_object_store = files('''
-  ObjectStore.cc
-  ObjectStore.hh
-  '''.split())
+boost_dep = dependency('boost')
 
 test_source_subscriber_subscription = files('''
   SubscriptionService.cc
@@ -48,6 +45,24 @@ test_source_subscriber_subscription = files('''
   Event.hh
   '''.split())
 
+test_source_object_store = test_source_subscriber_subscription + files('''
+  ObjectStore.cc
+  ObjectStore.hh
+  '''.split())
+
+
+test_source_object_list_packager = test_source_object_store + files('''
+  ObjectListController.cc
+  ObjectListController.hh
+  ObjectListPackager.cc
+  ObjectListPackager.hh
+  '''.split())
+
+test_source_pull_object_ingester = test_source_object_store + files('''
+  PullObjectIngester.cc
+  PullObjectIngester.hh
+  '''.split())
+
 libmbstf_dist_sources = files('''
     common.cc
     common.hh
@@ -55,6 +70,8 @@ libmbstf_dist_sources = files('''
     Context.hh
     Controller.cc
     Controller.hh
+    Curl.cc
+    Curl.hh
     DistributionSession.cc
     DistributionSession.hh
     EventHandler.hh
@@ -68,7 +85,12 @@ libmbstf_dist_sources = files('''
     ObjectController.hh
     ObjectStore.cc
     ObjectStore.hh
+    ObjectIngester.cc
     ObjectIngester.hh
+    ObjectPackager.cc
+    ObjectPackager.hh
+    ObjectListPackager.cc
+    ObjectListPackager.hh
     Open5GSEvent.hh
     Open5GSFSM.hh
     Open5GSNetworkFunction.cc
@@ -121,7 +143,9 @@ libmbstf = static_library('mbstf',
     dependencies : [libsbi_dep,
                     libsbi_openapi_dep,
                     libapp_dep,
-                    libcrypt_dep],
+                    libcrypt_dep,
+                    rt_libflute_dep,
+                    boost_dep],
     install : false)
 
 libmbstf_dep = declare_dependency(
@@ -129,7 +153,9 @@ libmbstf_dep = declare_dependency(
     dependencies : [libsbi_dep,
                     libsbi_openapi_dep,
                     libapp_dep,
-                    libcrypt_dep])
+                    libcrypt_dep,
+                    rt_libflute_dep,
+                    boost_dep])
 
 mbstf_sources = files('''
     App.cc
@@ -146,7 +172,7 @@ executable('open5gs-mbstfd',
     sources : mbstf_sources,
     c_args : '-DDEFAULT_CONFIG_FILENAME="@0@/mbstf.yaml"'.format(open5gs_sysconfdir),
     cpp_args : '-DDEFAULT_CONFIG_FILENAME="@0@/mbstf.yaml"'.format(open5gs_sysconfdir),
-    include_directories : [srcinc],
+    include_directories : [srcinc ],
     dependencies : [libmbstf_dep],
     install_rpath : libdir,
     install : true)

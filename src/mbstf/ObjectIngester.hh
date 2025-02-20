@@ -14,6 +14,7 @@
 
 #include "common.hh"
 #include <thread>
+#include <atomic>
 
 MBSTF_NAMESPACE_START
 
@@ -24,15 +25,18 @@ class ObjectIngester {
 public:
     ObjectIngester() = delete;
     ObjectIngester(ObjectStore &objectStore, ObjectController &controller)
-        : m_objectStore(objectStore), m_controller(controller), m_workerThread(&ObjectIngester::doObjectIngest, this) {}
+        : m_objectStore(objectStore), m_controller(controller), m_workerThread(ObjectIngester::workerLoop, this), m_workerCancel(false) {}
 
     void abort() {
+	m_workerCancel = true;    
+        if (m_workerThread.joinable()) {
+	    m_workerThread.join();
+        }
+	    
     }
 
     virtual ~ObjectIngester() {
-        if (m_workerThread.joinable()) {
-            m_workerThread.join();
-        }
+	abort();    
     }
 
 protected:
@@ -44,9 +48,11 @@ protected:
     virtual void doObjectIngest() = 0;
 
 private:
+    static void workerLoop(ObjectIngester*);
     ObjectStore &m_objectStore;
     ObjectController &m_controller;
     std::thread m_workerThread;
+    std::atomic_bool m_workerCancel;
 };
 
 MBSTF_NAMESPACE_STOP

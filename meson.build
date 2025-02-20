@@ -17,7 +17,13 @@ project('rt-5gms-mbs-transport-function', 'c', 'cpp',
     ],
 )
 
+cmake=import('cmake')
+
 open5gs_project=subproject('open5gs', required: true)
+
+libflute_project=cmake.subproject('rt-libflute')
+#message('CMake targets:\n - ' + '\n - '.join(libflute_project.target_list()))
+rt_libflute_dep=libflute_project.dependency('flute')
 
 #subdir('lib')
 subdir('src')
