@@ -17,6 +17,8 @@
 #include <mutex>
 
 #include "common.hh"
+#include "SubscriptionService.hh"
+#include "Event.hh"
 #include "ObjectStore.hh"
 
 MBSTF_NAMESPACE_START
@@ -67,7 +69,8 @@ ObjectStore::Metadata::Metadata(Metadata &&other)
 //ObjectStore::ObjectStore() {}
 
 ObjectStore::ObjectStore(ObjectController &controller)
-    :m_controller(controller)
+    :SubscriptionService()
+    ,m_controller(controller)
 {
 
 }
@@ -81,9 +84,16 @@ void ObjectStore::addObject(const std::string& object_id, ObjectData &&object, M
     std::lock_guard<std::recursive_mutex> lock(m_mutex);
     m_store.emplace(object_id, std::make_pair(std::move(object), std::move(metadata)));
     //m_store[object_id] = std::make_pair(std::move(object), std::move(metadata));
+    std::shared_ptr<ObjectStore::ObjectAddedEvent> event = std::make_shared<ObjectStore::ObjectAddedEvent>(object_id);
+    SubscriptionService::notifyEventAsynchronous(event);
 }
 
 const ObjectStore::ObjectData& ObjectStore::getObjectData(const std::string& object_id) const {
+    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+    return m_store.at(object_id).first;
+}
+
+ObjectStore::ObjectData& ObjectStore::getObjectData(const std::string& object_id) {
     std::lock_guard<std::recursive_mutex> lock(m_mutex);
     return m_store.at(object_id).first;
 }
@@ -96,6 +106,8 @@ const ObjectStore::Metadata& ObjectStore::getMetadata(const std::string& object_
 void ObjectStore::deleteObject(const std::string& object_id) {
     std::lock_guard<std::recursive_mutex> lock(m_mutex);
     m_store.erase(object_id);
+    std::shared_ptr<ObjectStore::ObjectDeletedEvent> event = std::make_shared<ObjectStore::ObjectDeletedEvent>(object_id);
+    SubscriptionService::notifyEventAsynchronous(event);
 }
 
 const ObjectStore::Object& ObjectStore::operator[](const std::string& object_id) const {

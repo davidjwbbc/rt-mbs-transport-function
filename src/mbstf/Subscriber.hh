@@ -40,6 +40,9 @@ public:
     virtual void subscriberRemoved(SubscriptionService &service);
 
     virtual std::string reprString() const;
+    bool subscribeToService(SubscriptionService &service) {
+        return subscribeTo(service);
+    }
 
 protected:
     bool subscribeTo(SubscriptionService &service); // subscribe to all events

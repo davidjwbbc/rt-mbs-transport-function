@@ -24,16 +24,44 @@
 #include <functional>
 #include <thread>
 #include "common.hh"
+#include "Event.hh"
+#include "SubscriptionService.hh"
 
 MBSTF_NAMESPACE_START
 
 class ObjectController;
+class SubscriptionService;
+class Event;
 
 #define CACHE_EXPIRES 10
 #define CHECK_EXPIRY_INTERVAL 10
 
-class ObjectStore {
+class ObjectStore: public SubscriptionService {
 public:
+    class ObjectAddedEvent : public Event {
+    public:
+        ObjectAddedEvent(const std::string& object_id)
+            : Event("ObjectAdded"), m_object_id(object_id) {}
+
+        std::string objectId() const { return m_object_id; }
+	virtual ~ObjectAddedEvent() {};
+
+    private:
+        std::string m_object_id;
+    };
+
+    class ObjectDeletedEvent : public Event {
+    public:
+        ObjectDeletedEvent(const std::string& object_id)
+            : Event("ObjectDeleted"), m_object_id(object_id) {}
+
+        std::string objectId() const { return m_object_id; }
+	virtual ~ObjectDeletedEvent() {};
+
+    private:
+        std::string m_object_id;
+    };
+
     class Metadata {
     public:
         Metadata();
@@ -46,6 +74,8 @@ public:
         virtual ~Metadata() {};
 
         const std::string &mediaType() const {return m_mediaType;};
+        const std::string &getOriginalUrl() const {return m_originalUrl;};
+        const std::string &getfetchedUrl() const {return m_fetchedUrl;};
         Metadata &mediaType(const std::string &media_type) {m_mediaType = media_type; return *this;};
         Metadata &mediaType(std::string &&media_type) {m_mediaType = std::move(media_type); return *this;};
 	const std::optional<std::chrono::system_clock::time_point>& cacheExpires() const { return m_cacheExpires;};
@@ -77,13 +107,13 @@ public:
     ~ObjectStore();
     void addObject(const std::string& object_id, ObjectData &&object, Metadata &&metadata);
     const ObjectData& getObjectData(const std::string& object_id) const;
+    ObjectData& getObjectData(const std::string& object_id);
     const Metadata& getMetadata(const std::string& object_id) const;
     void deleteObject(const std::string& object_id);
     bool removeObject(const std::string& objectId);
     bool removeObjects(const std::list<std::string>& objectIds);
     std::list<std::pair<const std::string*, const std::pair<std::vector<unsigned char>, ObjectStore::Metadata>*>> getExpired();
     const Object &operator[](const std::string& object_id) const;
-    
     bool isStale(const std::string& object_id) const;
     std::map<std::string, const Object&> getStale() const;
 

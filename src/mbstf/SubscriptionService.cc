@@ -247,6 +247,10 @@ std::string SubscriptionService::reprString() const
     return os.str();
 }
 
+void SubscriptionService::notifyEventAsynchronous(const std::shared_ptr<Event> &event) {
+    sendEventAsynchronous(event);
+}
+
 bool SubscriptionService::sendEventSynchronous(Event &event)
 {
     std::lock_guard guard(*m_asyncMutex);
