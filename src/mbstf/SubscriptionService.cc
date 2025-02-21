@@ -10,6 +10,7 @@
  * https://drive.google.com/file/d/1cinCiA778IErENZ3JN52VFW-1ffHpx7Z/view
  */
 
+#include <chrono>
 #include <deque>
 #include <list>
 #include <map>
@@ -315,15 +316,22 @@ void SubscriptionService::asyncEventsLoopRunner(SubscriptionService *svc)
 
 void SubscriptionService::asyncEventsLoop()
 {
+    using namespace std::literals;
     while (!m_asyncCancel) {
         std::lock_guard guard(*m_asyncMutex);
         while (!m_asyncCancel && m_asyncEventQueue.empty()) {
-            m_asyncCondVar.wait(*m_asyncMutex);
+            m_asyncCondVar.wait_for(*m_asyncMutex, 500ms);
         }
         while (!m_asyncCancel && !m_asyncEventQueue.empty()) {
             auto &event = m_asyncEventQueue.front();
             m_asyncEventQueue.pop_front();
-            sendEventSynchronous(*event);
+            m_asyncMutex->unlock();
+            try {
+                sendEventSynchronous(*event);
+            } catch (std::exception &ex) {
+                //m_asyncCancel = true;
+            }
+            m_asyncMutex->lock();
         }
     }
 }
