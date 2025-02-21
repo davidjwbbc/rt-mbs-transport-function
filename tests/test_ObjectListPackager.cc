@@ -118,14 +118,15 @@ void testObjectListPackager(ObjectStore &store, ObjectListController &controller
 }
 
 MBSTF_NAMESPACE_STOP
+
 MBSTF_NAMESPACE_USING;
+
 int main() {
     
-    ObjectController objectController;
     ObjectListController objectListController;
     ObjectStore store(objectListController);
 
-    std::cout<<"### ObjectStore: Test start #### "<<std::endl;
+    std::cout << "### ObjectStore: Test start #### " << std::endl;
     
     testAddObject(store);
     testObjectListPackager(store, objectListController);
@@ -134,7 +135,6 @@ int main() {
 
     return 0;
 }
-
 
 /* vim:ts=8:sts=4:sw=4:expandtab:
  */

@@ -4,6 +4,7 @@
  * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF Object List Controller
  ******************************************************************************
  * Copyright: (C)2024 British Broadcasting Corporation
+ * Author(s): Dev Audsin <dev.audsin@bbc.co.uk>
  * License: 5G-MAG Public License v1
  *
  * For full license terms please see the LICENSE file distributed with this
@@ -12,37 +13,21 @@
  */
 
 #include <memory>
-#include <list>
-#include <optional>
 #include <sstream>
 #include <string>
-#include <openapi/model/ObjDistributionData.h>
+
 #include "common.hh"
+#include "openapi/model/ObjDistributionData.h"
 #include "ObjectController.hh"
-#include "ObjectStore.hh"
-#include "PullObjectIngester.hh"
-#include "ObjectListPackager.hh"
 #include "Subscriber.hh"
-#include "Event.hh"
-
-namespace reftools::mbstf {
-    class ObjDistributionData;
-    class UpTrafficFlowInfo;
-    class IpAddr;
-}
-
-using reftools::mbstf::ObjDistributionData;
-using reftools::mbstf::UpTrafficFlowInfo;
-using reftools::mbstf::IpAddr;
-
 
 MBSTF_NAMESPACE_START
 
 class DistributionSession;
-class PullObjectIngester;
-class ObjectController;
+class Event;
 class ObjectListPackager;
-class Subscriber;
+class PullObjectIngester;
+class SubscriptionService;
 
 class ObjectListController : public ObjectController, public Subscriber {
 public:
@@ -50,20 +35,21 @@ public:
     ObjectListController(DistributionSession &distributionSession);
     ObjectListController(const ObjectListController &) = delete;
     ObjectListController(ObjectListController &&) = delete;
+
     virtual ~ObjectListController();
 
     ObjectListController &operator=(const ObjectListController &) = delete;
     ObjectListController &operator=(ObjectListController &&) = delete;
+
     void initPullObjectIngester(DistributionSession &distributionSession);
 
     void fetchItems();
-    //void onEvent(const Event &event);
     std::shared_ptr<ObjectListPackager> &setObjectListPackager(DistributionSession &distributionSession, ObjectStore &object_store);
     std::shared_ptr<ObjectListPackager> &setObjectListPackager(ObjectListPackager&&);
 
     // Subscriber virtual methods
     virtual void processEvent(Event &event, SubscriptionService &event_service);
-    // Optional: subscriberRemoved
+    // Optional: virtual void subscriberRemoved(SubscriptionService &event_service);
     std::string reprString() const {
                 std::ostringstream os;
                 os << "ObjectListController(controller =" << this << ")";
@@ -72,13 +58,12 @@ public:
 
 private:
     std::string generateUUID();
-    std::shared_ptr<ObjectListPackager> m_objectListPackager;
-    const ObjDistributionData::ObjAcquisitionIdsPullType &getObjectAcquisitionPullUrls(DistributionSession &distributionSession) const;
-    //const std::shared_ptr<IpAddr> &getdestIpAddr(DistributionSession &distributionSession) const;
+    const reftools::mbstf::ObjDistributionData::ObjAcquisitionIdsPullType &getObjectAcquisitionPullUrls(DistributionSession &distributionSession) const;
     std::shared_ptr<std::string> getdestIpAddr(DistributionSession &distributionSession) const;
     short getPortNumber(DistributionSession &distributionSession) const;
     uint32_t getRateLimit(DistributionSession &distributionSession) const;
 
+    std::shared_ptr<ObjectListPackager> m_objectListPackager;
 };
 
 MBSTF_NAMESPACE_STOP

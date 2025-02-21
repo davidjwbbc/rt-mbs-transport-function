@@ -1,7 +1,8 @@
 /******************************************************************************
  * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF ObjectListController
  ******************************************************************************
- * Copyright: (C)2024 British Broadcasting Corporation
+ * Copyright: (C)2025 British Broadcasting Corporation
+ * Author(s): Dev Audsin <dev.audsin@bbc.co.uk>
  * License: 5G-MAG Public License v1
  *
  * For full license terms please see the LICENSE file distributed with this
@@ -9,28 +10,36 @@
  * https://drive.google.com/file/d/1cinCiA778IErENZ3JN52VFW-1ffHpx7Z/view
  */
 
-#include <memory>
+#include <exception>
+#include <iostream>
 #include <list>
+#include <memory>
+#include <optional>
+#include <string>
+
 #include <uuid/uuid.h>
 
+#include "common.hh"
+#include "DistributionSession.hh"
+#include "Event.hh"
+#include "ObjectController.hh"
+#include "ObjectListPackager.hh"
+#include "ObjectStore.hh"
 #include "openapi/model/CreateReqData.h"
 #include "openapi/model/DistSession.h"
-#include <openapi/model/ObjDistributionData.h>
-#include <openapi/model/UpTrafficFlowInfo.h>
-#include <openapi/model/IpAddr.h>
-#include "common.hh"
-#include "ObjectController.hh"
-#include "DistributionSession.hh"
-#include "ObjectStore.hh"
+#include "openapi/model/IpAddr.h"
+#include "openapi/model/ObjDistributionData.h"
+#include "openapi/model/UpTrafficFlowInfo.h"
 #include "PullObjectIngester.hh"
+#include "SubscriptionService.hh"
 
 #include "ObjectListController.hh"
 
+using reftools::mbstf::CreateReqData;
 using reftools::mbstf::DistSession;
+using reftools::mbstf::IpAddr;
 using reftools::mbstf::ObjDistributionData;
 using reftools::mbstf::UpTrafficFlowInfo;
-using reftools::mbstf::IpAddr;
-
 
 MBSTF_NAMESPACE_START
 
@@ -153,7 +162,7 @@ const ObjDistributionData::ObjAcquisitionIdsPullType &ObjectListController::getO
 {
     const std::shared_ptr<CreateReqData> createReqData = distributionSession.distributionSessionReqData();
     std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
-    std::optional<std::shared_ptr< ObjDistributionData > > ObjectDistributionData = distSession->getObjDistributionData();
+    std::optional<std::shared_ptr<ObjDistributionData> > ObjectDistributionData = distSession->getObjDistributionData();
     if(ObjectDistributionData) {
           std::shared_ptr<ObjDistributionData> objectDistributionDataPtr = *ObjectDistributionData;
           return objectDistributionDataPtr->getObjAcquisitionIdsPull();
