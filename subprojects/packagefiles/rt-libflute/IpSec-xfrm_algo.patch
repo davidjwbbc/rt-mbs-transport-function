@@ -10,6 +10,74 @@ index 8e94b64..ea6fcaf 100644
  
  add_subdirectory(examples)
  
+diff --git a/include/EncodingSymbol.h b/include/EncodingSymbol.h
+index 085a2fd..f20502c 100644
+--- a/include/EncodingSymbol.h
++++ b/include/EncodingSymbol.h
+@@ -47,9 +47,10 @@ namespace LibFlute {
+       EncodingSymbol(uint32_t id, uint32_t source_block_number, char* encoded_data, size_t data_len, FecScheme fec_scheme)
+         : _id(id)
+         , _source_block_number(source_block_number)
++        , _fec_scheme(fec_scheme)
+         , _encoded_data(encoded_data)
+         , _data_len(data_len)
+-        , _fec_scheme(fec_scheme) {}
++      {};
+ 
+      /**
+       *  Default destructor.
+diff --git a/include/Transmitter.h b/include/Transmitter.h
+index 1dd0565..905bf89 100644
+--- a/include/Transmitter.h
++++ b/include/Transmitter.h
+@@ -107,8 +107,8 @@ namespace LibFlute {
+       void file_transmitted(uint32_t toi);
+ 
+       void handle_send_to(const boost::system::error_code& error);
+-      boost::asio::ip::udp::socket _socket;
+       boost::asio::ip::udp::endpoint _endpoint;
++      boost::asio::ip::udp::socket _socket;
+       boost::asio::io_service& _io_service;
+       boost::asio::deadline_timer _send_timer;
+       boost::asio::deadline_timer _fdt_timer;
+diff --git a/src/File.cpp b/src/File.cpp
+index 6f08020..2410063 100644
+--- a/src/File.cpp
++++ b/src/File.cpp
+@@ -22,6 +22,8 @@
+ #include <algorithm>
+ #include <sstream>
+ #include <iomanip>
++// Suppress warnings about MD5 being deprecated in later versions of OpenSSL
++#define OPENSSL_SUPPRESS_DEPRECATED 1
+ #include <openssl/md5.h>
+ #include "base64.h"
+ #include "spdlog/spdlog.h"
+@@ -168,13 +170,13 @@ auto LibFlute::File::create_blocks() -> void
+   // Create the required source blocks and encoding symbols
+   auto buffer_ptr = _buffer;
+   size_t remaining_size = _meta.fec_oti.transfer_length;
+-  auto number = 0;
++  decltype(_nof_large_source_blocks) number = 0;
+   while (remaining_size > 0) {
+     SourceBlock block;
+-    auto symbol_id = 0;
++    size_t symbol_id = 0;
+     auto block_length = ( number < _nof_large_source_blocks ) ? _large_source_block_length : _small_source_block_length;
+ 
+-    for (int i = 0; i < block_length; i++) {
++    for (decltype(block_length) i = 0; i < block_length; i++) {
+       auto symbol_length = std::min(remaining_size, (size_t)_meta.fec_oti.encoding_symbol_length);
+       assert(buffer_ptr + symbol_length <= _buffer + _meta.fec_oti.transfer_length);
+ 
+@@ -192,7 +194,6 @@ auto LibFlute::File::create_blocks() -> void
+ 
+ auto LibFlute::File::get_next_symbols(size_t max_size) -> std::vector<EncodingSymbol> 
+ {
+-  auto block = _source_blocks.begin();
+   int nof_symbols = std::ceil((float)(max_size - 4) / (float)_meta.fec_oti.encoding_symbol_length);
+   auto cnt = 0;
+   std::vector<EncodingSymbol> symbols;
 diff --git a/src/IpSec.cpp b/src/IpSec.cpp
 index de500ab..83361a8 100644
 --- a/src/IpSec.cpp
@@ -53,3 +121,26 @@ index de500ab..83361a8 100644
    }
  
    void enable_esp(uint32_t spi, const std::string& dest_address, Direction direction, const std::string& key)
+diff --git a/src/Transmitter.cpp b/src/Transmitter.cpp
+index 6d4d68d..faf3030 100644
+--- a/src/Transmitter.cpp
++++ b/src/Transmitter.cpp
+@@ -26,13 +26,15 @@ LibFlute::Transmitter::Transmitter ( const std::string& address,
+     boost::asio::io_service& io_service)
+     : _endpoint(boost::asio::ip::address::from_string(address), port)
+     , _socket(io_service, _endpoint.protocol())
+-    , _fdt_timer(io_service)
+-    , _send_timer(io_service)
+     , _io_service(io_service)
++    , _send_timer(io_service)
++    , _fdt_timer(io_service)
+     , _tsi(tsi)
+     , _mtu(mtu)
+-    , _rate_limit(rate_limit)
++    , _files()
++    , _files_mutex()
+     , _mcast_address(address)
++    , _rate_limit(rate_limit)
+ {
+   _max_payload = mtu -
+     20 - // IPv4 header
