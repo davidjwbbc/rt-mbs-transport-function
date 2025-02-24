@@ -248,10 +248,6 @@ std::string SubscriptionService::reprString() const
     return os.str();
 }
 
-void SubscriptionService::notifyEventAsynchronous(const std::shared_ptr<Event> &event) {
-    sendEventAsynchronous(event);
-}
-
 bool SubscriptionService::sendEventSynchronous(Event &event)
 {
     std::lock_guard guard(*m_asyncMutex);
@@ -297,7 +293,7 @@ void SubscriptionService::sendEventAsynchronous(const std::shared_ptr<Event> &ev
 void SubscriptionService::startAsyncLoop()
 {
     if (m_asyncThread.get_id() != std::thread::id()) return;
-    if (m_asyncCancel) return;
+    if (!!m_asyncCancel) return;
     m_asyncThread = std::thread(SubscriptionService::asyncEventsLoopRunner, this);
 }
 
@@ -323,7 +319,7 @@ void SubscriptionService::asyncEventsLoop()
             m_asyncCondVar.wait_for(*m_asyncMutex, 500ms);
         }
         while (!m_asyncCancel && !m_asyncEventQueue.empty()) {
-            auto &event = m_asyncEventQueue.front();
+            auto event = m_asyncEventQueue.front();
             m_asyncEventQueue.pop_front();
             m_asyncMutex->unlock();
             try {

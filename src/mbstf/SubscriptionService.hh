@@ -49,7 +49,6 @@ public:
     bool unsubscribe(Subscriber &subscriber); // unsubscribe to any events (named or all)
     bool unsubscribe(std::initializer_list<const char*> events_list, Subscriber &subscriber); // unsubscribe from named events
     std::list<const char*> subscribedEvents(Subscriber &subscriber); // get the list of named events a Subscriber is subscribed to. nullptr in return means subscribed to all events. empty list means Subscriber is not subscribed.
-    void notifyEventAsynchronous(const std::shared_ptr<Event> &event);
     std::string reprString() const;
 
 protected:
