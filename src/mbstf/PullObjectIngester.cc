@@ -63,7 +63,7 @@ bool PullObjectIngester::fetch(const std::string &object_id, const std::optional
                 it->deadline(download_deadline.value());
             }
 
-            sortListIntoPriorityOrder();
+            sortListByPolicy();
             return true;
         }
     }
@@ -72,17 +72,17 @@ bool PullObjectIngester::fetch(const std::string &object_id, const std::optional
 }
 bool PullObjectIngester::fetch(const IngestItem &item) {
     m_fetchList.push_back(item);
-    sortListIntoPriorityOrder();
+    sortListByPolicy();
     return true;
 }
 
 bool PullObjectIngester::fetch(IngestItem &&item) {
     m_fetchList.push_back(std::move(item));
-    sortListIntoPriorityOrder();
+    sortListByPolicy();
     return true;
 }
 
-void PullObjectIngester::sortListIntoPriorityOrder() {
+void PullObjectIngester::sortListByPolicy() {
     m_fetchList.sort([](const IngestItem &a, const IngestItem &b) {
         if (a.deadline().has_value() && b.deadline().has_value()) {
             return a.deadline() < b.deadline();
@@ -94,11 +94,13 @@ void PullObjectIngester::sortListIntoPriorityOrder() {
 
 void PullObjectIngester::doObjectIngest() {
 
-    m_curl = std::make_shared<Curl>();
+    if(!m_curl) m_curl = std::make_shared<Curl>();
     std::chrono::seconds timeout(10); // 10 seconds timeout
-    for (auto& item : m_fetchList) {
+    if (!m_fetchList.empty()) {
         // Make the GET request and get the number of bytes received
-        long bytesReceived = m_curl->get(item.url(), timeout);
+        auto item = m_fetchList.front();
+	m_fetchList.pop_front();
+	long bytesReceived = m_curl->get(item.url(), timeout);
 
         // Check the result
         if (bytesReceived >= 0) {

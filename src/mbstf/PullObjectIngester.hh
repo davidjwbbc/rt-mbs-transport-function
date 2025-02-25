@@ -65,11 +65,11 @@ public:
     PullObjectIngester(ObjectStore& object_store, ObjectController &controller, const std::list<IngestItem> &id_to_url_map)
       :ObjectIngester(object_store, controller)
       ,m_fetchList(id_to_url_map)
-    { sortListIntoPriorityOrder(); };
+    { sortListByPolicy(); startWorker(); };
     PullObjectIngester(ObjectStore& object_store, ObjectController &controller, std::list<IngestItem> &&id_to_url_map)
       :ObjectIngester(object_store, controller)
       ,m_fetchList(std::move(id_to_url_map))
-    { sortListIntoPriorityOrder(); };
+    { sortListByPolicy(); startWorker();};
     virtual ~PullObjectIngester();
 
     bool fetch(const IngestItem &item);
@@ -84,7 +84,7 @@ protected:
     virtual void doObjectIngest();
 
 private:
-    void sortListIntoPriorityOrder();
+    void sortListByPolicy();
     std::list<IngestItem> m_fetchList;
     std::shared_ptr<Curl> m_curl;
 };

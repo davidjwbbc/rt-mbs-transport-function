@@ -35,7 +35,7 @@ fiveg_api_release = get_option('fiveg_api_release')
 fs = import('fs')
 
 boost_dep = dependency('boost')
-
+uuid_dep = dependency('uuid')
 test_source_subscriber_subscription = files('''
   SubscriptionService.cc
   SubscriptionService.hh
@@ -74,6 +74,8 @@ libmbstf_dist_sources = files('''
     Curl.hh
     DistributionSession.cc
     DistributionSession.hh
+    Event.cc
+    Event.hh
     EventHandler.hh
     hash.hh
     MBSTFEventHandler.cc
@@ -82,7 +84,9 @@ libmbstf_dist_sources = files('''
     NfServer.cc
     NfServer.hh
     ObjectController.cc
-    ObjectController.hh
+    ObjectController.cc
+    ObjectListController.cc
+    ObjectListController.hh
     ObjectStore.cc
     ObjectStore.hh
     ObjectIngester.cc
@@ -113,6 +117,11 @@ libmbstf_dist_sources = files('''
     Open5GSYamlIter.hh
     PullObjectIngester.cc
     PullObjectIngester.hh
+    SubscriptionService.cc
+    SubscriptionService.hh
+    Subscriber.cc
+    Subscriber.hh
+
     TimerFunc.hh
 '''.split())
 
@@ -145,7 +154,8 @@ libmbstf = static_library('mbstf',
                     libapp_dep,
                     libcrypt_dep,
                     rt_libflute_dep,
-                    boost_dep],
+                    boost_dep,
+                    uuid_dep],
     install : false)
 
 libmbstf_dep = declare_dependency(
@@ -155,7 +165,8 @@ libmbstf_dep = declare_dependency(
                     libapp_dep,
                     libcrypt_dep,
                     rt_libflute_dep,
-                    boost_dep])
+                    boost_dep,
+                    uuid_dep])
 
 mbstf_sources = files('''
     App.cc

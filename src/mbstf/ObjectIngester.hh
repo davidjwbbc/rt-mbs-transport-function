@@ -25,7 +25,7 @@ class ObjectIngester {
 public:
     ObjectIngester() = delete;
     ObjectIngester(ObjectStore &objectStore, ObjectController &controller)
-        : m_objectStore(objectStore), m_controller(controller), m_workerThread(ObjectIngester::workerLoop, this), m_workerCancel(false) {}
+        : m_objectStore(objectStore), m_controller(controller), m_workerThread(), m_workerCancel(false) {}
 
     void abort() {
 	m_workerCancel = true;    
@@ -44,6 +44,7 @@ protected:
     const ObjectStore &objectStore() const { return m_objectStore; }
     ObjectController &controller() { return m_controller; }
     const ObjectController &controller() const { return m_controller; }
+    void startWorker(){m_workerThread = std::thread(workerLoop, this);};
 
     virtual void doObjectIngest() = 0;
 

@@ -68,6 +68,7 @@ std::shared_ptr<ObjectListPackager> &ObjectListController::setObjectListPackager
 
 
 void ObjectListController::processEvent(Event &event, SubscriptionService &event_service) {
+    std::cout<<"ObjectListController::processEvent " <<std::endl;
     if (event.eventName() == "ObjectAdded") {
         ObjectStore::ObjectAddedEvent &objAddedEvent = dynamic_cast<ObjectStore::ObjectAddedEvent&>(event);
         std::string objectId = objAddedEvent.objectId();
@@ -130,8 +131,7 @@ void ObjectListController::initPullObjectIngester(DistributionSession &distribut
             }
         }
 
-        auto pullObjectIngester = std::make_unique<PullObjectIngester>(objectStore(), *this, urls);
-        addPullObjectIngester(std::move(pullObjectIngester));
+        addPullObjectIngester(new PullObjectIngester(objectStore(), *this, urls));
     }
 }
 

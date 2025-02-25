@@ -52,6 +52,7 @@ public:
     Open5GSSBIMessage sbiMessage() const { return Open5GSSBIMessage(m_event?(m_event->sbi.message):nullptr, false); };
     void sbiMessage(Open5GSSBIMessage &message) { if (!m_event) return; m_event->sbi.message = message.ogsSBIMessage(); message.setOwner(false); };
     void sbiResponse(Open5GSSBIResponse &response) { if (!m_event) return; m_event->sbi.response = response.ogsSBIResponse(); response.setOwner(false); };
+    void sbiRequest(Open5GSSBIRequest &request) { if (!m_event) return; m_event->sbi.request = request.ogsSBIRequest(); request.setOwner(false); };
     void setSbiData(void *data) { if (!m_event) return; m_event->sbi.data = data; };
 
 private:

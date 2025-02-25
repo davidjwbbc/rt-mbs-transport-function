@@ -23,9 +23,9 @@
 
 MBSTF_NAMESPACE_START
 
-std::shared_ptr<PullObjectIngester> &ObjectController::addPullObjectIngester(std::unique_ptr<PullObjectIngester>&& ingester) {
+std::shared_ptr<PullObjectIngester> &ObjectController::addPullObjectIngester(PullObjectIngester *ingester) {
     // Transfer ownership from unique_ptr to shared_ptr
-    std::shared_ptr<PullObjectIngester> ingesterPtr = std::move(ingester);
+    std::shared_ptr<PullObjectIngester> ingesterPtr(ingester);
     m_pullIngesters.push_back(ingesterPtr);
     return m_pullIngesters.back();
 }

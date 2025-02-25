@@ -33,6 +33,7 @@
 #include "hash.hh"
 #include "MBSTFNetworkFunction.hh"
 #include "NfServer.hh"
+#include "ObjectListController.hh"
 #include "Open5GSEvent.hh"
 #include "Open5GSSBIMessage.hh"
 #include "Open5GSSBIRequest.hh"
@@ -185,7 +186,7 @@ bool DistributionSession::processEvent(Open5GSEvent &event)
 
                                 {
                                     std::string txt(distSession.serialise());
-	    			                ogs_debug("Parsed JSON: %s", txt.c_str());
+	    			                ogs_debug("Request Parsed JSON: %s", txt.c_str());
                                 }
 
                                 try {
@@ -202,6 +203,11 @@ bool DistributionSession::processEvent(Open5GSEvent &event)
 
                                 App::self().context()->addDistributionSession(distributionSession);
 
+				//std::shared_ptr<ObjectListController> controller = std::make_shared<ObjectListController>(*distributionSession); 
+				distributionSession->m_controller.reset(new ObjectListController(*distributionSession));
+                                //distributionSession->setController(controller);
+
+
                                     /*
                                 std::shared_ptr<DistributionSession> distributionSession = std::make_shared<DistributionSession>(distSession, true);
                                 App::self().context()->addDistributionSession(distributionSession);
@@ -209,7 +215,7 @@ bool DistributionSession::processEvent(Open5GSEvent &event)
 
                                 CJson createdReqData_json(distributionSession->json(false));
                                 std::string body(createdReqData_json.serialise());
-                                ogs_debug("Parsed JSON: %s", body.c_str());
+                                ogs_debug("Response Parsed JSON: %s", body.c_str());
                                 std::ostringstream location;
                                 location << request.uri() << "/" << distributionSession->distributionSessionId();
                                 std::shared_ptr<Open5GSSBIResponse> response(NfServer::newResponse(location.str(),

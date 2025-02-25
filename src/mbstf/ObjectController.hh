@@ -47,7 +47,7 @@ public:
     ObjectStore &objectStore() { return m_objectStore; };
 
 protected:
-    std::shared_ptr<PullObjectIngester> &addPullObjectIngester(std::unique_ptr<PullObjectIngester>&&);
+    std::shared_ptr<PullObjectIngester> &addPullObjectIngester(PullObjectIngester*);
     bool removePullObjectIngester(std::shared_ptr<PullObjectIngester> &);
     std::shared_ptr<ObjectPackager> &setPackager(ObjectPackager&&);
     void objectPushedEvent(const std::string &object_id);

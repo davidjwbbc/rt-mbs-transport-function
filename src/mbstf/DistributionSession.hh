@@ -41,6 +41,7 @@ using reftools::mbstf::CreateReqData;
 MBSTF_NAMESPACE_START
 
 class Open5GSEvent;
+class Controller;
 
 class DistributionSession {
 public:
@@ -62,6 +63,7 @@ public:
     const std::shared_ptr<CreateReqData> &distributionSessionReqData() const {return m_createReqData;};
     const SysTimeMS &generated() const {return m_generated;};
     const std::string &hash() const {return m_hash;};
+    void setController(std::shared_ptr<Controller> controller) {m_controller = controller;};
 
     static bool processEvent(Open5GSEvent &event);
 
@@ -71,6 +73,7 @@ private:
     SysTimeMS m_lastUsed;
     std::string m_hash;
     std::string m_distributionSessionId;
+    std::shared_ptr<Controller> m_controller;
     //ObjectStore m_objectStore;
 };
 
