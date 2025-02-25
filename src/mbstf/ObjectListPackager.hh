@@ -79,10 +79,6 @@ protected:
 private:
     void sortListByPolicy();
     std::list<PackageItem> m_packageItems;
-    LibFlute::Transmitter *m_transmitter;
-    boost::asio::io_service m_io;
-    uint32_t m_queuedToi;
-    bool m_queued;
 };
 
 MBSTF_NAMESPACE_STOP

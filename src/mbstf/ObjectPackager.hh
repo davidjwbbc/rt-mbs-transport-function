@@ -17,6 +17,12 @@
 #include <atomic>
 #include <memory>
 
+#include <boost/asio/io_service.hpp>
+
+namespace LibFlute{
+    class Transmitter;
+}
+
 MBSTF_NAMESPACE_START
 
 class ObjectStore;
@@ -29,10 +35,12 @@ public:
     ObjectPackager(const ObjectPackager &) = delete;
 
     ObjectPackager(ObjectStore &objectStore, ObjectController &controller)
-        : m_objectStore(objectStore), m_controller(controller), m_destIpAddr(nullptr), m_rateLimit(0), m_mtu(0), m_port(0), m_workerThread(), m_workerCancel(false) {}
+        : m_transmitter(nullptr), m_io(), m_queuedToi(0), m_queued(false)
+	, m_objectStore(objectStore), m_controller(controller), m_destIpAddr(nullptr), m_rateLimit(0), m_mtu(0), m_port(0), m_workerThread(), m_workerCancel(false) {}
 
     ObjectPackager(ObjectStore &objectStore, ObjectController &controller, std::shared_ptr<std::string> destIpAddr, uint32_t rateLimit, unsigned short mtu, short port)
-        : m_objectStore(objectStore), m_controller(controller), m_destIpAddr(destIpAddr), m_rateLimit(rateLimit), m_mtu(mtu), m_port(port), m_workerThread(), m_workerCancel(false) {}
+        : m_transmitter(nullptr), m_io(), m_queuedToi(0), m_queued(false)
+	, m_objectStore(objectStore), m_controller(controller), m_destIpAddr(destIpAddr), m_rateLimit(rateLimit), m_mtu(mtu), m_port(port), m_workerThread(), m_workerCancel(false) {}
 
     void abort() {
         m_workerCancel = true;
@@ -64,6 +72,10 @@ protected:
 
 
     virtual void doObjectPackage() = 0;
+    LibFlute::Transmitter *m_transmitter;
+    boost::asio::io_service m_io;
+    uint32_t m_queuedToi;
+    bool m_queued;
 
 private:
     static void workerLoop(ObjectPackager*);

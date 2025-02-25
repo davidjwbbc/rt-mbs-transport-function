@@ -203,15 +203,8 @@ bool DistributionSession::processEvent(Open5GSEvent &event)
 
                                 App::self().context()->addDistributionSession(distributionSession);
 
-				//std::shared_ptr<ObjectListController> controller = std::make_shared<ObjectListController>(*distributionSession); 
 				distributionSession->m_controller.reset(new ObjectListController(*distributionSession));
-                                //distributionSession->setController(controller);
 
-
-                                    /*
-                                std::shared_ptr<DistributionSession> distributionSession = std::make_shared<DistributionSession>(distSession, true);
-                                App::self().context()->addDistributionSession(distributionSession);
-                                    */
 
                                 CJson createdReqData_json(distributionSession->json(false));
                                 std::string body(createdReqData_json.serialise());

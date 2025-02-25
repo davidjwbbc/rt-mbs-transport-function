@@ -161,19 +161,24 @@ const ObjDistributionData::ObjAcquisitionIdsPullType &ObjectListController::getO
 
 }
 
-
 std::shared_ptr<std::string> ObjectListController::getdestIpAddr(DistributionSession &distributionSession) const
 {
     const std::shared_ptr<CreateReqData> createReqData = distributionSession.distributionSessionReqData();
     std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
     const std::optional<std::shared_ptr< UpTrafficFlowInfo > > &upTrafficFlowInfo = distSession->getUpTrafficFlowInfo();
     if(upTrafficFlowInfo.has_value()) {
-	  std::shared_ptr<UpTrafficFlowInfo> upTrafficFlow = upTrafficFlowInfo.value();  
-          const std::shared_ptr<IpAddr> &ipAddr = upTrafficFlow->getDestIpAddr();
-          if (ipAddr && ipAddr->getIpv4Addr()) {
-              return std::make_shared<std::string>(*ipAddr->getIpv4Addr());
+          std::shared_ptr<UpTrafficFlowInfo> upTrafficFlow = upTrafficFlowInfo.value();
+          const std::shared_ptr<IpAddr> ipAddr = upTrafficFlow->getDestIpAddr();
+          if (ipAddr) {
+              //std::optional<std::string> addr;
+              const auto &addr = ipAddr->getIpv4Addr();
+              if (addr.has_value()){
+                  std::shared_ptr<std::string> ipAddrPtr(new std::string(addr.value()));
+                  return ipAddrPtr;
+              }
           }
     }
+
     return nullptr;
 }
 

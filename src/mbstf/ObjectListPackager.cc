@@ -59,12 +59,9 @@ ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectListCont
                                        uint32_t rateLimit, unsigned short mtu, short port)
     :ObjectPackager(object_store, controller, address, rateLimit, mtu, port)
     ,m_packageItems(object_to_package)
-    ,m_transmitter(nullptr)
-    ,m_io()
-    ,m_queuedToi(0)
-    ,m_queued(false)
 {
     sortListByPolicy();
+    startWorker();
 }
 
 ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectListController &controller,
@@ -72,12 +69,9 @@ ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectListCont
                                        uint32_t rateLimit, unsigned short mtu, short port)
     :ObjectPackager(object_store, controller, address, rateLimit, mtu, port)
     ,m_packageItems(std::move(object_to_package))
-    ,m_transmitter(nullptr)
-    ,m_io()
-    ,m_queuedToi(0)
-    ,m_queued(false)
 {
     sortListByPolicy();
+    startWorker();
 }
 
 ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectListController &controller,
@@ -85,11 +79,8 @@ ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectListCont
                                        short port)
     :ObjectPackager(object_store, controller, address, rateLimit, mtu, port)
     ,m_packageItems()
-    ,m_transmitter(nullptr)
-    ,m_io()
-    ,m_queuedToi(0)
-    ,m_queued(false)
 {
+    startWorker();
 }
 
 ObjectListPackager::~ObjectListPackager() {
