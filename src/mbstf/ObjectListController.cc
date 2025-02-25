@@ -44,15 +44,12 @@ using reftools::mbstf::UpTrafficFlowInfo;
 MBSTF_NAMESPACE_START
 
 ObjectListController::ObjectListController(DistributionSession &distributionSession)
-    : ObjectController(distributionSession)
+    :ObjectController(distributionSession)
     ,Subscriber()	
 {
-
+    subscribeToService(objectStore());
     initPullObjectIngester(distributionSession);
     setObjectListPackager(distributionSession, objectStore());
-    ObjectStore& objstore = objectStore();
-    SubscriptionService& service = objstore;
-    Subscriber::subscribeToService(service);
 }
 
 ObjectListController::~ObjectListController()
@@ -60,30 +57,28 @@ ObjectListController::~ObjectListController()
 }
 
 std::shared_ptr<ObjectListPackager> &ObjectListController::setObjectListPackager(DistributionSession &distributionSession, ObjectStore &object_store) {
-    std::shared_ptr<std::string>destIpAddr = getdestIpAddr(distributionSession); 
+    std::shared_ptr<std::string>destIpAddr = getdestIpAddr(distributionSession);
     uint32_t rateLimit = getRateLimit(distributionSession);
     short port = getPortNumber(distributionSession);
     //TODO: getMTU() but from where does this value come from??
     unsigned short mtu = 1500;
-    m_objectListPackager = std::make_shared<ObjectListPackager>(object_store, *this, destIpAddr, rateLimit, mtu, port);
+    m_objectListPackager.reset(new ObjectListPackager(object_store, *this, destIpAddr, rateLimit, mtu, port));
     return m_objectListPackager;
 }
 
 
 void ObjectListController::processEvent(Event &event, SubscriptionService &event_service) {
     if (event.eventName() == "ObjectAdded") {
-        const ObjectStore::ObjectAddedEvent &objAddedEvent = dynamic_cast<const ObjectStore::ObjectAddedEvent&>(event);
+        ObjectStore::ObjectAddedEvent &objAddedEvent = dynamic_cast<ObjectStore::ObjectAddedEvent&>(event);
         std::string objectId = objAddedEvent.objectId();
         std::cout << "Object added with ID: " << objectId << std::endl;
 
         ObjectListPackager::PackageItem item(objectId);
-        if(m_objectListPackager) {
+        if (m_objectListPackager) {
             m_objectListPackager->add(item);
         } else {
             std::cerr << "ObjectListPackager is not initialized." << std::endl;
         }
-
-
     }
 }
 
@@ -125,24 +120,18 @@ std::string ObjectListController::generateUUID() {
 void ObjectListController::initPullObjectIngester(DistributionSession &distributionSession)
 {
 
-    std::string object_id = generateUUID();
-    const auto &ObjAcquisitionIdsPullUrls = getObjectAcquisitionPullUrls(distributionSession);
-    if (ObjAcquisitionIdsPullUrls.has_value()) {
-        const auto &urls = ObjAcquisitionIdsPullUrls.value();
+    auto &pull_urls = getObjectAcquisitionPullUrls(distributionSession);
+    if (pull_urls.has_value()) {
+        std::list<PullObjectIngester::IngestItem> urls;
 
-        for(const auto &url : urls) {
+        for(auto &url : pull_urls.value()) {
             if (url.has_value()) {
-                // Cast to std::string
-                std::string ingestUrl = static_cast<std::string>(url.value());
-                // Now you can use the url as a std::string
-                std::optional<PullObjectIngester::time_type> download_deadline = std::nullopt;
-                PullObjectIngester::IngestItem ingestItem(object_id, ingestUrl, download_deadline);
-                const ObjectStore *objectStore = &this->objectStore();
-                ObjectStore *objStore = const_cast<ObjectStore*>(objectStore);
-                auto pullObjectIngester = std::make_unique<PullObjectIngester>(*objStore, *this, std::list<PullObjectIngester::IngestItem>{ingestItem});
-                addPullObjectIngester(std::move(pullObjectIngester));
+                urls.emplace_back(std::move(PullObjectIngester::IngestItem(generateUUID(), url.value())));
             }
         }
+
+        auto pullObjectIngester = std::make_unique<PullObjectIngester>(objectStore(), *this, urls);
+        addPullObjectIngester(std::move(pullObjectIngester));
     }
 }
 
@@ -162,10 +151,10 @@ const ObjDistributionData::ObjAcquisitionIdsPullType &ObjectListController::getO
 {
     const std::shared_ptr<CreateReqData> createReqData = distributionSession.distributionSessionReqData();
     std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
-    std::optional<std::shared_ptr<ObjDistributionData> > ObjectDistributionData = distSession->getObjDistributionData();
-    if(ObjectDistributionData) {
-          std::shared_ptr<ObjDistributionData> objectDistributionDataPtr = *ObjectDistributionData;
-          return objectDistributionDataPtr->getObjAcquisitionIdsPull();
+    const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = distSession->getObjDistributionData();
+    if (object_distribution_data) {
+        std::shared_ptr<ObjDistributionData> objectDistributionDataPtr = object_distribution_data.value();
+        return objectDistributionDataPtr->getObjAcquisitionIdsPull();
     } else {
         throw std::runtime_error("ObjectDistributionData is not available");
     }
@@ -177,7 +166,7 @@ std::shared_ptr<std::string> ObjectListController::getdestIpAddr(DistributionSes
 {
     const std::shared_ptr<CreateReqData> createReqData = distributionSession.distributionSessionReqData();
     std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
-    std::optional<std::shared_ptr< UpTrafficFlowInfo > > upTrafficFlowInfo = distSession->getUpTrafficFlowInfo();
+    const std::optional<std::shared_ptr< UpTrafficFlowInfo > > &upTrafficFlowInfo = distSession->getUpTrafficFlowInfo();
     if(upTrafficFlowInfo.has_value()) {
 	  std::shared_ptr<UpTrafficFlowInfo> upTrafficFlow = upTrafficFlowInfo.value();  
           const std::shared_ptr<IpAddr> &ipAddr = upTrafficFlow->getDestIpAddr();
@@ -206,7 +195,7 @@ uint32_t ObjectListController::getRateLimit(DistributionSession &distributionSes
 {
     const std::shared_ptr<CreateReqData> createReqData = distributionSession.distributionSessionReqData();
     std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
-    std::optional<std::string> mbr = distSession->getMbr();
+    const std::optional<std::string> &mbr = distSession->getMbr();
 
     if (mbr) {
         try {
