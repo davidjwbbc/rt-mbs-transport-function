@@ -20,6 +20,7 @@
 
 #include <boost/asio/io_service.hpp>
 
+#include "ogs-app.h" // LibFlute
 #include "Transmitter.h" // LibFlute
 
 #include "common.hh"
@@ -118,7 +119,7 @@ void ObjectListPackager::doObjectPackage() {
                     [this](uint32_t toi) {
                         if (m_queuedToi == toi) {
                             m_queued = false;
-                            std::cout << "INFO: Object with TOI " << toi << " has been transmitted" <<std::endl;
+                            ogs_info("INFO: Object with TOI: %d", toi);
                         }
                     }
                 );
@@ -141,7 +142,9 @@ void ObjectListPackager::doObjectPackage() {
             m_io.run_one();
         }
     } catch (std::exception &ex) {
-        std::cout << "Exiting on unhandled exception: " << ex.what();
+	std::ostringstream exceptError;
+        exceptError << "Exiting on unhandled exception: " << ex.what();
+        ogs_info("%s", exceptError.str().c_str());
     }
 }
 

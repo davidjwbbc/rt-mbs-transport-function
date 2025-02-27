@@ -19,6 +19,7 @@
 
 #include <uuid/uuid.h>
 
+#include "ogs-app.h"
 #include "common.hh"
 #include "DistributionSession.hh"
 #include "Event.hh"
@@ -68,47 +69,19 @@ std::shared_ptr<ObjectListPackager> &ObjectListController::setObjectListPackager
 
 
 void ObjectListController::processEvent(Event &event, SubscriptionService &event_service) {
-    std::cout<<"ObjectListController::processEvent " <<std::endl;
     if (event.eventName() == "ObjectAdded") {
         ObjectStore::ObjectAddedEvent &objAddedEvent = dynamic_cast<ObjectStore::ObjectAddedEvent&>(event);
         std::string objectId = objAddedEvent.objectId();
-        std::cout << "Object added with ID: " << objectId << std::endl;
+	ogs_info("Object added with ID: %s", objectId.c_str());
 
         ObjectListPackager::PackageItem item(objectId);
         if (m_objectListPackager) {
             m_objectListPackager->add(item);
         } else {
-            std::cerr << "ObjectListPackager is not initialized." << std::endl;
+	    ogs_error("ObjectListPackager is not initialized.");
         }
     }
 }
-
-/*
-std::shared_ptr<ObjectListPackager> &ObjectListController::setObjectListPackager(ObjectStore &object_store, const std::string &address, uint32_t rateLimit, unsigned short mtu, short port) {
-    m_ObjectListpackager = std::dynamic_pointer_cast<ObjectListPackager>(setPackager(ObjectListPackager(object_store, *this, address, rateLimit, mtu, port)));
-    return m_ObjectListpackager;
-}
-*/
-/*
-void ObjectListController::onEvent(const Event &event) {
-    if (event.eventName() == "ObjectAdded") {
-        const ObjectStore::ObjectAddedEvent &objAddedEvent = static_cast<const ObjectStore::ObjectAddedEvent&>(event);
-        std::string objectId = objAddedEvent.objectId();
-        std::cout << "Object added with ID: " << objectId << std::endl;
-        // Add ObjectId to PakageHandler PackageItem(const std::string &object_id, const std::optional<time_type> &deadline = std::nullopt);
-    }
-}
-*/
-
-/*
-void ObjectListController::fetchItems() {
-    for (const auto& pullIngester : m_pullIngesters) {
-        for (const auto& item : pullIngester->getFetchList()) {
-            pullIngester->fetch(item);
-        }
-    }
-}
-*/
 
 std::string ObjectListController::generateUUID() {
     uuid_t uuid;
@@ -135,30 +108,19 @@ void ObjectListController::initPullObjectIngester(DistributionSession &distribut
     }
 }
 
-/*
-void ObjectListController::initObjectListController(DistributionSession &distributionSession)
-{
- //Get MBR and Multicast address from distributionSession
- //const ObjectStore *objectStore = &objectStore();
- //  ObjectStore *objStore = const_cast<ObjectStore*>(objectStore);
-
- //call the ObjectListController(mbr,multicastaddress, objectStore)
-
-}
-*/
-
 const ObjDistributionData::ObjAcquisitionIdsPullType &ObjectListController::getObjectAcquisitionPullUrls(DistributionSession &distributionSession) const
 {
     const std::shared_ptr<CreateReqData> createReqData = distributionSession.distributionSessionReqData();
     std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
     const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = distSession->getObjDistributionData();
-    if (object_distribution_data) {
+    if (object_distribution_data.has_value()) {
         std::shared_ptr<ObjDistributionData> objectDistributionDataPtr = object_distribution_data.value();
         return objectDistributionDataPtr->getObjAcquisitionIdsPull();
     } else {
-        throw std::runtime_error("ObjectDistributionData is not available");
+        ogs_error("ObjectDistributionData is not available");
+	static const ObjDistributionData::ObjAcquisitionIdsPullType empty_result;
+        return empty_result;
     }
-
 }
 
 std::shared_ptr<std::string> ObjectListController::getdestIpAddr(DistributionSession &distributionSession) const

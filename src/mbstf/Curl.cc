@@ -9,6 +9,7 @@
  * https://drive.google.com/file/d/1cinCiA778IErENZ3JN52VFW-1ffHpx7Z/view
  */
 
+#include "ogs-app.h"
 #include "Curl.hh"
 #include <iostream>
 
@@ -51,9 +52,9 @@ long Curl::get(const std::string& url, std::chrono::milliseconds timeout) {
             h = curl_easy_header(m_curl, "ETag", 0, CURLH_HEADER, -1, &type);
             if (h == CURLHE_OK && type) {
                 m_etag = std::string(type->value);
-                std::cout << "ETag: " << m_etag << std::endl;
+		ogs_info("ETag: %s", m_etag.c_str());
             } else {
-                std::cout << "ETag header not found." << std::endl;
+		ogs_info("ETag header not found.");    
             }
 
             // Get the Content-Type header
