@@ -17,6 +17,8 @@
 #include <optional>
 #include <string>
 
+#include <netinet/in.h>
+
 #include <uuid/uuid.h>
 
 #include "ogs-app.h"
@@ -44,26 +46,32 @@ using reftools::mbstf::UpTrafficFlowInfo;
 
 MBSTF_NAMESPACE_START
 
+static const ObjDistributionData::ObjAcquisitionIdsPullType &get_object_acquisition_pull_urls(
+                                                                                        DistributionSession &distributionSession);
+static const std::optional<std::string> &get_dest_ip_addr(DistributionSession &distributionSession);
+static in_port_t get_port_number(DistributionSession &distributionSession);
+static uint32_t get_rate_limit(DistributionSession &distributionSession);
+
 ObjectListController::ObjectListController(DistributionSession &distributionSession)
     :ObjectController(distributionSession)
     ,Subscriber()	
 {
     subscribeToService(objectStore());
-    initPullObjectIngester(distributionSession);
-    setObjectListPackager(distributionSession, objectStore());
+    initPullObjectIngester();
+    setObjectListPackager();
 }
 
 ObjectListController::~ObjectListController()
 {
 }
 
-std::shared_ptr<ObjectListPackager> &ObjectListController::setObjectListPackager(DistributionSession &distributionSession, ObjectStore &object_store) {
-    std::shared_ptr<std::string>destIpAddr = getdestIpAddr(distributionSession);
-    uint32_t rateLimit = getRateLimit(distributionSession);
-    short port = getPortNumber(distributionSession);
-    //TODO: getMTU() but from where does this value come from??
+std::shared_ptr<ObjectListPackager> &ObjectListController::setObjectListPackager() {
+    std::optional<std::string> dest_ip_addr = get_dest_ip_addr(distributionSession());
+    uint32_t rate_limit = get_rate_limit(distributionSession());
+    in_port_t port = get_port_number(distributionSession());
+    //TODO: get the MTU for the dest_ip_addr
     unsigned short mtu = 1500;
-    m_objectListPackager.reset(new ObjectListPackager(object_store, *this, destIpAddr, rateLimit, mtu, port));
+    m_objectListPackager.reset(new ObjectListPackager(objectStore(), *this, dest_ip_addr, rate_limit, mtu, port));
     return m_objectListPackager;
 }
 
@@ -91,10 +99,10 @@ std::string ObjectListController::generateUUID() {
     return std::string(uuid_str);
 }
 
-void ObjectListController::initPullObjectIngester(DistributionSession &distributionSession)
+void ObjectListController::initPullObjectIngester()
 {
 
-    auto &pull_urls = getObjectAcquisitionPullUrls(distributionSession);
+    auto &pull_urls = get_object_acquisition_pull_urls(distributionSession());
     if (pull_urls.has_value()) {
         std::list<PullObjectIngester::IngestItem> urls;
 
@@ -108,9 +116,10 @@ void ObjectListController::initPullObjectIngester(DistributionSession &distribut
     }
 }
 
-const ObjDistributionData::ObjAcquisitionIdsPullType &ObjectListController::getObjectAcquisitionPullUrls(DistributionSession &distributionSession) const
+static const ObjDistributionData::ObjAcquisitionIdsPullType &get_object_acquisition_pull_urls(
+                                                                                        DistributionSession &distributionSession)
 {
-    const std::shared_ptr<CreateReqData> createReqData = distributionSession.distributionSessionReqData();
+    std::shared_ptr<CreateReqData> createReqData = distributionSession.distributionSessionReqData();
     std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
     const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = distSession->getObjDistributionData();
     if (object_distribution_data.has_value()) {
@@ -123,58 +132,54 @@ const ObjDistributionData::ObjAcquisitionIdsPullType &ObjectListController::getO
     }
 }
 
-std::shared_ptr<std::string> ObjectListController::getdestIpAddr(DistributionSession &distributionSession) const
+static const std::optional<std::string> &get_dest_ip_addr(DistributionSession &distributionSession)
 {
-    const std::shared_ptr<CreateReqData> createReqData = distributionSession.distributionSessionReqData();
+    std::shared_ptr<CreateReqData> createReqData = distributionSession.distributionSessionReqData();
     std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
     const std::optional<std::shared_ptr< UpTrafficFlowInfo > > &upTrafficFlowInfo = distSession->getUpTrafficFlowInfo();
-    if(upTrafficFlowInfo.has_value()) {
-          std::shared_ptr<UpTrafficFlowInfo> upTrafficFlow = upTrafficFlowInfo.value();
-          const std::shared_ptr<IpAddr> ipAddr = upTrafficFlow->getDestIpAddr();
-          if (ipAddr) {
-              //std::optional<std::string> addr;
-              const auto &addr = ipAddr->getIpv4Addr();
-              if (addr.has_value()){
-                  std::shared_ptr<std::string> ipAddrPtr(new std::string(addr.value()));
-                  return ipAddrPtr;
-              }
-          }
+    if (upTrafficFlowInfo.has_value()) {
+        std::shared_ptr<UpTrafficFlowInfo> upTrafficFlow = upTrafficFlowInfo.value();
+        const std::shared_ptr<IpAddr> ipAddr = upTrafficFlow->getDestIpAddr();
+        if (ipAddr) {
+            return ipAddr->getIpv4Addr();
+        }
     }
 
-    return nullptr;
+    static const std::optional<std::string> empty = std::nullopt;
+    return empty;
 }
 
-short ObjectListController::getPortNumber(DistributionSession &distributionSession) const
+static in_port_t get_port_number(DistributionSession &distributionSession)
 {
-    int32_t portNumber = 0;
-    const std::shared_ptr<CreateReqData> createReqData = distributionSession.distributionSessionReqData();
+    in_port_t portNumber = 0;
+    std::shared_ptr<CreateReqData> createReqData = distributionSession.distributionSessionReqData();
     std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
-    std::optional<std::shared_ptr< UpTrafficFlowInfo > > upTrafficFlowInfo = distSession->getUpTrafficFlowInfo();
-    if(upTrafficFlowInfo.has_value()) {
-	  std::shared_ptr<UpTrafficFlowInfo> upTrafficFlow = upTrafficFlowInfo.value();
-          portNumber = upTrafficFlow->getPortNumber();
+    std::optional<std::shared_ptr<UpTrafficFlowInfo> > upTrafficFlowInfo = distSession->getUpTrafficFlowInfo();
+    if (upTrafficFlowInfo.has_value()) {
+        std::shared_ptr<UpTrafficFlowInfo> upTrafficFlow = upTrafficFlowInfo.value();
+        portNumber = static_cast<in_port_t>(upTrafficFlow->getPortNumber());
     }
-    return static_cast<short>(portNumber);
+    return portNumber;
 }
 
 
-uint32_t ObjectListController::getRateLimit(DistributionSession &distributionSession) const
+static uint32_t get_rate_limit(DistributionSession &distributionSession)
 {
-    const std::shared_ptr<CreateReqData> createReqData = distributionSession.distributionSessionReqData();
+    std::shared_ptr<CreateReqData> createReqData = distributionSession.distributionSessionReqData();
     std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
     const std::optional<std::string> &mbr = distSession->getMbr();
 
     if (mbr) {
         try {
-            return static_cast<uint32_t>(std::stoul(*mbr));
+            return static_cast<uint32_t>(std::stoul(mbr.value()));
         } catch (const std::invalid_argument &e) {
             throw std::runtime_error("Invalid MBR value");
         } catch (const std::out_of_range &e) {
             throw std::runtime_error("MBR value out of range");
         }
-    } else {
-        return 0;
     }
+
+    return 0;
 }
 
 MBSTF_NAMESPACE_STOP

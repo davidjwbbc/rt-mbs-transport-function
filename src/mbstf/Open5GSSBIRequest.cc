@@ -37,7 +37,8 @@ public:
 };
 
 Open5GSSBIRequest::Open5GSSBIRequest(const std::string &method, const std::string &uri, const std::string &apiVersion, const std::optional<std::string> &data, const std::optional<std::string> &type)
-    : m_request(ogs_sbi_request_new()) 
+    :m_request(ogs_sbi_request_new()) 
+    ,m_owner(true)
 {
 
     m_request = ogs_sbi_request_new();

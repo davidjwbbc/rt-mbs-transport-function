@@ -24,6 +24,8 @@
 #include <map>
 #include <list>
 
+#include <netinet/in.h>
+
 #include "common.hh"
 #include "ObjectStore.hh"
 #include "ObjectListPackager.hh"
@@ -102,10 +104,10 @@ void testDeleteSecondObject(ObjectStore& store) {
 
 void testObjectListPackager(ObjectStore &store, ObjectListController &controller) {
 
-    std::shared_ptr<std::string> address = std::make_shared<std::string>("127.0.0.1");
+    std::optional<std::string> address = std::string("127.0.0.1");
     uint32_t rateLimit = 1000;
     unsigned short mtu = 1500;
-    short port = 8080;
+    in_port_t port = 8080;
 
     ObjectListPackager packager(store, controller, address, rateLimit, mtu, port);
     packager.startWorker();

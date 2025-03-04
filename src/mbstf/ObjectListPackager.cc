@@ -18,6 +18,8 @@
 #include <optional>
 #include <string>
 
+#include <netinet/in.h>
+
 #include <boost/asio/io_service.hpp>
 
 #include "ogs-app.h" // LibFlute
@@ -56,8 +58,8 @@ ObjectListPackager::PackageItem::PackageItem(PackageItem &&other)
 
 ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectListController &controller,
                                        const std::list<PackageItem> &object_to_package,
-                                       const std::shared_ptr<std::string> &address,
-                                       uint32_t rateLimit, unsigned short mtu, short port)
+                                       const std::optional<std::string> &address,
+                                       uint32_t rateLimit, unsigned short mtu, in_port_t port)
     :ObjectPackager(object_store, controller, address, rateLimit, mtu, port)
     ,m_packageItems(object_to_package)
 {
@@ -66,8 +68,8 @@ ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectListCont
 }
 
 ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectListController &controller,
-                                       std::list<PackageItem> &&object_to_package, const std::shared_ptr<std::string> &address,
-                                       uint32_t rateLimit, unsigned short mtu, short port)
+                                       std::list<PackageItem> &&object_to_package, const std::optional<std::string> &address,
+                                       uint32_t rateLimit, unsigned short mtu, in_port_t port)
     :ObjectPackager(object_store, controller, address, rateLimit, mtu, port)
     ,m_packageItems(std::move(object_to_package))
 {
@@ -76,8 +78,8 @@ ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectListCont
 }
 
 ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectListController &controller,
-                                       const std::shared_ptr<std::string> &address, uint32_t rateLimit, unsigned short mtu,
-                                       short port)
+                                       const std::optional<std::string> &address, uint32_t rateLimit, unsigned short mtu,
+                                       in_port_t port)
     :ObjectPackager(object_store, controller, address, rateLimit, mtu, port)
     ,m_packageItems()
 {
@@ -103,14 +105,14 @@ bool ObjectListPackager::add(PackageItem &&item) {
 
 void ObjectListPackager::doObjectPackage() {
     try {
-        std::shared_ptr<std::string> destAddr = destIpAddr();
+        std::optional<std::string> destAddr = destIpAddr();
 
         if (destAddr)
         {
             if (!m_transmitter) {
                 m_transmitter = new LibFlute::Transmitter(
-                    *destAddr,
-                    (short)port(),
+                    destAddr.value(),
+                    static_cast<short>(port()),
                     0,
                     mtu(),
                     rateLimit(),
@@ -119,7 +121,7 @@ void ObjectListPackager::doObjectPackage() {
                     [this](uint32_t toi) {
                         if (m_queuedToi == toi) {
                             m_queued = false;
-                            ogs_info("INFO: Object with TOI: %d", toi);
+                            ogs_info("Object with TOI: %d", toi);
                         }
                     }
                 );
@@ -144,7 +146,7 @@ void ObjectListPackager::doObjectPackage() {
     } catch (std::exception &ex) {
 	std::ostringstream exceptError;
         exceptError << "Exiting on unhandled exception: " << ex.what();
-        ogs_info("%s", exceptError.str().c_str());
+        ogs_error("%s", exceptError.str().c_str());
     }
 }
 

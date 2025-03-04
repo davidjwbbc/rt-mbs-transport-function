@@ -104,7 +104,12 @@ public:
 
     ObjectStore() = delete;
     ObjectStore(ObjectController &controller);
+    ObjectStore(const ObjectStore&) = delete;
+    ObjectStore(ObjectStore&&) = delete;
     ~ObjectStore();
+    ObjectStore &operator=(const ObjectStore&) = delete;
+    ObjectStore &operator=(ObjectStore&&) = delete;
+
     void addObject(const std::string& object_id, ObjectData &&object, Metadata &&metadata);
     const ObjectData& getObjectData(const std::string& object_id) const;
     ObjectData& getObjectData(const std::string& object_id);
@@ -112,7 +117,7 @@ public:
     void deleteObject(const std::string& object_id);
     bool removeObject(const std::string& objectId);
     bool removeObjects(const std::list<std::string>& objectIds);
-    std::list<std::pair<const std::string*, const std::pair<std::vector<unsigned char>, ObjectStore::Metadata>*>> getExpired();
+    std::list<std::pair<const std::string*, const Object*>> getExpired();
     const Object &operator[](const std::string& object_id) const;
     bool isStale(const std::string& object_id) const;
     std::map<std::string, const Object&> getStale() const;

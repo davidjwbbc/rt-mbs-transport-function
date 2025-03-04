@@ -50,8 +50,6 @@ protected:
     std::shared_ptr<PullObjectIngester> &addPullObjectIngester(PullObjectIngester*);
     bool removePullObjectIngester(std::shared_ptr<PullObjectIngester> &);
     std::shared_ptr<ObjectPackager> &setPackager(ObjectPackager&&);
-    void objectPushedEvent(const std::string &object_id);
-    void objectSentEvent(const std::string &object_id);
 	
 private:
     ObjectStore m_objectStore;

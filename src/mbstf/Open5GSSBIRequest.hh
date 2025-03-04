@@ -30,14 +30,14 @@ MBSTF_NAMESPACE_START
 
 class Open5GSSBIRequest {
 public:
-    Open5GSSBIRequest(ogs_sbi_request_t *request) :m_request(request) {};
+    Open5GSSBIRequest(ogs_sbi_request_t *request, bool owner = true) :m_request(request), m_owner(owner) {};
     Open5GSSBIRequest(const std::string &method, const std::string &uri, const std::string &apiVersion, const std::optional<std::string> &data, const std::optional<std::string> &type);
     Open5GSSBIRequest() = delete;
     Open5GSSBIRequest(Open5GSSBIRequest &&other) = delete;
     Open5GSSBIRequest(const Open5GSSBIRequest &other) = delete;
     Open5GSSBIRequest &operator=(Open5GSSBIRequest &&other) = delete;
     Open5GSSBIRequest &operator=(const Open5GSSBIRequest &other) = delete;
-    virtual ~Open5GSSBIRequest() {};
+    virtual ~Open5GSSBIRequest() {if (m_owner) ogs_sbi_request_free(m_request);};
 
     ogs_sbi_request_t *ogsSBIRequest() { return m_request; };
     const ogs_sbi_request_t *ogsSBIRequest() const { return m_request; };

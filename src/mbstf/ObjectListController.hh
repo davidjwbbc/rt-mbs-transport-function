@@ -41,10 +41,10 @@ public:
     ObjectListController &operator=(const ObjectListController &) = delete;
     ObjectListController &operator=(ObjectListController &&) = delete;
 
-    void initPullObjectIngester(DistributionSession &distributionSession);
+    void initPullObjectIngester();
 
     void fetchItems();
-    std::shared_ptr<ObjectListPackager> &setObjectListPackager(DistributionSession &distributionSession, ObjectStore &object_store);
+    std::shared_ptr<ObjectListPackager> &setObjectListPackager();
     std::shared_ptr<ObjectListPackager> &setObjectListPackager(ObjectListPackager&&);
 
     // Subscriber virtual methods
@@ -58,10 +58,6 @@ public:
 
 private:
     std::string generateUUID();
-    const reftools::mbstf::ObjDistributionData::ObjAcquisitionIdsPullType &getObjectAcquisitionPullUrls(DistributionSession &distributionSession) const;
-    std::shared_ptr<std::string> getdestIpAddr(DistributionSession &distributionSession) const;
-    short getPortNumber(DistributionSession &distributionSession) const;
-    uint32_t getRateLimit(DistributionSession &distributionSession) const;
 
     std::shared_ptr<ObjectListPackager> m_objectListPackager;
 };

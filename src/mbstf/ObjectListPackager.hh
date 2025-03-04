@@ -18,6 +18,8 @@
 #include <optional>
 #include <string>
 
+#include <netinet/in.h>
+
 #include <boost/asio/io_service.hpp>
 
 #include "common.hh"
@@ -52,7 +54,7 @@ public:
         const std::optional<time_type> &deadline() const { return m_deadline; }
         time_type deadline(const time_type &default_deadline) const { return m_deadline.value_or(default_deadline); }
         PackageItem &deadline(std::nullopt_t) { m_deadline.reset(); return *this; }
-        PackageItem &deadline(const time_type &deadline) { m_deadline = time_type(deadline); return *this; }
+        PackageItem &deadline(const time_type &deadline) { m_deadline = deadline; return *this; }
         PackageItem &deadline(time_type &&deadline) { m_deadline = std::move(deadline); return *this; }
 
     private:
@@ -62,12 +64,12 @@ public:
 
     ObjectListPackager() = delete;
     ObjectListPackager(ObjectStore &object_store, ObjectListController &controller,
-                       const std::list<PackageItem> &object_to_package, const std::shared_ptr<std::string> &address,
-                       uint32_t rateLimit, unsigned short mtu, short port);
+                       const std::list<PackageItem> &object_to_package, const std::optional<std::string> &address,
+                       uint32_t rateLimit, unsigned short mtu, in_port_t port);
     ObjectListPackager(ObjectStore &object_store, ObjectListController &controller, std::list<PackageItem> &&object_to_package,
-                       const std::shared_ptr<std::string> &address, uint32_t rateLimit, unsigned short mtu, short port);
-    ObjectListPackager(ObjectStore &object_store, ObjectListController &controller, const std::shared_ptr<std::string> &address,
-                       uint32_t rateLimit, unsigned short mtu, short port);
+                       const std::optional<std::string> &address, uint32_t rateLimit, unsigned short mtu, in_port_t port);
+    ObjectListPackager(ObjectStore &object_store, ObjectListController &controller, const std::optional<std::string> &address,
+                       uint32_t rateLimit, unsigned short mtu, in_port_t port);
     virtual ~ObjectListPackager();
 
     bool add(const PackageItem &item);

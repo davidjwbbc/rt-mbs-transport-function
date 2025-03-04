@@ -19,15 +19,14 @@ void ObjectPackager::workerLoop(ObjectPackager *packager)
     while(!packager->m_workerCancel){
        packager->doObjectPackage();
     }	    
-
 }
 
-ObjectPackager& ObjectPackager::setDestIpAddr(std::shared_ptr<std::string> destIpAddr) {
-    m_destIpAddr = destIpAddr;
+ObjectPackager& ObjectPackager::setDestIpAddr(const std::optional<std::string> &dest_ip_addr) {
+    m_destIpAddr = dest_ip_addr;
     return *this;
 }
 
-ObjectPackager& ObjectPackager::setPort(short port) {
+ObjectPackager& ObjectPackager::setPort(in_port_t port) {
     m_port = port;
     return *this;
 }

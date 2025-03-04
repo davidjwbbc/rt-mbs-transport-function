@@ -12,12 +12,16 @@
  */
 
 
-#include "common.hh"
-#include <thread>
 #include <atomic>
 #include <memory>
+#include <optional>
+#include <thread>
+
+#include <netinet/in.h>
 
 #include <boost/asio/io_service.hpp>
+
+#include "common.hh"
 
 namespace LibFlute{
     class Transmitter;
@@ -34,44 +38,45 @@ public:
     ObjectPackager(ObjectPackager &&) = delete;
     ObjectPackager(const ObjectPackager &) = delete;
 
-    ObjectPackager(ObjectStore &objectStore, ObjectController &controller)
-        : m_transmitter(nullptr), m_io(), m_queuedToi(0), m_queued(false)
-	, m_objectStore(objectStore), m_controller(controller), m_destIpAddr(nullptr), m_rateLimit(0), m_mtu(0), m_port(0), m_workerThread(), m_workerCancel(false) {}
-
-    ObjectPackager(ObjectStore &objectStore, ObjectController &controller, std::shared_ptr<std::string> destIpAddr, uint32_t rateLimit, unsigned short mtu, short port)
-        : m_transmitter(nullptr), m_io(), m_queuedToi(0), m_queued(false)
-	, m_objectStore(objectStore), m_controller(controller), m_destIpAddr(destIpAddr), m_rateLimit(rateLimit), m_mtu(mtu), m_port(port), m_workerThread(), m_workerCancel(false) {}
+    ObjectPackager(ObjectStore &objectStore, ObjectController &controller, std::optional<std::string> destIpAddr = std::nullopt, uint32_t rateLimit = 0, unsigned short mtu = 0, in_port_t port = 0)
+        :m_transmitter(nullptr), m_io(), m_queuedToi(0), m_queued(false)
+	,m_objectStore(objectStore), m_controller(controller), m_destIpAddr(destIpAddr), m_rateLimit(rateLimit), m_mtu(mtu)
+        ,m_port(port), m_workerThread(), m_workerCancel(false)
+    {};
 
     void abort() {
         m_workerCancel = true;
         if (m_workerThread.joinable()) {
             m_workerThread.join();
         }
-
-    }
+    };
 
     virtual ~ObjectPackager() {
         abort();
-    }
+    };
 
-    ObjectPackager& setDestIpAddr(std::shared_ptr<std::string> destIpAddr);
-    ObjectPackager& setPort(short port);
+    ObjectPackager& setDestIpAddr(const std::optional<std::string> &destIpAddr);
+    ObjectPackager& setPort(in_port_t port);
     ObjectPackager& setMtu(unsigned short mtu);
     ObjectPackager& setRateLimit(uint32_t rateLimit);
-    void startWorker(){m_workerThread = std::thread(workerLoop, this);};
+    void startWorker() {
+        if (m_workerThread.get_id() != std::thread::id()) return;
+        if (!!m_workerCancel) return;
+        m_workerThread = std::thread(workerLoop, this);
+    };
 
 protected:
-    const ObjectStore &objectStore() const { return m_objectStore; }
-    ObjectStore &objectStore() { return m_objectStore; }
-    ObjectController &controller() { return m_controller; }
-    const ObjectController &controller() const { return m_controller; }
-    const std::shared_ptr<std::string> &destIpAddr() const { return m_destIpAddr; }
-    const uint32_t &rateLimit() const { return m_rateLimit; }
-    const unsigned short &mtu() const { return m_mtu; }
-    const short &port() const { return m_port; }
-
+    const ObjectStore &objectStore() const { return m_objectStore; };
+    ObjectStore &objectStore() { return m_objectStore; };
+    const ObjectController &controller() const { return m_controller; };
+    ObjectController &controller() { return m_controller; };
+    const std::optional<std::string> &destIpAddr() const { return m_destIpAddr; };
+    uint32_t rateLimit() const { return m_rateLimit; };
+    unsigned short mtu() const { return m_mtu; };
+    in_port_t port() const { return m_port; };
 
     virtual void doObjectPackage() = 0;
+
     LibFlute::Transmitter *m_transmitter;
     boost::asio::io_service m_io;
     uint32_t m_queuedToi;
@@ -81,10 +86,10 @@ private:
     static void workerLoop(ObjectPackager*);
     ObjectStore &m_objectStore;
     ObjectController &m_controller;
-    std::shared_ptr<std::string> m_destIpAddr;
+    std::optional<std::string> m_destIpAddr;
     uint32_t m_rateLimit;
     unsigned short m_mtu;
-    short m_port;
+    in_port_t m_port;
     std::thread m_workerThread;
     std::atomic_bool m_workerCancel;
 };
