@@ -12,6 +12,7 @@
 
 #include <memory>
 #include <list>
+#include <regex>
 
 #include "common.hh"
 #include "Controller.hh"
@@ -38,6 +39,20 @@ bool ObjectController::removePullObjectIngester(std::shared_ptr<PullObjectIngest
     }
     return false;
 }
+
+// Function to remove leading and trailing slashes from a string
+std::string ObjectController::trimSlashes(const std::string& str) {
+    size_t start = (str.front() == '/') ? 1 : 0;
+    size_t end = (str.back() == '/') ? str.size() - 1 : str.size();
+    return str.substr(start, end - start);
+}
+
+// Function to remove the domain part of an absolute URL
+std::string ObjectController::removeBaseURL(const std::string& url) {
+    std::regex baseUrlPattern(R"(https?://[^/]+)");
+    return trimSlashes(std::regex_replace(url, baseUrlPattern, ""));
+}
+
 
 MBSTF_NAMESPACE_STOP
 

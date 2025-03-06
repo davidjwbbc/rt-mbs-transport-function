@@ -34,7 +34,7 @@ public:
     public:
 
         IngestItem() = delete;
-        IngestItem(const std::string &object_id, const std::string &url, const std::optional<time_type> &download_deadline = std::nullopt);
+	IngestItem(const std::string &object_id, const std::string &url, std::shared_ptr<std::string> objIngestUrl, std::shared_ptr<std::string> objDistributionUrl, const std::optional<std::string> &objIngestBaseUrl = std::nullopt,  const std::optional<std::string> &objDistributionBaseUrl = std::nullopt, const std::optional<time_type> &download_deadline = std::nullopt);
         IngestItem(const IngestItem &other);
         IngestItem(IngestItem &&other);
         virtual ~IngestItem() {};
@@ -47,6 +47,11 @@ public:
         IngestItem &url(const std::string &url) { m_url = url; return *this; };
         IngestItem &url(std::string &&url) { m_url = std::move(url); return *this; };
 
+	const std::shared_ptr<std::string> objIngestUrl() const { return m_objIngestUrl; };
+        const std::shared_ptr<std::string> objDistributionUrl() const { return m_objDistributionUrl; };
+        const std::optional<std::string> &objIngestBaseUrl() const { return m_objIngestBaseUrl; };
+        const std::optional<std::string> &objDistributionBaseUrl() const { return m_objDistributionBaseUrl; };
+
         bool hasDeadline() const { return m_deadline.has_value(); };
         const std::optional<time_type> &deadline() const { return m_deadline; };
         time_type deadline(const time_type &default_deadline) const { return m_deadline.value_or(default_deadline); };
@@ -58,6 +63,10 @@ public:
     private:
         std::string m_objectId;
         std::string m_url;
+	std::shared_ptr<std::string> m_objIngestUrl;
+        std::shared_ptr<std::string> m_objDistributionUrl;
+        const std::optional<std::string> m_objIngestBaseUrl;
+        const std::optional<std::string> m_objDistributionBaseUrl;
         std::optional<time_type> m_deadline;
     };
 

@@ -59,6 +59,9 @@ public:
     ObjectPackager& setPort(in_port_t port);
     ObjectPackager& setMtu(unsigned short mtu);
     ObjectPackager& setRateLimit(uint32_t rateLimit);
+    std::shared_ptr<std::string> findAndReplace(
+        std::shared_ptr<std::string> inputStr, const std::optional<std::string>& toReplace,
+        const std::optional<std::string>& replaceWith);
     void startWorker() {
         if (m_workerThread.get_id() != std::thread::id()) return;
         if (!!m_workerCancel) return;

@@ -65,9 +65,15 @@ public:
     class Metadata {
     public:
         Metadata();
-        Metadata(const std::string &media_type, const std::string &url, const std::string &fetched_url,
+
+	Metadata(const std::string &media_type, const std::string &url, const std::string &fetched_url,
+                 std::shared_ptr<std::string> m_objIngestUrl,
+                 std::shared_ptr<std::string> m_objDistributionUrl,
                  const std::chrono::system_clock::time_point last_modified,
+                 std::optional<std::string> objIngestBaseUrl = std::nullopt,
+                 std::optional<std::string> objDistributionBaseUrl =  std::nullopt,
                  const std::optional<std::chrono::system_clock::time_point> &cache_expires = std::nullopt);
+
         Metadata(const Metadata &other);
         Metadata(Metadata &&other);
 	Metadata& operator=(Metadata&& other);
@@ -89,10 +95,26 @@ public:
 
 	Metadata &entityTag(const std::optional<std::string>& entityTag) {m_entityTag = entityTag; return *this;};
 
+	const std::optional<std::string> &objIngestBaseUrl() const { return m_objIngestBaseUrl;};
+        const std::optional<std::string> &objDistributionBaseUrl() const { return m_objDistributionBaseUrl;};
+
+        const std::shared_ptr<std::string> objIngestUrl() const { return m_objIngestUrl;};
+        const std::shared_ptr<std::string> objDistributionUrl() const { return m_objDistributionUrl;};
+
+	Metadata &objIngestBaseUrl(const std::optional<std::string>& objIngestBaseUrl) {m_objIngestBaseUrl = objIngestBaseUrl; return *this;};
+        Metadata &objDistributionBaseUrl(const std::optional<std::string>& objDistributionBaseUrl) {m_objDistributionBaseUrl = objDistributionBaseUrl; return *this;};
+
+        Metadata &objIngestUrl(const std::shared_ptr<std::string> objIngestUrl) {m_objIngestUrl = objIngestUrl; return *this;};
+        Metadata &objDistributionUrl(const std::shared_ptr<std::string> objDistributionUrl) {m_objDistributionUrl = objDistributionUrl; return *this;};
+
     private:
         std::string m_mediaType;
         std::string m_originalUrl;
         std::string m_fetchedUrl;
+	std::shared_ptr<std::string> m_objIngestUrl;
+        std::shared_ptr<std::string> m_objDistributionUrl;
+        std::optional<std::string> m_objIngestBaseUrl;
+        std::optional<std::string> m_objDistributionBaseUrl;
 	std::optional<std::string> m_entityTag;
         std::optional<std::chrono::system_clock::time_point> m_cacheExpires;
 	std::chrono::system_clock::time_point m_created;

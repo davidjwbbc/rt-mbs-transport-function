@@ -50,6 +50,8 @@ protected:
     std::shared_ptr<PullObjectIngester> &addPullObjectIngester(PullObjectIngester*);
     bool removePullObjectIngester(std::shared_ptr<PullObjectIngester> &);
     std::shared_ptr<ObjectPackager> &setPackager(ObjectPackager&&);
+    std::string trimSlashes(const std::string& str);
+    std::string removeBaseURL(const std::string& url);
 	
 private:
     ObjectStore m_objectStore;

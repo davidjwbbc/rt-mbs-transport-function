@@ -129,16 +129,23 @@ void ObjectListPackager::doObjectPackage() {
 
             if (!m_packageItems.empty() && !m_queued) {
                 auto &item = m_packageItems.front();
+		std::shared_ptr<std::string> location;
                 std::vector<unsigned char> &objData = objectStore().getObjectData(item.objectId());
                 const ObjectStore::Metadata &metadata = objectStore().getMetadata(item.objectId());
+
+		if (metadata.objIngestBaseUrl().has_value() && !metadata.objIngestBaseUrl()->empty()){
+                    location = findAndReplace(metadata.objIngestUrl(), metadata.objIngestBaseUrl(), metadata.objDistributionBaseUrl());
+                }
+
                 m_queued = true;
-                m_queuedToi = m_transmitter->send( metadata.getOriginalUrl(),
+                m_queuedToi = m_transmitter->send( location?*location:metadata.getOriginalUrl(),
                     "application/octet-stream",
                     m_transmitter->seconds_since_epoch() + 60, // 1 minute from now
                     reinterpret_cast<char*>(objData.data()),
                     objData.size()
                 );
                 m_packageItems.pop_front();
+		location = nullptr;
             }
 
             m_io.run_one();

@@ -41,6 +41,29 @@ ObjectPackager& ObjectPackager::setRateLimit(uint32_t rateLimit) {
     return *this;
 }
 
+std::shared_ptr<std::string> ObjectPackager::findAndReplace(
+    std::shared_ptr<std::string> inputStr,
+    const std::optional<std::string>& toReplace,
+    const std::optional<std::string>& replaceWith) {
+
+    if (!inputStr || !toReplace || !replaceWith) {
+        return inputStr;
+    }
+
+    std::shared_ptr<std::string> result;
+    result.reset(new std::string(*inputStr));
+    size_t pos = result->find(*toReplace);
+
+    // Check if the substring to be replaced is found
+    if (pos != std::string::npos) {
+        result->replace(pos, toReplace->length(), *replaceWith);
+    }
+
+    // Return the modified result
+    return result;
+}
+
+
 MBSTF_NAMESPACE_STOP
 
 /* vim:ts=8:sts=4:sw=4:expandtab:
