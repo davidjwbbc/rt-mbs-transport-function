@@ -32,23 +32,20 @@ ObjectStore::Metadata::Metadata()
 }
 
 ObjectStore::Metadata::Metadata(const std::string &media_type, const std::string &url, const std::string &fetched_url,
-                 std::shared_ptr<std::string> objIngestUrl,
-                 std::shared_ptr<std::string> objDistributionUrl,
+                 const std::string &acquisition_id,
                  const std::chrono::system_clock::time_point last_modified,
-                 std::optional<std::string> objIngestBaseUrl,
-                 std::optional<std::string> objDistributionBaseUrl,
+                 std::optional<std::string> obj_ingest_base_url,
+                 std::optional<std::string> obj_distribution_base_url,
                  const std::optional<std::chrono::system_clock::time_point> &cache_expires)
     :m_mediaType(media_type)
     ,m_originalUrl(url)
     ,m_fetchedUrl(fetched_url)
-    ,m_objIngestUrl(objIngestUrl)
-    ,m_objDistributionUrl(objDistributionUrl)
-    ,m_objIngestBaseUrl(objIngestBaseUrl)
-    ,m_objDistributionBaseUrl(objDistributionBaseUrl)
+    ,m_acquisitionId(acquisition_id)
+    ,m_objIngestBaseUrl(obj_ingest_base_url)
+    ,m_objDistributionBaseUrl(obj_distribution_base_url)
     ,m_cacheExpires(cache_expires)
     ,m_created(std::chrono::system_clock::now())
     ,m_modified(last_modified)
-
 {
 
 }
@@ -57,8 +54,7 @@ ObjectStore::Metadata::Metadata(const Metadata &other)
     :m_mediaType(other.m_mediaType)
     ,m_originalUrl(other.m_originalUrl)
     ,m_fetchedUrl(other.m_fetchedUrl)
-    ,m_objIngestUrl(other.m_objIngestUrl)
-    ,m_objDistributionUrl(other.m_objDistributionUrl)
+    ,m_acquisitionId(other.m_acquisitionId)
     ,m_objIngestBaseUrl(other.m_objIngestBaseUrl)
     ,m_objDistributionBaseUrl(other.m_objDistributionBaseUrl)
     ,m_cacheExpires(other.m_cacheExpires)
@@ -72,8 +68,7 @@ ObjectStore::Metadata::Metadata(Metadata &&other)
     :m_mediaType(std::move(other.m_mediaType))
     ,m_originalUrl(std::move(other.m_originalUrl))
     ,m_fetchedUrl(std::move(other.m_fetchedUrl))
-    ,m_objIngestUrl(std::move(other.m_objIngestUrl))
-    ,m_objDistributionUrl(std::move(other.m_objDistributionUrl))
+    ,m_acquisitionId(std::move(other.m_acquisitionId))
     ,m_objIngestBaseUrl(std::move(other.m_objIngestBaseUrl))
     ,m_objDistributionBaseUrl(std::move(other.m_objDistributionBaseUrl))
     ,m_cacheExpires(std::move(other.m_cacheExpires))

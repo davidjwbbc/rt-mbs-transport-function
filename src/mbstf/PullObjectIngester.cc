@@ -28,15 +28,13 @@ MBSTF_NAMESPACE_START
 class ObjectStore;
 class Curl;
 
-PullObjectIngester::IngestItem::IngestItem(const std::string &object_id, const std::string &url, std::shared_ptr<std::string> objIngestUrl, std::shared_ptr<std::string> objDistributionUrl, const std::optional<std::string> &objIngestBaseUrl,  const std::optional<std::string> &objDistributionBaseUrl, const std::optional<time_type> &download_deadline)
+PullObjectIngester::IngestItem::IngestItem(const std::string &object_id, const std::string &url, const std::string &acquisition_id, const std::optional<std::string> &obj_ingest_base_url,  const std::optional<std::string> &obj_distribution_base_url, const std::optional<time_type> &download_deadline)
     :m_objectId(object_id)
     ,m_url(url)
-    ,m_objIngestUrl(objIngestUrl)
-    ,m_objDistributionUrl(objDistributionUrl)
-    ,m_objIngestBaseUrl(objIngestBaseUrl)
-    ,m_objDistributionBaseUrl(objDistributionBaseUrl)
+    ,m_acquisitionId(acquisition_id)
+    ,m_objIngestBaseUrl(obj_ingest_base_url)
+    ,m_objDistributionBaseUrl(obj_distribution_base_url)
     ,m_deadline(download_deadline)
-
 {
 
 }
@@ -44,8 +42,7 @@ PullObjectIngester::IngestItem::IngestItem(const std::string &object_id, const s
 PullObjectIngester::IngestItem::IngestItem(const IngestItem &other)
     :m_objectId(other.m_objectId)
     ,m_url(other.m_url)
-    ,m_objIngestUrl(other.m_objIngestUrl)
-    ,m_objDistributionUrl(other.m_objDistributionUrl)
+    ,m_acquisitionId(other.m_acquisitionId)
     ,m_objIngestBaseUrl(other.m_objIngestBaseUrl)
     ,m_objDistributionBaseUrl(other.m_objDistributionBaseUrl)
     ,m_deadline(other.m_deadline)
@@ -56,8 +53,7 @@ PullObjectIngester::IngestItem::IngestItem(const IngestItem &other)
 PullObjectIngester::IngestItem::IngestItem(IngestItem &&other)
     :m_objectId(std::move(other.m_objectId))
     ,m_url(std::move(other.m_url))
-    ,m_objIngestUrl(std::move(other.m_objIngestUrl))
-    ,m_objDistributionUrl(std::move(other.m_objDistributionUrl))
+    ,m_acquisitionId(std::move(other.m_acquisitionId))
     ,m_objIngestBaseUrl(std::move(other.m_objIngestBaseUrl))
     ,m_objDistributionBaseUrl(std::move(other.m_objDistributionBaseUrl))
     ,m_deadline(std::move(other.m_deadline)) 
@@ -104,7 +100,6 @@ void PullObjectIngester::sortListByPolicy() {
     });
 }
 
-
 void PullObjectIngester::doObjectIngest() {
 
     if(!m_curl) m_curl = std::make_shared<Curl>();
@@ -113,13 +108,16 @@ void PullObjectIngester::doObjectIngest() {
         // Make the GET request and get the number of bytes received
         auto item = m_fetchList.front();
 	m_fetchList.pop_front();
-	long bytesReceived = m_curl->get(item.objIngestUrl()?*item.objIngestUrl():item.url(), timeout);
+        ogs_debug("Fetching %s...", item.url().c_str());
+	long bytesReceived = m_curl->get(item.url(), timeout);
 
         // Check the result
         if (bytesReceived >= 0) {
             ogs_info("Received %ld bytes of data", bytesReceived);
 	    auto lastModified = std::chrono::system_clock::now();
-	    ObjectStore::Metadata metadata(m_curl->getContentType(), item.url(), item.url(), item.objIngestUrl(), item.objDistributionUrl(), lastModified, item.objIngestBaseUrl(), item.objDistributionBaseUrl());
+            // TODO: handle redirects and remember the URLs for permanent redirects
+            std::string fetched_url = m_curl->getEffectiveUrl();
+	    ObjectStore::Metadata metadata(m_curl->getContentType(), item.url(), fetched_url, item.acquisitionId(), lastModified, item.objIngestBaseUrl(), item.objDistributionBaseUrl());
             metadata.cacheExpires(std::chrono::system_clock::now() + std::chrono::minutes(ObjectStore::Metadata::cacheExpiry()));
             const std::string& etag = m_curl->getEtag();
 	    if (!etag.empty()) {

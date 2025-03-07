@@ -30,13 +30,15 @@ MBSTF_NAMESPACE_START
 
 class Open5GSSBIResponse {
 public:
-    Open5GSSBIResponse(ogs_sbi_response_t *response) :m_response(response) {};
-    Open5GSSBIResponse(const Open5GSSBIResponse &other) :m_response(other.m_response) {};
-    Open5GSSBIResponse(Open5GSSBIResponse &&other) :m_response(other.m_response) {};
+    Open5GSSBIResponse(ogs_sbi_response_t *response, bool owner = true) :m_response(response), m_owner(owner) {};
+    Open5GSSBIResponse(const Open5GSSBIResponse &other) :m_response(other.m_response), m_owner(false) {};
+    Open5GSSBIResponse(Open5GSSBIResponse &&other) :m_response(other.m_response), m_owner(other.m_owner) {
+        other.m_owner = false;
+    };
     Open5GSSBIResponse() = delete;
-    Open5GSSBIResponse &operator=(Open5GSSBIResponse &&other) { m_response = other.m_response; return *this; };
-    Open5GSSBIResponse &operator=(const Open5GSSBIResponse &other) { m_response = other.m_response; return *this; };
-    virtual ~Open5GSSBIResponse() {};
+    Open5GSSBIResponse &operator=(Open5GSSBIResponse &&other) { m_response = other.m_response; m_owner = other.m_owner; other.m_owner = false; return *this; };
+    Open5GSSBIResponse &operator=(const Open5GSSBIResponse &other) { m_response = other.m_response; m_owner = false; return *this; };
+    virtual ~Open5GSSBIResponse() { if (m_owner && m_response) ogs_sbi_response_free(m_response); };
 
     ogs_sbi_response_t *ogsSBIResponse() { return m_response; };
     const ogs_sbi_response_t *ogsSBIResponse() const { return m_response; };
@@ -50,7 +52,7 @@ public:
     Open5GSSBIResponse &content(char *content) { if (m_response) m_response->http.content = content; return *this; };
     const char *getHeader(const char *header);
     bool headerSet(const std::string &field, const std::string &value);
-    void setOwner(bool owner) { m_owner = owner; };
+    Open5GSSBIResponse &setOwner(bool owner) { m_owner = owner; return *this; };
 
 private:
     ogs_sbi_response_t *m_response;

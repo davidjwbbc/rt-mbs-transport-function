@@ -31,9 +31,11 @@ public:
     ~Curl();
 
     long get(const std::string& url, std::chrono::milliseconds timeout);
-    std::vector<unsigned char>& getData();
-    std::string& getEtag() ;
-    std::string& getContentType();
+    std::vector<unsigned char> &getData();
+    const std::vector<unsigned char> &getData() const;
+    const std::string &getEtag() const;
+    const std::string &getContentType() const;
+    const std::string &getEffectiveUrl() const;
 
 private:
     //static size_t headerCallback(char* buffer, size_t size, size_t numberOfItems, void* userData);
@@ -43,6 +45,7 @@ private:
     std::vector<unsigned char> m_receivedData;
     std::string m_etag;
     std::string m_contentType;
+    std::string m_effectiveUrl;
 };
 
 class CurlGlobalCleanup {

@@ -66,6 +66,7 @@ test_source_pull_object_ingester = test_source_object_store + files('''
 libmbstf_dist_sources = files('''
     common.cc
     common.hh
+    CaseInsensitiveTraits.hh
     Context.cc
     Context.hh
     Controller.cc

@@ -129,31 +129,34 @@ void ObjectListPackager::doObjectPackage() {
 
             if (!m_packageItems.empty() && !m_queued) {
                 auto &item = m_packageItems.front();
-		std::shared_ptr<std::string> location;
+                std::string location;
                 std::vector<unsigned char> &objData = objectStore().getObjectData(item.objectId());
                 const ObjectStore::Metadata &metadata = objectStore().getMetadata(item.objectId());
+                std::string obj_ingest_base_url = metadata.objIngestBaseUrl().value_or(std::string());
+                std::string obj_distribution_base_url = metadata.objDistributionBaseUrl().value_or(std::string());
 
-		if (metadata.objIngestBaseUrl().has_value() && !metadata.objIngestBaseUrl()->empty()){
-                    location = findAndReplace(metadata.objIngestUrl(), metadata.objIngestBaseUrl(), metadata.objDistributionBaseUrl());
+                // If we need to substitute objIngestBaseUrl for objDistributionBaseUrl then do so
+                if (!obj_ingest_base_url.empty() && !obj_distribution_base_url.empty() &&
+                    metadata.getFetchedUrl().starts_with(obj_ingest_base_url)) {
+                    location = obj_distribution_base_url + metadata.getFetchedUrl().substr(obj_ingest_base_url.size());
+                } else {
+                    // Just use the fetched URL
+                    location = metadata.getFetchedUrl();
                 }
 
                 m_queued = true;
-                m_queuedToi = m_transmitter->send( location?*location:metadata.getOriginalUrl(),
-                    "application/octet-stream",
+                m_queuedToi = m_transmitter->send(location, "application/octet-stream",
                     m_transmitter->seconds_since_epoch() + 60, // 1 minute from now
                     reinterpret_cast<char*>(objData.data()),
                     objData.size()
                 );
                 m_packageItems.pop_front();
-		location = nullptr;
             }
 
             m_io.run_one();
         }
     } catch (std::exception &ex) {
-	std::ostringstream exceptError;
-        exceptError << "Exiting on unhandled exception: " << ex.what();
-        ogs_error("%s", exceptError.str().c_str());
+        ogs_error("Exiting on unhandled exception: %s", ex.what());
     }
 }
 

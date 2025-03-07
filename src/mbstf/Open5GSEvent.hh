@@ -46,8 +46,8 @@ public:
 
     int id() const { return m_event?(m_event->id):0; };
     int timerId() const { return m_event?(m_event->timer_id):0; };
-    Open5GSSBIRequest sbiRequest() const { return Open5GSSBIRequest(m_event?(m_event->sbi.request):nullptr); };
-    Open5GSSBIResponse sbiResponse() const { return Open5GSSBIResponse(m_event?(m_event->sbi.response):nullptr); };
+    Open5GSSBIRequest sbiRequest() const { return Open5GSSBIRequest(m_event?(m_event->sbi.request):nullptr, false); };
+    Open5GSSBIResponse sbiResponse() const { return Open5GSSBIResponse(m_event?(m_event->sbi.response):nullptr, false); };
     void *sbiData() const { return m_event?(m_event->sbi.data):nullptr; };
     Open5GSSBIMessage sbiMessage() const { return Open5GSSBIMessage(m_event?(m_event->sbi.message):nullptr, false); };
     void sbiMessage(Open5GSSBIMessage &message) { if (!m_event) return; m_event->sbi.message = message.ogsSBIMessage(); message.setOwner(false); };

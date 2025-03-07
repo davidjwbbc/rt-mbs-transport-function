@@ -67,6 +67,7 @@ bool Open5GSSBIServer::sendError(Open5GSSBIStream &stream, int status_code, std:
 
 bool Open5GSSBIServer::sendResponse(Open5GSSBIStream &stream, Open5GSSBIResponse &response)
 {
+    response.setOwner(false); // ogs_sbi_response is being passed to ogs_sbi_server now
     return ogs_sbi_server_send_response(stream.ogsSBIStream(), response.ogsSBIResponse());
 }
 

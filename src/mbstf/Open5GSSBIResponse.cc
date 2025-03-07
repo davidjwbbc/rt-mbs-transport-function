@@ -22,18 +22,11 @@
 #include <string>
 
 #include "common.hh"
+#include "CaseInsensitiveTraits.hh"
 
 #include "Open5GSSBIResponse.hh"
 
 MBSTF_NAMESPACE_START
-
-template <class CharT>
-class CaseInsensitiveTraits : public std::char_traits<CharT>
-{
-public:
-    static bool eq(CharT a, CharT b) { return std::tolower(a) == std::tolower(b); };
-    static bool lt(CharT a, CharT b) { return std::tolower(a) < std::tolower(b); };
-};
 
 bool Open5GSSBIResponse::headerSet(const std::string &field, const std::string &value)
 {

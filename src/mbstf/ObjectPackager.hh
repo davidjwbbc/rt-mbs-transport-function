@@ -40,7 +40,7 @@ public:
 
     ObjectPackager(ObjectStore &objectStore, ObjectController &controller, std::optional<std::string> destIpAddr = std::nullopt, uint32_t rateLimit = 0, unsigned short mtu = 0, in_port_t port = 0)
         :m_transmitter(nullptr), m_io(), m_queuedToi(0), m_queued(false)
-	,m_objectStore(objectStore), m_controller(controller), m_destIpAddr(destIpAddr), m_rateLimit(rateLimit), m_mtu(mtu)
+        ,m_objectStore(objectStore), m_controller(controller), m_destIpAddr(destIpAddr), m_rateLimit(rateLimit), m_mtu(mtu)
         ,m_port(port), m_workerThread(), m_workerCancel(false)
     {};
 
@@ -59,9 +59,6 @@ public:
     ObjectPackager& setPort(in_port_t port);
     ObjectPackager& setMtu(unsigned short mtu);
     ObjectPackager& setRateLimit(uint32_t rateLimit);
-    std::shared_ptr<std::string> findAndReplace(
-        std::shared_ptr<std::string> inputStr, const std::optional<std::string>& toReplace,
-        const std::optional<std::string>& replaceWith);
     void startWorker() {
         if (m_workerThread.get_id() != std::thread::id()) return;
         if (!!m_workerCancel) return;

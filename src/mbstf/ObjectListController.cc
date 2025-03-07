@@ -46,18 +46,19 @@ using reftools::mbstf::UpTrafficFlowInfo;
 
 MBSTF_NAMESPACE_START
 
+static std::string trim_slashes(const std::string &path);
 static const ObjDistributionData::ObjAcquisitionIdsPullType &get_object_acquisition_pull_urls(
                                                                                         DistributionSession &distributionSession);
 static const std::optional<std::string> &get_dest_ip_addr(DistributionSession &distributionSession);
 static in_port_t get_port_number(DistributionSession &distributionSession);
 static uint32_t get_rate_limit(DistributionSession &distributionSession);
-static const std::optional<std::string > getObjectIngestBaseUrl(DistributionSession &distributionSession);
-static const std::optional<std::string > getObjectDistributionBaseUrl(DistributionSession &distributionSession);
+static const std::optional<std::string> &get_object_ingest_base_url(DistributionSession &distributionSession);
+static const std::optional<std::string> &get_object_distribution_base_url(DistributionSession &distributionSession);
 
 
 ObjectListController::ObjectListController(DistributionSession &distributionSession)
     :ObjectController(distributionSession)
-    ,Subscriber()	
+    ,Subscriber()
 {
     subscribeToService(objectStore());
     initPullObjectIngester();
@@ -83,13 +84,13 @@ void ObjectListController::processEvent(Event &event, SubscriptionService &event
     if (event.eventName() == "ObjectAdded") {
         ObjectStore::ObjectAddedEvent &objAddedEvent = dynamic_cast<ObjectStore::ObjectAddedEvent&>(event);
         std::string objectId = objAddedEvent.objectId();
-	ogs_info("Object added with ID: %s", objectId.c_str());
+        ogs_info("Object added with ID: %s", objectId.c_str());
 
         ObjectListPackager::PackageItem item(objectId);
         if (m_objectListPackager) {
             m_objectListPackager->add(item);
         } else {
-	    ogs_error("ObjectListPackager is not initialized.");
+            ogs_error("ObjectListPackager is not initialized.");
         }
     }
 }
@@ -104,55 +105,45 @@ std::string ObjectListController::generateUUID() {
 
 void ObjectListController::initPullObjectIngester()
 {
-    std::string objectIngestBaseUrl;
-    std::string objectDistributionBaseUrl;
-    const std::optional<std::string>  objIngestBaseUrl = getObjectIngestBaseUrl(distributionSession());
-    const std::optional<std::string>  objDistributionBaseUrl = getObjectDistributionBaseUrl(distributionSession());
-    
-    if (objIngestBaseUrl.has_value()) {
-        objectIngestBaseUrl = objIngestBaseUrl.value();
-
-    }
-
-    if (objDistributionBaseUrl.has_value()) {
-        objectDistributionBaseUrl = objDistributionBaseUrl.value();
-    }
-
+    std::optional<std::string> object_ingest_base_url = get_object_ingest_base_url(distributionSession());
+    std::optional<std::string> object_distribution_base_url = get_object_distribution_base_url(distributionSession());
 
     auto &pull_urls = get_object_acquisition_pull_urls(distributionSession());
     if (pull_urls.has_value()) {
         std::list<PullObjectIngester::IngestItem> urls;
 
-        for(auto &url : pull_urls.value()) {
-	    std::shared_ptr<std::string> objIngestUrl;
-            std::shared_ptr<std::string> objDistributionUrl;
+        for (auto &url : pull_urls.value()) {
+            std::string obj_ingest_url;
 
             if (url.has_value()) {
-		if(!objectIngestBaseUrl.empty()) {
-                    if (url.value().substr(0, 4) == "http" || url.value().substr(0, 2) == "//"){
-                        ogs_error("Invalid ObjectAcquisitionPullUrl");
+                const std::string &url_str = url.value();
+                if (object_ingest_base_url.has_value()) {
+                    if (url_str.starts_with("https:") || url_str.starts_with("http:") || url_str.starts_with("//")) {
+                        ogs_error("Invalid objectAcquisitionPullUrl when objectIngestBaseUrl is set: %s", url.value().c_str());
                         continue;
                     } else {
-                        objIngestUrl.reset(new std::string(trimSlashes(objectIngestBaseUrl) + "/" + trimSlashes(url.value())));
+                        obj_ingest_url = object_ingest_base_url.value();
+                        if (!obj_ingest_url.ends_with("/")) obj_ingest_url += "/";
+                        obj_ingest_url += trim_slashes(url_str);
                     }
 
                 }
 
-                if(!objectDistributionBaseUrl.empty()) {
-                    if (url.value().substr(0, 4) == "http"){
-                        objDistributionUrl.reset(new std::string(trimSlashes(objectDistributionBaseUrl) + "/" + removeBaseURL(url.value())));
-                    } else {
-
-                        objDistributionUrl.reset(new std::string(trimSlashes(objectDistributionBaseUrl) + "/" + trimSlashes(url.value())));
-                    }
-
-                }
-		urls.emplace_back(std::move(PullObjectIngester::IngestItem(generateUUID(), url.value(), objIngestUrl, objDistributionUrl, objIngestBaseUrl, objDistributionBaseUrl)));
+                urls.emplace_back(std::move(PullObjectIngester::IngestItem(generateUUID(), obj_ingest_url, url_str,
+                                                                           object_ingest_base_url, object_distribution_base_url)));
             }
         }
 
         addPullObjectIngester(new PullObjectIngester(objectStore(), *this, urls));
     }
+}
+
+static std::string trim_slashes(const std::string &path)
+{
+    size_t start = path.starts_with('/') ? 1 : 0;
+    size_t end = path.ends_with('/') ? path.size() - 1 : path.size();
+
+    return path.substr(start, end - start);
 }
 
 static const ObjDistributionData::ObjAcquisitionIdsPullType &get_object_acquisition_pull_urls(
@@ -166,14 +157,14 @@ static const ObjDistributionData::ObjAcquisitionIdsPullType &get_object_acquisit
         return objectDistributionDataPtr->getObjAcquisitionIdsPull();
     } else {
         ogs_error("ObjectDistributionData is not available");
-	static const ObjDistributionData::ObjAcquisitionIdsPullType empty_result;
+        static const ObjDistributionData::ObjAcquisitionIdsPullType empty_result;
         return empty_result;
     }
 }
 
-static const std::optional<std::string > getObjectIngestBaseUrl(DistributionSession &distributionSession)
+static const std::optional<std::string> &get_object_ingest_base_url(DistributionSession &distributionSession)
 {
-    const std::shared_ptr<CreateReqData> createReqData = distributionSession.distributionSessionReqData();
+    std::shared_ptr<CreateReqData> createReqData = distributionSession.distributionSessionReqData();
     std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
     const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = distSession->getObjDistributionData();
     if (object_distribution_data.has_value()) {
@@ -186,9 +177,9 @@ static const std::optional<std::string > getObjectIngestBaseUrl(DistributionSess
     }
 }
 
-static const std::optional<std::string > getObjectDistributionBaseUrl(DistributionSession &distributionSession)
+static const std::optional<std::string> &get_object_distribution_base_url(DistributionSession &distributionSession)
 {
-    const std::shared_ptr<CreateReqData> createReqData = distributionSession.distributionSessionReqData();
+    std::shared_ptr<CreateReqData> createReqData = distributionSession.distributionSessionReqData();
     std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
     const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = distSession->getObjDistributionData();
     if (object_distribution_data.has_value()) {

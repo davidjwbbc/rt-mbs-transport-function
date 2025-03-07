@@ -34,7 +34,10 @@ public:
     public:
 
         IngestItem() = delete;
-	IngestItem(const std::string &object_id, const std::string &url, std::shared_ptr<std::string> objIngestUrl, std::shared_ptr<std::string> objDistributionUrl, const std::optional<std::string> &objIngestBaseUrl = std::nullopt,  const std::optional<std::string> &objDistributionBaseUrl = std::nullopt, const std::optional<time_type> &download_deadline = std::nullopt);
+	IngestItem(const std::string &object_id, const std::string &url, const std::string &acquisition_id,
+                   const std::optional<std::string> &obj_ingest_base_url = std::nullopt,
+                   const std::optional<std::string> &obj_distribution_base_url = std::nullopt,
+                   const std::optional<time_type> &download_deadline = std::nullopt);
         IngestItem(const IngestItem &other);
         IngestItem(IngestItem &&other);
         virtual ~IngestItem() {};
@@ -47,8 +50,10 @@ public:
         IngestItem &url(const std::string &url) { m_url = url; return *this; };
         IngestItem &url(std::string &&url) { m_url = std::move(url); return *this; };
 
-	const std::shared_ptr<std::string> objIngestUrl() const { return m_objIngestUrl; };
-        const std::shared_ptr<std::string> objDistributionUrl() const { return m_objDistributionUrl; };
+        const std::string &acquisitionId() const { return m_acquisitionId; };
+        IngestItem &acquisitionId(const std::string &acquisition_id) { m_acquisitionId = acquisition_id; return *this; };
+        IngestItem &acquisitionId(std::string &&acquisition_id) { m_acquisitionId = std::move(acquisition_id); return *this; };
+
         const std::optional<std::string> &objIngestBaseUrl() const { return m_objIngestBaseUrl; };
         const std::optional<std::string> &objDistributionBaseUrl() const { return m_objDistributionBaseUrl; };
 
@@ -59,14 +64,12 @@ public:
         IngestItem &deadline(const time_type &dl_deadline) { m_deadline = time_type(dl_deadline); return *this; };
         IngestItem &deadline(time_type &&dl_deadline) { m_deadline = std::move(dl_deadline); return *this; };
 
-
     private:
         std::string m_objectId;
         std::string m_url;
-	std::shared_ptr<std::string> m_objIngestUrl;
-        std::shared_ptr<std::string> m_objDistributionUrl;
-        const std::optional<std::string> m_objIngestBaseUrl;
-        const std::optional<std::string> m_objDistributionBaseUrl;
+	std::string m_acquisitionId;
+        std::optional<std::string> m_objIngestBaseUrl;
+        std::optional<std::string> m_objDistributionBaseUrl;
         std::optional<time_type> m_deadline;
     };
 

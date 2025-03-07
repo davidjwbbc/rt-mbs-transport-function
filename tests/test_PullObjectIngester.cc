@@ -48,8 +48,8 @@ int main() {
     // Create a list of IngestItem
     //using time_type = std::chrono::system_clock::time_point;
     std::list<PullObjectIngester::IngestItem> id_to_url_map = {
-        {"object1", "http://127.0.0.1/object1", nullptr, nullptr, std::nullopt, std::nullopt, std::nullopt},
-        {"object2", "http://127.0.0.1/object2", nullptr, nullptr, std::nullopt, std::nullopt, std::nullopt}
+        {"object1", "http://127.0.0.1/object1", "object1", "http://127.0.0.1/", std::nullopt, std::nullopt},
+        {"object2", "http://127.0.0.1/object2", "object2", "http://127.0.0.1/", "http://127.0.0.2/", std::nullopt}
     };
 
     // Create an instance of PullObjectIngester

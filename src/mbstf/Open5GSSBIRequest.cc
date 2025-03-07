@@ -21,20 +21,15 @@
 
 #include <cctype>
 #include <string>
+#include <sstream>
+#include <string_view>
 
 #include "common.hh"
+#include "CaseInsensitiveTraits.hh"
 
 #include "Open5GSSBIRequest.hh"
 
 MBSTF_NAMESPACE_START
-
-template <class CharT>
-class CaseInsensitiveTraits : public std::char_traits<CharT>
-{
-public:
-    static bool eq(CharT a, CharT b) { return std::tolower(a) == std::tolower(b); };
-    static bool lt(CharT a, CharT b) { return std::tolower(a) < std::tolower(b); };
-};
 
 Open5GSSBIRequest::Open5GSSBIRequest(const std::string &method, const std::string &uri, const std::string &apiVersion, const std::optional<std::string> &data, const std::optional<std::string> &type)
     :m_request(ogs_sbi_request_new()) 

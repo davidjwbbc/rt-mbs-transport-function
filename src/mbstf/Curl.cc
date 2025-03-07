@@ -40,6 +40,7 @@ long Curl::get(const std::string& url, std::chrono::milliseconds timeout) {
         curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str());
 	curl_easy_setopt(m_curl, CURLOPT_CONNECTTIMEOUT_MS, 500l);
         curl_easy_setopt(m_curl, CURLOPT_TIMEOUT_MS, timeout.count());
+        curl_easy_setopt(m_curl, CURLOPT_FOLLOWLOCATION, 1L);
 	//curl_easy_setopt(m_curl, CURLOPT_HEADERDATA, this);
         //curl_easy_setopt(m_curl, CURLOPT_HEADERFUNCTION, headerCallback);
         curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &m_receivedData);
@@ -60,9 +61,15 @@ long Curl::get(const std::string& url, std::chrono::milliseconds timeout) {
             // Get the Content-Type header
 	    char *ct = NULL;
 	    res = curl_easy_getinfo(m_curl, CURLINFO_CONTENT_TYPE, &ct);
-	    if(!res && ct) { 
+	    if (!res && ct) { 
 	        m_contentType = std::string(ct);
 	    }
+
+            char *redir_url = NULL;
+            res = curl_easy_getinfo(m_curl, CURLINFO_EFFECTIVE_URL, &redir_url);
+            if (!res && redir_url) {
+                m_effectiveUrl = redir_url;
+            }
 
             return m_receivedData.size(); // Return the number of bytes received
         } else if (res == CURLE_OPERATION_TIMEDOUT) {
@@ -75,17 +82,29 @@ long Curl::get(const std::string& url, std::chrono::milliseconds timeout) {
     return -2; // Indicate error if m_curl is not initialized
 }
 
-std::vector<unsigned char>& Curl::getData() {
+std::vector<unsigned char>& Curl::getData()
+{
     return m_receivedData;
 }
 
-std::string& Curl::getEtag() {
+const std::vector<unsigned char>& Curl::getData() const
+{
+    return m_receivedData;
+}
+
+const std::string& Curl::getEtag() const
+{
     return m_etag;
 }
 
-std::string& Curl::getContentType()
+const std::string& Curl::getContentType() const
 {
     return m_contentType;
+}
+
+const std::string &Curl::getEffectiveUrl() const
+{
+    return m_effectiveUrl;
 }
 
 /*
