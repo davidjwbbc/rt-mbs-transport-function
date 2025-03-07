@@ -36,16 +36,26 @@ public:
     const std::string &getEtag() const;
     const std::string &getContentType() const;
     const std::string &getEffectiveUrl() const;
+    const std::string &getPermanentRedirectUrl() const;
+
+    Curl &setUserAgent(const std::string &user_agent);
 
 private:
-    //static size_t headerCallback(char* buffer, size_t size, size_t numberOfItems, void* userData);
+    bool extractProtocolAndStatusCode(std::string_view &status_line);
+    void processHeaderLine(std::string_view &header_line);
+    static size_t headerCallback(char* buffer, size_t size, size_t numberOfItems, void* userData);
     static size_t writeCallback(void* contents, size_t memberSize, size_t numberOfMembers, void* userData);
 
     CURL* m_curl;
+    int m_hdrState;
     std::vector<unsigned char> m_receivedData;
     std::string m_etag;
     std::string m_contentType;
     std::string m_effectiveUrl;
+    std::string m_userAgent;
+    std::string m_protocol;
+    int m_statusCode;
+    std::string m_permanentRedirectUrl;
 };
 
 class CurlGlobalCleanup {

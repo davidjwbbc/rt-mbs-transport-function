@@ -115,8 +115,8 @@ void PullObjectIngester::doObjectIngest() {
         if (bytesReceived >= 0) {
             ogs_info("Received %ld bytes of data", bytesReceived);
 	    auto lastModified = std::chrono::system_clock::now();
-            // TODO: handle redirects and remember the URLs for permanent redirects
-            std::string fetched_url = m_curl->getEffectiveUrl();
+            std::string fetched_url = m_curl->getPermanentRedirectUrl();
+            if (fetched_url.empty()) fetched_url = item.url();
 	    ObjectStore::Metadata metadata(m_curl->getContentType(), item.url(), fetched_url, item.acquisitionId(), lastModified, item.objIngestBaseUrl(), item.objDistributionBaseUrl());
             metadata.cacheExpires(std::chrono::system_clock::now() + std::chrono::minutes(ObjectStore::Metadata::cacheExpiry()));
             const std::string& etag = m_curl->getEtag();
