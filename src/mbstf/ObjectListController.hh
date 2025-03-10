@@ -41,7 +41,10 @@ public:
     ObjectListController &operator=(const ObjectListController &) = delete;
     ObjectListController &operator=(ObjectListController &&) = delete;
 
+    void initObjectIngester();
     void initPullObjectIngester();
+    void initPushObjectIngester();
+
 
     void fetchItems();
     std::shared_ptr<ObjectListPackager> &setObjectListPackager();

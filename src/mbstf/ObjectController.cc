@@ -18,6 +18,7 @@
 #include "DistributionSession.hh"
 #include "ObjectStore.hh"
 #include "PullObjectIngester.hh"
+#include "PushObjectIngester.hh"
 
 #include "ObjectController.hh"
 
@@ -38,6 +39,12 @@ bool ObjectController::removePullObjectIngester(std::shared_ptr<PullObjectIngest
     }
     return false;
 }
+
+std::shared_ptr<PushObjectIngester> &ObjectController::setPushIngester(PushObjectIngester *pushIngester) {
+    m_pushIngester = std::shared_ptr<PushObjectIngester>(pushIngester);
+    return m_pushIngester;
+}
+
 
 MBSTF_NAMESPACE_STOP
 

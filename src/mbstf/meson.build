@@ -118,6 +118,8 @@ libmbstf_dist_sources = files('''
     Open5GSYamlIter.hh
     PullObjectIngester.cc
     PullObjectIngester.hh
+    PushObjectIngester.cc
+    PushObjectIngester.hh
     SubscriptionService.cc
     SubscriptionService.hh
     Subscriber.cc

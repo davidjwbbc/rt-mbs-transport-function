@@ -33,7 +33,9 @@
 #include "openapi/model/IpAddr.h"
 #include "openapi/model/ObjDistributionData.h"
 #include "openapi/model/UpTrafficFlowInfo.h"
+#include "openapi/model/ObjAcquisitionMethod.h"
 #include "PullObjectIngester.hh"
+#include "PushObjectIngester.hh"
 #include "SubscriptionService.hh"
 
 #include "ObjectListController.hh"
@@ -43,6 +45,7 @@ using reftools::mbstf::DistSession;
 using reftools::mbstf::IpAddr;
 using reftools::mbstf::ObjDistributionData;
 using reftools::mbstf::UpTrafficFlowInfo;
+using reftools::mbstf::ObjAcquisitionMethod;
 
 MBSTF_NAMESPACE_START
 
@@ -54,14 +57,15 @@ static in_port_t get_port_number(DistributionSession &distributionSession);
 static uint32_t get_rate_limit(DistributionSession &distributionSession);
 static const std::optional<std::string> &get_object_ingest_base_url(DistributionSession &distributionSession);
 static const std::optional<std::string> &get_object_distribution_base_url(DistributionSession &distributionSession);
-
-
+static const std::string &get_object_acquisition_method(DistributionSession &distributionSession);
+static const std::string populate_object_ingest_base_url(const std::string &ingestServerInfo);
+static void set_object_ingest_base_url(DistributionSession &distributionSession, std::string ingestBaseUrl);
 ObjectListController::ObjectListController(DistributionSession &distributionSession)
     :ObjectController(distributionSession)
     ,Subscriber()
 {
     subscribeToService(objectStore());
-    initPullObjectIngester();
+    initObjectIngester();
     setObjectListPackager();
 }
 
@@ -138,6 +142,41 @@ void ObjectListController::initPullObjectIngester()
     }
 }
 
+
+void ObjectListController::initPushObjectIngester()
+{
+    const std::string objIngestBaseUrl;
+    const std::optional<std::string>  objDistributionBaseUrl = get_object_distribution_base_url(distributionSession());
+
+    PushObjectIngester *pushIngester = new PushObjectIngester(objectStore(), *this);
+
+    set_object_ingest_base_url(distributionSession(), populate_object_ingest_base_url(pushIngester->getIngestServerInfo()));
+    setPushIngester(pushIngester);
+}
+
+static const std::string populate_object_ingest_base_url(const std::string &ingestServerInfo)
+{
+        const std::string scheme = "http://";
+	return scheme + ingestServerInfo;
+}
+
+void ObjectListController::initObjectIngester()
+{
+    if(get_object_acquisition_method(distributionSession()) == "PULL")
+    {
+        initPullObjectIngester();
+
+    } else
+    if(get_object_acquisition_method(distributionSession()) == "PUSH")
+    {
+        initPushObjectIngester();
+
+    } else {
+        ogs_error("Invalid Acq. method");
+    }
+}
+
+
 static std::string trim_slashes(const std::string &path)
 {
     size_t start = path.starts_with('/') ? 1 : 0;
@@ -161,6 +200,23 @@ static const ObjDistributionData::ObjAcquisitionIdsPullType &get_object_acquisit
         return empty_result;
     }
 }
+
+static const std::string &get_object_acquisition_method(DistributionSession &distributionSession)
+{
+    std::shared_ptr<CreateReqData> createReqData = distributionSession.distributionSessionReqData();
+    std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
+    const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = distSession->getObjDistributionData();
+    if (object_distribution_data.has_value()) {
+        std::shared_ptr<ObjDistributionData> objectDistributionDataPtr = object_distribution_data.value();
+        std::shared_ptr< ObjAcquisitionMethod > objAcquisitionMethod = objectDistributionDataPtr->getObjAcquisitionMethod();
+        return objAcquisitionMethod->getString();
+    } else {
+        ogs_error("ObjectDistributionData is not available");
+        static std::string emptyObjAcquisitionMethod = std::string();
+        return emptyObjAcquisitionMethod;
+    }
+}
+
 
 static const std::optional<std::string> &get_object_ingest_base_url(DistributionSession &distributionSession)
 {
@@ -191,6 +247,21 @@ static const std::optional<std::string> &get_object_distribution_base_url(Distri
         return nullValue;
     }
 }
+
+static void set_object_ingest_base_url(DistributionSession &distributionSession, std::string ingestBaseUrl)
+{
+    const std::shared_ptr<CreateReqData> createReqData = distributionSession.distributionSessionReqData();
+    std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
+    const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = distSession->getObjDistributionData();
+    if (object_distribution_data.has_value()) {
+        std::shared_ptr<ObjDistributionData> objectDistributionDataPtr = object_distribution_data.value();
+        const std::optional<std::string> &baseUrl = ingestBaseUrl.empty() ? std::nullopt : std::optional<std::string>(ingestBaseUrl);
+        objectDistributionDataPtr->setObjIngestBaseUrl(baseUrl);
+    } else {
+        ogs_error("ObjectDistributionData is not available");
+    }
+}
+
 
 static const std::optional<std::string> &get_dest_ip_addr(DistributionSession &distributionSession)
 {
