@@ -111,7 +111,7 @@ std::optional<std::string> PushObjectIngester::Request::getHeader(const std::str
 }
 
 void PushObjectIngester::Request::processRequest() {
-    const char *contentLength = MHD_lookup_connection_value(m_mhdConnection, MHD_HEADER_KIND, MHD_HTTP_HEADER_CONTENT_LENGTH);
+    //const char *contentLength = MHD_lookup_connection_value(m_mhdConnection, MHD_HEADER_KIND, MHD_HTTP_HEADER_CONTENT_LENGTH);
     const char *contentType = MHD_lookup_connection_value(m_mhdConnection, MHD_HEADER_KIND, MHD_HTTP_HEADER_CONTENT_TYPE);
     auto lastModified = std::chrono::system_clock::now();
 
@@ -129,7 +129,7 @@ void PushObjectIngester::Request::requestHandler(struct MHD_Connection *connecti
     
     std::lock_guard<std::recursive_mutex> lock(m_mutex);
     m_mhdConnection = connection;
-    m_mhdResponse = MHD_create_response_from_data(0, NULL, 0, 0);
+    m_mhdResponse = MHD_create_response_from_buffer(0, NULL, MHD_RESPMEM_PERSISTENT);
 
     if (m_urlPath.substr(0, 4) != "http" || m_urlPath.substr(0, 2) == "//")
     {
