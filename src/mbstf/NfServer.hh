@@ -1,8 +1,8 @@
-#ifndef NF_SERVER_H
-#define NF_SERVER_H
+#ifndef _MBS_TF_NF_SERVER_HH_
+#define _MBS_TF_NF_SERVER_HH_
 /*
  * License: 5G-MAG Public License (v1.0)
- * Author: Dev Audsin
+ * Author: Dev Audsin <dev.audsin@bbc.co.uk>
  * Copyright: (C) 2022-2024 British Broadcasting Corporation
  *
  * Licensed under the License terms and conditions for use, reproduction, and
@@ -124,4 +124,4 @@ MBSTF_NAMESPACE_STOP
 /* vim:ts=8:sts=4:sw=4:expandtab:
  */
 
-#endif /* NF_SERVER_H */
+#endif /* _MBS_TF_NF_SERVER_HH_ */

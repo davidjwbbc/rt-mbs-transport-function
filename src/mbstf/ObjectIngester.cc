@@ -1,7 +1,8 @@
 /******************************************************************************
- * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF Object Ingester base class
+ * 5G-MAG Reference Tools: MBS Traffic Function: Object Ingester base class
  ******************************************************************************
- * Copyright: (C)2024 British Broadcasting Corporation
+ * Copyright: (C)2025 British Broadcasting Corporation
+ * Author(s): Dev Audsin <dev.audsin@bbc.co.uk>
  * License: 5G-MAG Public License v1
  *
  * For full license terms please see the LICENSE file distributed with this
@@ -10,6 +11,7 @@
  */
 
 #include "common.hh"
+
 #include "ObjectIngester.hh"
 
 MBSTF_NAMESPACE_START
@@ -21,7 +23,6 @@ void ObjectIngester::workerLoop(ObjectIngester *ingester)
     }	    
 
 }
-
 
 MBSTF_NAMESPACE_STOP
 

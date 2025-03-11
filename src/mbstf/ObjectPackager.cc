@@ -1,7 +1,8 @@
 /******************************************************************************
- * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF Object packager base class
+ * 5G-MAG Reference Tools: MBS Traffic Function: Object packager base class
  ******************************************************************************
  * Copyright: (C)2024 British Broadcasting Corporation
+ * Author(s): Dev Audsin <dev.audsin@bbc.co.uk>
  * License: 5G-MAG Public License v1
  *
  * For full license terms please see the LICENSE file distributed with this

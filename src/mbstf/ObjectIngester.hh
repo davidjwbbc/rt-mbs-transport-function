@@ -1,9 +1,10 @@
-#ifndef _MBS_TF_MBSTF_OBJECT_INGESTER_HH_
-#define _MBS_TF_MBSTF_OBJECT_INGESTER_HH_
+#ifndef _MBS_TF_OBJECT_INGESTER_HH_
+#define _MBS_TF_OBJECT_INGESTER_HH_
 /******************************************************************************
- * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF Object Ingester base class
+ * 5G-MAG Reference Tools: MBS Traffic Function: Object Ingester base class
  ******************************************************************************
  * Copyright: (C)2024 British Broadcasting Corporation
+ * Author(s): Dev Audsin <dev.audsin@bbc.co.uk>
  * License: 5G-MAG Public License v1
  *
  * For full license terms please see the LICENSE file distributed with this
@@ -60,4 +61,4 @@ MBSTF_NAMESPACE_STOP
 
 /* vim:ts=8:sts=4:sw=4:expandtab:
  */
-#endif /* _MBS_TF_MBSTF_OBJECT_INGESTER_HH_ */
+#endif /* _MBS_TF_OBJECT_INGESTER_HH_ */

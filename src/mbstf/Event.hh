@@ -1,5 +1,5 @@
-#ifndef _MBS_TF_MBSTF_EVENT_HH_
-#define _MBS_TF_MBSTF_EVENT_HH_
+#ifndef _MBS_TF_EVENT_HH_
+#define _MBS_TF_EVENT_HH_
 /******************************************************************************
  * 5G-MAG Reference Tools: MBS Traffic Function: Subscription Event base class
  ******************************************************************************
@@ -55,4 +55,4 @@ std::ostream &operator<<(std::ostream &ostrm, const MBSTF_NAMESPACE_NAME(Event) 
 
 /* vim:ts=8:sts=4:sw=4:expandtab:
  */
-#endif /* _MBS_TF_MBSTF_EVENT_HH_ */
+#endif /* _MBS_TF_EVENT_HH_ */

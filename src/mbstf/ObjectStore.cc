@@ -1,7 +1,8 @@
 /******************************************************************************
- * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF Object store
+ * 5G-MAG Reference Tools: MBS Traffic Function: Object store
  ******************************************************************************
- * Copyright: (C)2024 British Broadcasting Corporation
+ * Copyright: (C)2025 British Broadcasting Corporation
+ * Author(s): Dev Audsin <dev.audsin@bbc.co.uk>
  * License: 5G-MAG Public License v1
  *
  * For full license terms please see the LICENSE file distributed with this
@@ -24,11 +25,16 @@
 MBSTF_NAMESPACE_START
 
 ObjectStore::Metadata::Metadata()
-    :m_cacheExpires(std::nullopt)
+    :m_mediaType()
+    ,m_originalUrl()
+    ,m_fetchedUrl()
+    ,m_acquisitionId()
+    ,m_objIngestBaseUrl()
+    ,m_objDistributionBaseUrl()
+    ,m_cacheExpires(std::nullopt)
     ,m_created(std::chrono::system_clock::now()) 
     ,m_modified(std::chrono::system_clock::now())
 {
-
 }
 
 ObjectStore::Metadata::Metadata(const std::string &media_type, const std::string &url, const std::string &fetched_url,
@@ -47,7 +53,6 @@ ObjectStore::Metadata::Metadata(const std::string &media_type, const std::string
     ,m_created(std::chrono::system_clock::now())
     ,m_modified(last_modified)
 {
-
 }
 
 ObjectStore::Metadata::Metadata(const Metadata &other)
@@ -61,7 +66,6 @@ ObjectStore::Metadata::Metadata(const Metadata &other)
     ,m_created(other.m_created)
     ,m_modified(other.m_modified)
 {
-
 }
 
 ObjectStore::Metadata::Metadata(Metadata &&other)
@@ -75,7 +79,6 @@ ObjectStore::Metadata::Metadata(Metadata &&other)
     ,m_created(other.m_created)
     ,m_modified(other.m_modified)
 {
-
 }
 
 
@@ -83,12 +86,10 @@ ObjectStore::ObjectStore(ObjectController &controller)
     :SubscriptionService()
     ,m_controller(controller)
 {
-
 }
 
 ObjectStore::~ObjectStore() 
 {
-
 }
 
 void ObjectStore::addObject(const std::string& object_id, ObjectData &&object, Metadata &&metadata) {
@@ -185,7 +186,6 @@ bool ObjectStore::removeObjects(const std::list<std::string>& objectIds) {
     }
     return true;
 }
-
 
 MBSTF_NAMESPACE_STOP
 

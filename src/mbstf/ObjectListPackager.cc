@@ -1,5 +1,5 @@
 /******************************************************************************
- * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF ObjectListPackager
+ * 5G-MAG Reference Tools: MBS Traffic Function: ObjectListPackager class
  ******************************************************************************
  * Copyright: (C)2025 British Broadcasting Corporation
  * Author(s): Dev Audsin <dev.audsin@bbc.co.uk>
@@ -20,9 +20,7 @@
 
 #include <netinet/in.h>
 
-#include <boost/asio/io_service.hpp>
-
-#include "ogs-app.h" // LibFlute
+#include "ogs-app.h" // ogs_error(), ogs_info()
 #include "Transmitter.h" // LibFlute
 
 #include "common.hh"

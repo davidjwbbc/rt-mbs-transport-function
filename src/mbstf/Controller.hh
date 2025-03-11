@@ -1,7 +1,7 @@
-#ifndef _MBS_TF_MBSTF_CONTROLLER_HH_
-#define _MBS_TF_MBSTF_CONTROLLER_HH_
+#ifndef _MBS_TF_CONTROLLER_HH_
+#define _MBS_TF_CONTROLLER_HH_
 /******************************************************************************
- * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF Object store class
+ * 5G-MAG Reference Tools: MBS Traffic Function: Session Controller Base
  ******************************************************************************
  * Copyright: (C)2024 British Broadcasting Corporation
  * Author(s): Dev Audsin <dev.audsin@bbc.co.uk>
@@ -41,4 +41,4 @@ MBSTF_NAMESPACE_STOP
 
 /* vim:ts=8:sts=4:sw=4:expandtab:
  */
-#endif /* _MBS_TF_MBSTF_CONTROLLER_HH_ */
+#endif /* _MBS_TF_CONTROLLER_HH_ */

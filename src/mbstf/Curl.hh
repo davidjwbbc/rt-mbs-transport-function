@@ -1,9 +1,11 @@
-#ifndef _MBS_TF_MBSTF_CURL_HH_
-#define _MBS_TF_MBSTF_CURL_HH_
+#ifndef _MBS_TF_CURL_HH_
+#define _MBS_TF_CURL_HH_
 /******************************************************************************
- * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF Object store class
+ * 5G-MAG Reference Tools: MBS Traffic Function: cURL client
  ******************************************************************************
- * Copyright: (C)2024 British Broadcasting Corporation
+ * Copyright: (C)2025 British Broadcasting Corporation
+ * Author(s): Dev Audsin <dev.audsin@bbc.co.uk>
+ *            David Waring <david.waring2@bbc.co.uk>
  * License: 5G-MAG Public License v1
  *
  * For full license terms please see the LICENSE file distributed with this
@@ -13,7 +15,6 @@
     
 #pragma once
     
-
 #include <curl/curl.h>
 #include <iostream>
 #include <string>
@@ -58,21 +59,9 @@ private:
     std::string m_permanentRedirectUrl;
 };
 
-class CurlGlobalCleanup {
-public:
-	
-    CurlGlobalCleanup() { };
-    ~CurlGlobalCleanup() {
-        curl_global_cleanup();
-    }
-};
-
-// Create a static object to ensure cleanup at program exit
-static CurlGlobalCleanup curlGlobalCleanup;
-
 MBSTF_NAMESPACE_STOP
 
 /* vim:ts=8:sts=4:sw=4:expandtab:
  */
-#endif /* _MBS_TF_MBSTF_CURL_HH_ */
+#endif /* _MBS_TF_CURL_HH_ */
 

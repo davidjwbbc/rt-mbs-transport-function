@@ -1,7 +1,9 @@
-/*
- * License: 5G-MAG Public License (v1.0)
- * Author: David Waring
+/******************************************************************************
+ * 5G-MAG Reference Tools: MBS Traffic Function: Network Function Server
+ ******************************************************************************
  * Copyright: (C) 2024 British Broadcasting Corporation
+ * Author: David Waring <david.waring2@bbc.co.uk>
+ * License: 5G-MAG Public License (v1.0)
  * 
  * Licensed under the License terms and conditions for use, reproduction, and
  * distribution of 5G-MAG software (the “License”).  You may not use this file

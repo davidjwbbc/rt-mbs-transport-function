@@ -1,9 +1,11 @@
-#ifndef _MBS_TF_MBSTF_OBJECT_STORE_HH_
-#define _MBS_TF_MBSTF_OBJECT_STORE_HH_
+#ifndef _MBS_TF_OBJECT_STORE_HH_
+#define _MBS_TF_OBJECT_STORE_HH_
 /******************************************************************************
- * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF Object store class
+ * 5G-MAG Reference Tools: MBS Traffic Function: Object Store class
  ******************************************************************************
- * Copyright: (C)2024 British Broadcasting Corporation
+ * Copyright: (C)2025 British Broadcasting Corporation
+ * Author(s): Dev Audsin <dev.audsin@bbc.co.uk>
+ *            David Waring <david.waring2@bbc.co.uk>
  * License: 5G-MAG Public License v1
  *
  * For full license terms please see the LICENSE file distributed with this
@@ -142,7 +144,6 @@ public:
     bool isStale(const std::string& object_id) const;
     std::map<std::string, const Object&> getStale() const;
 
-        
 private:
     void checkExpiredObjects();        
     mutable std::recursive_mutex m_mutex;
@@ -154,4 +155,4 @@ MBSTF_NAMESPACE_STOP
 
 /* vim:ts=8:sts=4:sw=4:expandtab:
  */
-#endif /* _MBS_TF_MBSTF_OBJECT_STORE_HH_ */
+#endif /* _MBS_TF_OBJECT_STORE_HH_ */

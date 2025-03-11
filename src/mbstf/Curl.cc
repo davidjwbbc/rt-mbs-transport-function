@@ -22,6 +22,17 @@
 
 MBSTF_NAMESPACE_START
 
+class CurlGlobalCleanup {
+public:
+    CurlGlobalCleanup() {};
+    ~CurlGlobalCleanup() {
+        curl_global_cleanup();
+    };
+};
+
+// Ensure cURL clean up called on program exit
+static CurlGlobalCleanup g_curl_global_cleanup;  
+
 enum HeaderProcessingState {
     HEADER_START,
     HEADER_HEADERS,

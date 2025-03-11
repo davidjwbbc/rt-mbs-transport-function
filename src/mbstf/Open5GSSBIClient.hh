@@ -4,6 +4,7 @@
  * 5G-MAG Reference Tools: MBS Traffic Function: Open5GS SBI Client interface
  ******************************************************************************
  * Copyright: (C)2024 British Broadcasting Corporation
+ * Author(s): David Waring <david.waring2@bbc.co.uk>
  * License: 5G-MAG Public License v1
  *
  * Licensed under the License terms and conditions for use, reproduction, and

@@ -1,9 +1,10 @@
-#ifndef _MBS_TF_MBSTF_PULL_OBJECT_INGESTER_HH_
-#define _MBS_TF_MBSTF_PULL_OBJECT_INGESTER_HH_
+#ifndef _MBS_TF_PULL_OBJECT_INGESTER_HH_
+#define _MBS_TF_PULL_OBJECT_INGESTER_HH_
 /******************************************************************************
- * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF Pull Object Ingester class
+ * 5G-MAG Reference Tools: MBS Traffic Function: Pull Object Ingester class
  ******************************************************************************
- * Copyright: (C)2024 British Broadcasting Corporation
+ * Copyright: (C)2025 British Broadcasting Corporation
+ * Author(s): Dev Audsin <dev.audsin@bbc.co.uk>
  * License: 5G-MAG Public License v1
  *
  * For full license terms please see the LICENSE file distributed with this
@@ -15,9 +16,7 @@
 #include <list>
 
 #include "common.hh"
-#include "ObjectStore.hh"
 #include "ObjectIngester.hh"
-#include "Curl.hh"
 
 MBSTF_NAMESPACE_START
 
@@ -90,7 +89,6 @@ public:
 
     std::shared_ptr<Curl> curl() {return m_curl;};
     //static int client_notify_cb(int status, ogs_sbi_response_t *response, void *data);
-    static std::vector<unsigned char> convertToVector(const std::string &str);
 
 protected:
     virtual void doObjectIngest();

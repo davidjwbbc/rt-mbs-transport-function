@@ -1,7 +1,8 @@
 /******************************************************************************
- * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF Pull Object Ingester
+ * 5G-MAG Reference Tools: MBS Traffic Function: Pull Object Ingester
  ******************************************************************************
- * Copyright: (C)2024 British Broadcasting Corporation
+ * Copyright: (C)2025 British Broadcasting Corporation
+ * Author(s): Dev Audsin <dev.audsin@bbc.co.uk>
  * License: 5G-MAG Public License v1
  *
  * For full license terms please see the LICENSE file distributed with this
@@ -25,9 +26,6 @@
 
 MBSTF_NAMESPACE_START
 
-class ObjectStore;
-class Curl;
-
 PullObjectIngester::IngestItem::IngestItem(const std::string &object_id, const std::string &url, const std::string &acquisition_id, const std::optional<std::string> &obj_ingest_base_url,  const std::optional<std::string> &obj_distribution_base_url, const std::optional<time_type> &download_deadline)
     :m_objectId(object_id)
     ,m_url(url)
@@ -36,7 +34,6 @@ PullObjectIngester::IngestItem::IngestItem(const std::string &object_id, const s
     ,m_objDistributionBaseUrl(obj_distribution_base_url)
     ,m_deadline(download_deadline)
 {
-
 }
 
 PullObjectIngester::IngestItem::IngestItem(const IngestItem &other)
@@ -47,7 +44,6 @@ PullObjectIngester::IngestItem::IngestItem(const IngestItem &other)
     ,m_objDistributionBaseUrl(other.m_objDistributionBaseUrl)
     ,m_deadline(other.m_deadline)
 {
-
 }
 
 PullObjectIngester::IngestItem::IngestItem(IngestItem &&other)
@@ -58,9 +54,7 @@ PullObjectIngester::IngestItem::IngestItem(IngestItem &&other)
     ,m_objDistributionBaseUrl(std::move(other.m_objDistributionBaseUrl))
     ,m_deadline(std::move(other.m_deadline)) 
 {
-
 }
-
 
 PullObjectIngester::~PullObjectIngester() {abort();}
 
@@ -79,6 +73,7 @@ bool PullObjectIngester::fetch(const std::string &object_id, const std::optional
 
     return false;
 }
+
 bool PullObjectIngester::fetch(const IngestItem &item) {
     m_fetchList.push_back(item);
     sortListByPolicy();
@@ -101,7 +96,6 @@ void PullObjectIngester::sortListByPolicy() {
 }
 
 void PullObjectIngester::doObjectIngest() {
-
     if(!m_curl) m_curl = std::make_shared<Curl>();
     std::chrono::seconds timeout(10); // 10 seconds timeout
     if (!m_fetchList.empty()) {
@@ -131,14 +125,7 @@ void PullObjectIngester::doObjectIngest() {
             ogs_error("An error occurred while fetching the data."); 	     
         }
     }
-
 }
-
-// Utility function to convert std::string to std::vector<unsigned char>
-std::vector<unsigned char> PullObjectIngester::convertToVector(const std::string &str) {
-    return std::vector<unsigned char>(str.begin(), str.end());
-}
-
 
 MBSTF_NAMESPACE_STOP
 

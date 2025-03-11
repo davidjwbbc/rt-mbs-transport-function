@@ -1,9 +1,10 @@
-#ifndef _MBS_TF_MBSTF_DISTRIBUTION_SESSION_HH_
-#define _MBS_TF_MBSTF_DISTRIBUTION_SESSION_HH_
+#ifndef _MBS_TF_DISTRIBUTION_SESSION_HH_
+#define _MBS_TF_DISTRIBUTION_SESSION_HH_
 /******************************************************************************
- * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF Network Function class
+ * 5G-MAG Reference Tools: MBS Traffic Function: Distribution Session class
  ******************************************************************************
- * Copyright: (C)2024 British Broadcasting Corporation
+ * Copyright: (C)2024-2025 British Broadcasting Corporation
+ * Author(s): Dev Audsin <dev.audsin@bbc.co.uk>
  * License: 5G-MAG Public License v1
  *
  * Licensed under the License terms and conditions for use, reproduction, and
@@ -81,4 +82,4 @@ MBSTF_NAMESPACE_STOP
 
 /* vim:ts=8:sts=4:sw=4:expandtab:
  */
-#endif /* _MBS_TF_MBSTF_DISTRIBUTION_SESSION_HH_ */
+#endif /* _MBS_TF_DISTRIBUTION_SESSION_HH_ */

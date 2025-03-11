@@ -1,9 +1,10 @@
-#ifndef _MBS_TF_MBSTF_PUSH_OBJECT_INGESTER_HH_
-#define _MBS_TF_MBSTF_PUSH_OBJECT_INGESTER_HH_
+#ifndef _MBS_TF_PUSH_OBJECT_INGESTER_HH_
+#define _MBS_TF_PUSH_OBJECT_INGESTER_HH_
 /******************************************************************************
- * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF Push Object Ingester class
+ * 5G-MAG Reference Tools: MBS Traffic Function: Push Object Ingester class
  ******************************************************************************
- * Copyright: (C)2024 British Broadcasting Corporation
+ * Copyright: (C)2025 British Broadcasting Corporation
+ * Author(s): Dev Audsin <dev.audsin@bbc.co.uk>
  * License: 5G-MAG Public License v1
  *
  * For full license terms please see the LICENSE file distributed with this
@@ -17,7 +18,6 @@
 #include <vector>
 
 #include "common.hh"
-#include "ObjectStore.hh"
 #include "ObjectIngester.hh"
 #include "SubscriptionService.hh"
 
@@ -124,12 +124,10 @@ private:
     int m_port;
     std::recursive_mutex m_mtx;
     std::condition_variable_any m_condVar; /**< CondVar for new response content/eof */
-
-    
 };
 
 MBSTF_NAMESPACE_STOP
 
 /* vim:ts=8:sts=4:sw=4:expandtab:
  */
-#endif /* _MBS_TF_MBSTF_PUSH_OBJECT_INGESTER_HH_ */
+#endif /* _MBS_TF_PUSH_OBJECT_INGESTER_HH_ */

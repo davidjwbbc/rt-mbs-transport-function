@@ -1,3 +1,5 @@
+#ifndef _MBS_TF_HASH_HH_
+#define _MBS_TF_HASH_HH_
 /*****************************************************************************
  * 5G-MAG Reference Tools: MBS Traffic Function: SHA256 hashing function
  *****************************************************************************
@@ -18,8 +20,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *****************************************************************************/
-#ifndef MSAF_HASH_H
-#define MSAF_HASH_H
 
 #include <string>
 #include <vector>
@@ -50,4 +50,4 @@ std::string calculate_hash(const std::vector<T,A> &buf)
 /* vim:ts=8:sts=4:sw=4:expandtab:
  */
 
-#endif /* MSAF_HASH_H */
+#endif /* _MBS_TF_HASH_HH_ */

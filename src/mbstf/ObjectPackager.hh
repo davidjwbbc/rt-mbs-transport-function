@@ -1,16 +1,16 @@
-#ifndef _MBS_TF_MBSTF_OBJECT_PACKAGER_HH_
-#define _MBS_TF_MBSTF_OBJECT_PACKAGER_HH_
+#ifndef _MBS_TF_OBJECT_PACKAGER_HH_
+#define _MBS_TF_OBJECT_PACKAGER_HH_
 /******************************************************************************
- * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF Object Ingester base class
+ * 5G-MAG Reference Tools: MBS Traffic Function: Object Packager base class
  ******************************************************************************
- * Copyright: (C)2024 British Broadcasting Corporation
+ * Copyright: (C)2025 British Broadcasting Corporation
+ * Author(s): Dev Audsin <dev.audsin@bbc.co.uk>
  * License: 5G-MAG Public License v1
  *
  * For full license terms please see the LICENSE file distributed with this
  * program. If this file is missing then the license can be retrieved from
  * https://drive.google.com/file/d/1cinCiA778IErENZ3JN52VFW-1ffHpx7Z/view
  */
-
 
 #include <atomic>
 #include <memory>
@@ -98,5 +98,5 @@ MBSTF_NAMESPACE_STOP
 
 /* vim:ts=8:sts=4:sw=4:expandtab:
  */
-#endif /* _MBS_TF_MBSTF_OBJECT_PACKAGER_HH_ */
+#endif /* _MBS_TF_OBJECT_PACKAGER_HH_ */
 

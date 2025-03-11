@@ -1,7 +1,7 @@
-#ifndef _MBS_TF_MBSTF_LIST_PACKAGER_HH_
-#define _MBS_TF_MBSTF_LIST_PACKAGER_HH_
+#ifndef _MBS_TF_OBJECT_LIST_PACKAGER_HH_
+#define _MBS_TF_OBJECT_LIST_PACKAGER_HH_
 /******************************************************************************
- * 5G-MAG Reference Tools: MBS Traffic Function: MBSTF Object List Controller
+ * 5G-MAG Reference Tools: MBS Traffic Function: Object List Packager class
  ******************************************************************************
  * Copyright: (C)2025 British Broadcasting Corporation
  * Author(s): Dev Audsin <dev.audsin@bbc.co.uk>
@@ -20,14 +20,8 @@
 
 #include <netinet/in.h>
 
-#include <boost/asio/io_service.hpp>
-
 #include "common.hh"
 #include "ObjectPackager.hh"
-
-namespace LibFlute{
-    class Transmitter;
-}
 
 MBSTF_NAMESPACE_START
 
@@ -88,4 +82,4 @@ MBSTF_NAMESPACE_STOP
 /* vim:ts=8:sts=4:sw=4:expandtab:
  */
 
-#endif /* _MBS_TF_MBSTF_OBJECT_LIST_PACKAGER_HH_ */
+#endif /* _MBS_TF_OBJECT_LIST_PACKAGER_HH_ */
