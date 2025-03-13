@@ -12,10 +12,12 @@
  * https://drive.google.com/file/d/1cinCiA778IErENZ3JN52VFW-1ffHpx7Z/view
  */
 
-#include <string>
 #include <list>
-#include <microhttpd.h>
+#include <memory>
+#include <string>
 #include <vector>
+
+#include <microhttpd.h>
 
 #include "common.hh"
 #include "ObjectIngester.hh"
@@ -31,8 +33,15 @@ public:
 	
     class Request {
     public:
+        Request() = delete;
+        Request(const Request&) = delete;
+        Request(Request&&) = delete;
 	Request(struct MHD_Connection *mhd_connection, PushObjectIngester &poi);
+
 	virtual ~Request() {};
+
+        Request &operator=(const Request&) = delete;
+        Request &operator=(Request&&) = delete;
         	
 	const std::string &method() const { return m_urlPath; };
           
@@ -52,7 +61,7 @@ public:
 	
 	bool addBodyBlock(const std::vector<unsigned char> &body_block);
 	bool setError(unsigned int status_code = 0, const std::string &reason = std::string());
-        void terminated(struct MHD_Connection *connection, enum MHD_RequestTerminationCode term_code);
+        void completed(struct MHD_Connection *connection, enum MHD_RequestTerminationCode term_code);
 	virtual void waitClose() {};
 	void requestHandler(struct MHD_Connection *connection);
 	typedef bool (*HeaderProcessingCallback)(const std::string &key, const std::string &value, void *data);
@@ -76,14 +85,43 @@ public:
         //MHD_connection *m_mhdConnection;
 
         std::list<std::vector<unsigned char> > m_bodyBlocks;
+        std::vector<unsigned char>::size_type m_totalBodySize;
 
         unsigned int m_statusCode;
         std::string m_errorReason;
         bool m_noMoreBodyData;	
 
-	mutable std::recursive_mutex m_mutex;
+	std::unique_ptr<std::recursive_mutex> m_mutex;
         std::condition_variable_any m_condVar; /**< CondVar for new response content/eof */
 
+    };
+
+    class ObjectPushEvent : public Event {
+    public:
+        enum ObjectPushEventType {
+            ObjectPushStart,
+            ObjectPushBlockReceived,
+            ObjectPushTrailersReceived
+        };
+
+        ObjectPushEvent() = delete;
+        static ObjectPushEvent *makeStartEvent(const std::shared_ptr<Request> &request);
+        static ObjectPushEvent *makeBlockReceivedEvent(const std::shared_ptr<Request> &request);
+        static ObjectPushEvent *makeTrailersReceivedEvent(const std::shared_ptr<Request> &request);
+        ObjectPushEvent(const ObjectPushEvent&) = delete;
+        ObjectPushEvent(ObjectPushEvent&&) = delete;
+
+        virtual ~ObjectPushEvent();
+
+        ObjectPushEvent &operator=(const ObjectPushEvent &) = delete;
+        ObjectPushEvent &operator=(ObjectPushEvent &&) = delete;
+
+        const Request &request() const { return *m_request; };
+
+    private:
+        ObjectPushEvent(const std::string &typ, const std::shared_ptr<Request> &request);
+
+        std::shared_ptr<Request> m_request;
     };
 
     PushObjectIngester(ObjectStore& object_store, ObjectController &controller)
@@ -93,6 +131,7 @@ public:
       ,m_activeRequests()
       ,m_IPAddress()
       ,m_domain()
+      ,m_urlPrefix()
       ,m_port(0)
       ,m_mtx()	
     { startWorker(); };
@@ -104,7 +143,7 @@ public:
 
     //void addConnection(Request *request);
     //void removeConnection(Request *request);
-    std::string getIngestServerInfo();
+    const std::string &getIngestServerPrefix();
 
     virtual ~PushObjectIngester();
 
@@ -121,6 +160,7 @@ private:
     //std::vector<Request*>  m_connections;
     std::string m_IPAddress;
     std::string m_domain;
+    std::string m_urlPrefix;
     int m_port;
     std::recursive_mutex m_mtx;
     std::condition_variable_any m_condVar; /**< CondVar for new response content/eof */

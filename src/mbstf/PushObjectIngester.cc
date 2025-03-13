@@ -31,28 +31,35 @@
 
 #include "PushObjectIngester.hh"
 
-//static MHD_Result gatherHeaders(void *cls, MHD_ValueKind kind, char const *key, char const *value);
-
 MBSTF_NAMESPACE_START
+
+/********************** PushObjectIngester::Request ***********************/
 
 PushObjectIngester::Request::Request(struct MHD_Connection *mhd_connection, PushObjectIngester &poi)
     :m_mhdConnection(mhd_connection)
+    ,m_mhdResponse(nullptr)
     ,m_pushObjectIngester(poi)
+    ,m_objectId()
+    ,m_method()
+    ,m_urlPath()
+    ,m_protocolVersion()
+    ,m_bodyBlocks()
+    ,m_totalBodySize(0)
+    ,m_statusCode(0)
+    ,m_errorReason()
+    ,m_noMoreBodyData(false)
+    ,m_mutex(new std::recursive_mutex)
+    ,m_condVar()
 {
-
 }
 
 bool PushObjectIngester::Request::addBodyBlock(const std::vector<unsigned char> &body_block)
 {
-    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+    std::lock_guard<std::recursive_mutex> lock(*m_mutex);
     m_bodyBlocks.push_back(body_block);
+    m_totalBodySize += body_block.size();
 
-    size_t total_size = 0;
-    for (const auto& block : m_bodyBlocks) {
-        total_size += block.size();
-    }
-
-    if (total_size > 65536) {
+    if (m_totalBodySize > 65536) {
         return false;
     }
 
@@ -61,10 +68,10 @@ bool PushObjectIngester::Request::addBodyBlock(const std::vector<unsigned char> 
 
 
 
-void PushObjectIngester::Request::terminated(struct MHD_Connection *connection,
-                             enum MHD_RequestTerminationCode term_code)
+void PushObjectIngester::Request::completed(struct MHD_Connection *connection,
+                                            enum MHD_RequestTerminationCode term_code)
 {
-    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+    std::lock_guard<std::recursive_mutex> lock(*m_mutex);
 
     ogs_info("PushObjectIngester::Request::terminated(%p, %u)", connection, term_code);
     ogs_info("End of request for %s", std::string(m_urlPath).c_str());
@@ -73,7 +80,7 @@ void PushObjectIngester::Request::terminated(struct MHD_Connection *connection,
 }
 
 
-extern "C" MHD_Result gatherHeaders(void *cls, MHD_ValueKind kind, char const *key, char const *value)
+static MHD_Result gatherHeaders(void *cls, MHD_ValueKind kind, char const *key, char const *value)
 {
     std::list<std::pair<std::string, std::string> > *headers =
         reinterpret_cast<std::list<std::pair<std::string, std::string> >*>(cls);
@@ -93,7 +100,7 @@ bool PushObjectIngester::Request::setError(unsigned int status_code, const std::
 
 std::optional<std::string> PushObjectIngester::Request::getHeader(const std::string &field) const
 {
-    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+    std::lock_guard<std::recursive_mutex> lock(*m_mutex);
 
     const char *ret = MHD_lookup_connection_value(m_mhdConnection, MHD_HEADER_KIND, field.c_str());
 
@@ -109,25 +116,40 @@ void PushObjectIngester::Request::processRequest() {
     const char *contentType = MHD_lookup_connection_value(m_mhdConnection, MHD_HEADER_KIND, MHD_HTTP_HEADER_CONTENT_TYPE);
     auto lastModified = std::chrono::system_clock::now();
 
-    ObjectStore::Metadata metadata(contentType, m_urlPath, m_urlPath, nullptr, lastModified);
+    std::string url(m_urlPath);
+    if (url.front() == '/') {
+        url = m_pushObjectIngester.getIngestServerPrefix() + url.substr(1,url.size()-1);
+    }
+
+    ObjectStore::Metadata metadata(contentType, url, url, m_urlPath, lastModified, m_pushObjectIngester.getIngestServerPrefix());
     metadata.cacheExpires(std::chrono::system_clock::now() + std::chrono::minutes(ObjectStore::Metadata::cacheExpiry()));
 
+    // Pull all body blocks together into one vector
+    std::vector<unsigned char> body;
+    ogs_debug("Building body of %zu bytes", m_totalBodySize);
+    body.reserve(m_totalBodySize);
     for (auto& block : m_bodyBlocks) {
-        m_pushObjectIngester.objectStore().addObject(m_objectId, std::move(block), std::move(metadata));
+        ogs_debug("Adding body block of %zu bytes", block.size());
+        body.insert(body.end(), block.begin(), block.end());
     }
-    //m_pushObjectIngester.objectStore().addObject(m_objectId, std::move(m_bodyBlocks), std::move(metadata));
+
+    m_pushObjectIngester.objectStore().addObject(m_objectId, std::move(body), std::move(metadata));
+    m_statusCode = 200;
 }
 
 void PushObjectIngester::Request::requestHandler(struct MHD_Connection *connection)
 {
-    std::lock_guard<std::recursive_mutex> lock(m_mutex);
+    std::lock_guard<std::recursive_mutex> lock(*m_mutex);
     m_mhdConnection = connection;
     m_mhdResponse = MHD_create_response_from_buffer(0, NULL, MHD_RESPMEM_PERSISTENT);
 
-    if (m_urlPath.substr(0, 4) != "http" || m_urlPath.substr(0, 2) == "//") {
-        setError(404, "Not Found");
-    } else if ( m_method != "PUSH" || m_method != "PUT") {
-        setError(501, "Not Implemented");
+    ogs_debug("Request::requestHandler: url = %s, method = %s", m_urlPath.c_str(), m_method.c_str());
+
+    //if (m_urlPath.substr(0, 4) != "http" || m_urlPath.substr(0, 2) == "//") {
+    //    setError(404, "Not Found");
+    //} else
+    if (m_method != "PUSH" && m_method != "PUT" && m_method != "POST") {
+        setError(405, "Method Not Allowed");
     } else {
         processRequest();
     }
@@ -136,8 +158,36 @@ void PushObjectIngester::Request::requestHandler(struct MHD_Connection *connecti
     // Queue the request
     MHD_queue_response(connection, m_statusCode, m_mhdResponse);
     MHD_destroy_response(m_mhdResponse);
-    ogs_info("PushObjectIngester::Request::requestHandler: end");
 }
+
+/********************** PushObjectIngester::ObjectPushEvent ***************/
+
+PushObjectIngester::ObjectPushEvent *PushObjectIngester::ObjectPushEvent::makeStartEvent(const std::shared_ptr<Request> &request)
+{
+    return new PushObjectIngester::ObjectPushEvent("ObjectPushStart", request);
+}
+
+PushObjectIngester::ObjectPushEvent *PushObjectIngester::ObjectPushEvent::makeBlockReceivedEvent(const std::shared_ptr<Request> &request)
+{
+    return new PushObjectIngester::ObjectPushEvent("ObjectPushBlockReceived", request);
+}
+
+PushObjectIngester::ObjectPushEvent *PushObjectIngester::ObjectPushEvent::makeTrailersReceivedEvent(const std::shared_ptr<Request> &request)
+{
+    return new PushObjectIngester::ObjectPushEvent("ObjectPushTrailersReceived", request);
+}
+
+PushObjectIngester::ObjectPushEvent::~ObjectPushEvent()
+{
+}
+
+PushObjectIngester::ObjectPushEvent::ObjectPushEvent(const std::string &typ, const std::shared_ptr<Request> &request)
+    :Event(typ)
+    ,m_request(request)
+{
+}
+
+/********************** PushObjectIngester ********************************/
 
 PushObjectIngester::~PushObjectIngester()
 {
@@ -145,16 +195,16 @@ PushObjectIngester::~PushObjectIngester()
     abort();
 }
 
-extern "C" void requestTerminationCallback(void *cls, struct MHD_Connection *connection, void **con_cls, enum MHD_RequestTerminationCode termination_code)
+static void request_completion_callback(void *cls, struct MHD_Connection *connection, void **con_cls, enum MHD_RequestTerminationCode termination_code)
 {
     PushObjectIngester *ingester = reinterpret_cast<PushObjectIngester*>(cls);
 
     // Convert *con_cls into a shared pointer
-    std::shared_ptr<PushObjectIngester::Request> req = std::static_pointer_cast<PushObjectIngester::Request>(*reinterpret_cast<std::shared_ptr<void>*>(con_cls));
+    std::shared_ptr<PushObjectIngester::Request> &req = *reinterpret_cast<std::shared_ptr<PushObjectIngester::Request>*>(*con_cls);
 
-    ogs_info("requestTerminationCallback[%u])", termination_code);
+    ogs_info("request_completion_callback[%u])", termination_code);
 
-    req->terminated(connection, termination_code);
+    req->completed(connection, termination_code);
 
     ingester->removeRequest(req);
 
@@ -162,42 +212,40 @@ extern "C" void requestTerminationCallback(void *cls, struct MHD_Connection *con
     *con_cls = nullptr;
 }
 
-extern "C" MHD_Result handleRequest(void *cls, struct MHD_Connection *connection, const char *url, const char *method, const char *version, const char *upload_data, size_t *upload_data_size, void **con_cls)
+static MHD_Result handle_request(void *cls, struct MHD_Connection *connection, const char *url, const char *method, const char *version, const char *upload_data, size_t *upload_data_size, void **con_cls)
 {
     PushObjectIngester *ingester = reinterpret_cast<PushObjectIngester*>(cls);
-    ogs_debug("handleRequest[%p, %p, %s, %s, %s, %p, %lu, %p]", cls, connection, url, method, version, upload_data, *upload_data_size, *con_cls);
-    std::shared_ptr<PushObjectIngester::Request> req;
+    ogs_debug("handle_request[%p, %p, %s, %s, %s, %p, %lu, %p]", cls, connection, url, method, version, upload_data, *upload_data_size, *con_cls);
 
-    if (*con_cls == 0) {
-        ogs_debug("handleRequest: creating new PushObjectIngester::Request('%s', '%s', '%s')", url, method, version);
-        req.reset(new PushObjectIngester::Request(connection, *ingester));
-        req->urlPath(std::string(url));
-        req->method(std::string(method));
+    if (*con_cls == nullptr) {
+        ogs_debug("handle_request: creating new PushObjectIngester::Request('%s', '%s', '%s')", url, method, version);
+        PushObjectIngester::Request *req = new PushObjectIngester::Request(connection, *ingester);
+        req->urlPath(url);
+        req->method(method);
         req->protocolVersion(version);
-        //*con_cls = req;
-        *con_cls = new std::shared_ptr<com::fiveg_mag::ref_tools::mbstf::PushObjectIngester::Request>(req);
-        ingester->addRequest(req);
-    } else {
-        //req = reinterpret_cast<PushObjectIngester::Request*>(*con_cls);
-        auto req = *reinterpret_cast<std::shared_ptr<PushObjectIngester::Request>*>(con_cls);
+        std::shared_ptr<PushObjectIngester::Request> *req_ptr = new std::shared_ptr<PushObjectIngester::Request>(req);
+        *con_cls = req_ptr;
+        ingester->addRequest(*req_ptr);
+        return MHD_YES;
     }
 
-    if (*upload_data_size) {
-        ogs_info("handleRequest: Adding ingest data");
+    std::shared_ptr<PushObjectIngester::Request> req = *reinterpret_cast<std::shared_ptr<PushObjectIngester::Request>*>(*con_cls);
+
+    if (*upload_data_size > 0) {
+        ogs_debug("handle_request: Adding %zu bytes of ingest data", *upload_data_size);
         req->addBodyBlock(std::vector<unsigned char>(upload_data, upload_data + *upload_data_size));
-    } else {
-        ogs_info("handleRequest: Perform request processing.");
-        ogs_info("Received client request for %s", url);
+        *upload_data_size = 0;
+    } else if (*upload_data_size == 0) {
+        ogs_debug("handle_request: Completed request processing.");
+        ogs_info("Received client %s request for %s", method, url);
         req->requestHandler(connection);
-    }
-
-    if (*upload_data_size < 0) {
-        ogs_info("requestHandle: Request cancelled.");
+    } else if (*upload_data_size < 0) {
+        ogs_info("handle_request: Request cancelled.");
         *upload_data_size = 0;
         return MHD_NO;
     }
 
-    ogs_info("requestHandle: Request processed.");
+    ogs_debug("handle_request: Request processed.");
 
     return MHD_YES;
 }
@@ -223,16 +271,14 @@ bool PushObjectIngester::start()
     {
         std::lock_guard<std::recursive_mutex> lock(m_mtx);
         m_mhdDaemon = MHD_start_daemon(
-                     MHD_USE_SELECT_INTERNALLY,
-                     0,
-                     NULL,
-                     NULL,
-                     handleRequest,
-                    this,
-                    MHD_OPTION_NOTIFY_COMPLETED, requestTerminationCallback, this,
-                    MHD_OPTION_SOCK_ADDR, (union MHD_DaemonInfo *)sockaddr,
-                    MHD_OPTION_END
-                    );
+                                    MHD_USE_SELECT_INTERNALLY,
+                                    0,
+                                    NULL, NULL,
+                                    handle_request, this,
+                                    MHD_OPTION_NOTIFY_COMPLETED, request_completion_callback, this,
+                                    MHD_OPTION_SOCK_ADDR, (union MHD_DaemonInfo *)sockaddr,
+                                    MHD_OPTION_END
+                                    );
         m_condVar.notify_all();
     }
     ogs_debug("PushObjectIngester::start(): Started MHD (%p)", m_mhdDaemon);
@@ -262,9 +308,18 @@ bool PushObjectIngester::stop()
 
 void PushObjectIngester::addRequest(std::shared_ptr<PushObjectIngester::Request> req)
 {
-    std::lock_guard<std::recursive_mutex> lock(m_mtx);
-    m_activeRequests.push_back(req);
-    ogs_debug( "Added new request, there are now %ld active requests", m_activeRequests.size());
+    {
+        std::lock_guard<std::recursive_mutex> lock(m_mtx);
+        m_activeRequests.push_back(req);
+        ogs_debug( "Added new request, there are now %ld active requests", m_activeRequests.size());
+    }
+    ObjectPushEvent *evt = ObjectPushEvent::makeStartEvent(req);
+    if (sendEventSynchronous(*evt)) {
+        ogs_debug("Request accepted, receiving...");
+    } else {
+        // error - do immediate client response
+    }
+    delete evt;
 }
 
 void PushObjectIngester::removeRequest(std::shared_ptr<PushObjectIngester::Request> req)
@@ -280,60 +335,64 @@ void PushObjectIngester::removeRequest(std::shared_ptr<PushObjectIngester::Reque
             break;
         }
     }
-    //delete req;
 }
 
 void PushObjectIngester::doObjectIngest() {
     start();
 }
 
-std::string PushObjectIngester::getIngestServerInfo()
+const std::string &PushObjectIngester::getIngestServerPrefix()
 {
-    {
-        std::lock_guard<std::recursive_mutex> lock(m_mtx);
-        while(!m_mhdDaemon) m_condVar.wait(m_mtx);
-    }
-    const union MHD_DaemonInfo *daemon_info = MHD_get_daemon_info(m_mhdDaemon, MHD_DAEMON_INFO_LISTEN_FD);
-    if (daemon_info != nullptr && daemon_info->listen_fd != -1) {
-        int sock_fd = daemon_info->listen_fd;
-        socklen_t addr_len = sizeof(m_sockaddr);
-        if (getsockname(sock_fd, reinterpret_cast<struct sockaddr*>(&m_sockaddr), &addr_len) == 0) {
-            switch(m_sockaddr.ss_family ) {
-            case AF_INET:
-                {
-                    struct sockaddr_in *sin = reinterpret_cast<struct sockaddr_in*>(&m_sockaddr);
-                    m_port = ntohs(sin->sin_port);
-                }
-                break;
-            case AF_INET6:
-                {
-                    struct sockaddr_in6 *sin6 = reinterpret_cast<struct sockaddr_in6*>(&m_sockaddr);
-                    m_port = ntohs(sin6->sin6_port);
-                }
-                break;
-            default:
-                ogs_error("Yout Push Server address family not understood %i", m_sockaddr.ss_family);
-                return std::string();
-            }
-            ogs_info("PUSH SERVER PORT: %d", m_port);
-
-            // Get the IP address
-            char host[NI_MAXHOST];
-            char domain[NI_MAXHOST];
-            if (getnameinfo(reinterpret_cast<struct sockaddr*>(&m_sockaddr), addr_len, host, sizeof(host), nullptr, 0, NI_NUMERICHOST) == 0) {
-                m_IPAddress = host;
-                return m_IPAddress + ":" + std::to_string(m_port);
-            }
-            if (getnameinfo(reinterpret_cast<struct sockaddr*>(&m_sockaddr), addr_len, domain, sizeof(domain), nullptr, 0, 0) == 0) {
-                m_domain = domain;
-                return m_domain + ":" + std::to_string(m_port);
-            }
+    if (m_urlPrefix.empty()) {
+        {
+            std::lock_guard<std::recursive_mutex> lock(m_mtx);
+            while(!m_mhdDaemon) m_condVar.wait(m_mtx);
         }
-        ogs_info("GETSOCKNAME FAILED");
-        ogs_info("getsockname error: %d", errno);
+        const union MHD_DaemonInfo *daemon_info = MHD_get_daemon_info(m_mhdDaemon, MHD_DAEMON_INFO_LISTEN_FD);
+        if (daemon_info != nullptr && daemon_info->listen_fd != -1) {
+            int sock_fd = daemon_info->listen_fd;
+            socklen_t addr_len = sizeof(m_sockaddr);
+            if (getsockname(sock_fd, reinterpret_cast<struct sockaddr*>(&m_sockaddr), &addr_len) == 0) {
+                switch(m_sockaddr.ss_family ) {
+                case AF_INET:
+                    {
+                        struct sockaddr_in *sin = reinterpret_cast<struct sockaddr_in*>(&m_sockaddr);
+                        m_port = ntohs(sin->sin_port);
+                    }
+                    break;
+                case AF_INET6:
+                    {
+                        struct sockaddr_in6 *sin6 = reinterpret_cast<struct sockaddr_in6*>(&m_sockaddr);
+                        m_port = ntohs(sin6->sin6_port);
+                    }
+                    break;
+                default:
+                    ogs_error("The Push Server address family not understood %i", m_sockaddr.ss_family);
+                    m_urlPrefix.clear();
+                    return m_urlPrefix;
+                }
+                ogs_info("PUSH SERVER PORT: %d", m_port);
+
+                // Get the IP address
+                char host[NI_MAXHOST];
+                if (getnameinfo(reinterpret_cast<struct sockaddr*>(&m_sockaddr), addr_len, host, sizeof(host), nullptr, 0, 0) == 0) {
+                    m_domain = host;
+                }
+                if (getnameinfo(reinterpret_cast<struct sockaddr*>(&m_sockaddr), addr_len, host, sizeof(host), nullptr, 0, NI_NUMERICHOST) == 0) {
+                    m_IPAddress = host;
+                }
+                if (!m_domain.empty()) {
+                    m_urlPrefix = "http://" + m_domain + ":" + std::to_string(m_port) + "/";
+                } else if (!m_IPAddress.empty()) {
+                    m_urlPrefix = "http://" + m_IPAddress + ":" + std::to_string(m_port) + "/";
+                }
+            }
+            ogs_info("GETSOCKNAME FAILED");
+            ogs_info("getsockname error: %d", errno);
+        }
     }
 
-    return std::string();
+    return m_urlPrefix;
 }
 
 MBSTF_NAMESPACE_STOP

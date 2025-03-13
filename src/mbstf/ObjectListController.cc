@@ -58,7 +58,6 @@ static uint32_t get_rate_limit(DistributionSession &distributionSession);
 static const std::optional<std::string> &get_object_ingest_base_url(DistributionSession &distributionSession);
 static const std::optional<std::string> &get_object_distribution_base_url(DistributionSession &distributionSession);
 static const std::string &get_object_acquisition_method(DistributionSession &distributionSession);
-static const std::string populate_object_ingest_base_url(const std::string &ingestServerInfo);
 static void set_object_ingest_base_url(DistributionSession &distributionSession, std::string ingestBaseUrl);
 ObjectListController::ObjectListController(DistributionSession &distributionSession)
     :ObjectController(distributionSession)
@@ -150,14 +149,8 @@ void ObjectListController::initPushObjectIngester()
 
     PushObjectIngester *pushIngester = new PushObjectIngester(objectStore(), *this);
 
-    set_object_ingest_base_url(distributionSession(), populate_object_ingest_base_url(pushIngester->getIngestServerInfo()));
+    set_object_ingest_base_url(distributionSession(), pushIngester->getIngestServerPrefix());
     setPushIngester(pushIngester);
-}
-
-static const std::string populate_object_ingest_base_url(const std::string &ingestServerInfo)
-{
-        const std::string scheme = "http://";
-	return scheme + ingestServerInfo;
 }
 
 void ObjectListController::initObjectIngester()
