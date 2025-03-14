@@ -358,12 +358,46 @@ const std::string &PushObjectIngester::getIngestServerPrefix()
                     {
                         struct sockaddr_in *sin = reinterpret_cast<struct sockaddr_in*>(&m_sockaddr);
                         m_port = ntohs(sin->sin_port);
+                        // If bind address is ANY, use the default route local address
+                        if (sin->sin_addr.s_addr == INADDR_ANY) {
+                            int def_route_sock = socket(AF_INET, SOCK_DGRAM|SOCK_CLOEXEC, 0);
+                            static const struct sockaddr_in known_public_ipv4 = {
+                                .sin_family=AF_INET,
+                                .sin_port=htons(53),
+                                .sin_addr={static_cast<in_addr_t>(0x08080808)} /* 8.8.8.8 */
+                            };
+                            struct sockaddr_in local_def_route;
+                            socklen_t local_def_route_len = sizeof(local_def_route);
+                            connect(def_route_sock, reinterpret_cast<const struct sockaddr*>(&known_public_ipv4),
+                                        sizeof(known_public_ipv4));
+                            getsockname(def_route_sock, reinterpret_cast<struct sockaddr*>(&local_def_route),
+                                        &local_def_route_len);
+                            close(def_route_sock);
+                            sin->sin_addr.s_addr = local_def_route.sin_addr.s_addr;
+                        }
                     }
                     break;
                 case AF_INET6:
                     {
                         struct sockaddr_in6 *sin6 = reinterpret_cast<struct sockaddr_in6*>(&m_sockaddr);
                         m_port = ntohs(sin6->sin6_port);
+                        // If bind address is ANY, use the default route local address
+                        if (IN6_IS_ADDR_UNSPECIFIED(&sin6->sin6_addr)) {
+                            int def_route_sock = socket(AF_INET6, SOCK_DGRAM|SOCK_CLOEXEC, 0);
+                            static const struct sockaddr_in6 known_public_ipv6 = {
+                                .sin6_family=AF_INET6,
+                                .sin6_port=htons(53),
+                                .sin6_addr={ { { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 } } } /* :: */
+                            };
+                            struct sockaddr_in6 local_def_route;
+                            socklen_t local_def_route_len = sizeof(local_def_route);
+                            connect(def_route_sock, reinterpret_cast<const struct sockaddr*>(&known_public_ipv6),
+                                        sizeof(known_public_ipv6));
+                            getsockname(def_route_sock, reinterpret_cast<struct sockaddr*>(&local_def_route),
+                                        &local_def_route_len);
+                            close(def_route_sock);
+                            memcpy(&sin6->sin6_addr, &local_def_route.sin6_addr, sizeof(struct in6_addr));
+                        }
                     }
                     break;
                 default:
