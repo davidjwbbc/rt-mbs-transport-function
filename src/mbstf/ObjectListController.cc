@@ -56,7 +56,6 @@ static const std::optional<std::string> &get_dest_ip_addr(DistributionSession &d
 static in_port_t get_port_number(DistributionSession &distributionSession);
 static uint32_t get_rate_limit(DistributionSession &distributionSession);
 static const std::optional<std::string> &get_object_ingest_base_url(DistributionSession &distributionSession);
-static const std::optional<std::string> &get_object_distribution_base_url(DistributionSession &distributionSession);
 static const std::string &get_object_acquisition_method(DistributionSession &distributionSession);
 static void set_object_ingest_base_url(DistributionSession &distributionSession, std::string ingestBaseUrl);
 ObjectListController::ObjectListController(DistributionSession &distributionSession)
@@ -109,7 +108,7 @@ std::string ObjectListController::generateUUID() {
 void ObjectListController::initPullObjectIngester()
 {
     std::optional<std::string> object_ingest_base_url = get_object_ingest_base_url(distributionSession());
-    std::optional<std::string> object_distribution_base_url = get_object_distribution_base_url(distributionSession());
+    std::optional<std::string> object_distribution_base_url = objectDistributionBaseUrl();
 
     auto &pull_urls = get_object_acquisition_pull_urls(distributionSession());
     if (pull_urls.has_value()) {
@@ -145,7 +144,6 @@ void ObjectListController::initPullObjectIngester()
 void ObjectListController::initPushObjectIngester()
 {
     const std::string objIngestBaseUrl;
-    const std::optional<std::string>  objDistributionBaseUrl = get_object_distribution_base_url(distributionSession());
 
     PushObjectIngester *pushIngester = new PushObjectIngester(objectStore(), *this);
 
@@ -169,6 +167,20 @@ void ObjectListController::initObjectIngester()
     }
 }
 
+const std::optional<std::string> &ObjectListController::objectDistributionBaseUrl() const
+{
+    std::shared_ptr<CreateReqData> createReqData = distributionSession().distributionSessionReqData();
+    std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
+    const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = distSession->getObjDistributionData();
+    if (object_distribution_data.has_value()) {
+        std::shared_ptr<ObjDistributionData> objectDistributionDataPtr = object_distribution_data.value();
+        return objectDistributionDataPtr->getObjDistributionBaseUrl();
+    } else {
+        ogs_error("ObjectDistributionData is not available");
+        static const std::optional<std::string> nullValue = std::nullopt;
+        return nullValue;
+    }
+}
 
 static std::string trim_slashes(const std::string &path)
 {
@@ -226,20 +238,6 @@ static const std::optional<std::string> &get_object_ingest_base_url(Distribution
     }
 }
 
-static const std::optional<std::string> &get_object_distribution_base_url(DistributionSession &distributionSession)
-{
-    std::shared_ptr<CreateReqData> createReqData = distributionSession.distributionSessionReqData();
-    std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
-    const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = distSession->getObjDistributionData();
-    if (object_distribution_data.has_value()) {
-        std::shared_ptr<ObjDistributionData> objectDistributionDataPtr = object_distribution_data.value();
-        return objectDistributionDataPtr->getObjDistributionBaseUrl();
-    } else {
-        ogs_error("ObjectDistributionData is not available");
-        static const std::optional<std::string> nullValue = std::nullopt;
-        return nullValue;
-    }
-}
 
 static void set_object_ingest_base_url(DistributionSession &distributionSession, std::string ingestBaseUrl)
 {

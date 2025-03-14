@@ -58,6 +58,7 @@ public:
                 os << "ObjectListController(controller =" << this << ")";
                 return os.str();
     }
+    const std::optional<std::string> &objectDistributionBaseUrl() const;
 
 private:
     std::string generateUUID();

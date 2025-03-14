@@ -27,11 +27,18 @@
 #include "common.hh"
 #include "App.hh"
 #include "hash.hh"
+#include "ObjectListController.hh"
 #include "ObjectStore.hh"
 
 #include "PushObjectIngester.hh"
 
 MBSTF_NAMESPACE_START
+
+//static MHD_Result gatherHeaders(void *cls, MHD_ValueKind kind, char const *key, char const *value);
+static void request_completion_callback(void *cls, struct MHD_Connection *connection, void **con_cls,
+                                        enum MHD_RequestTerminationCode termination_code);
+static MHD_Result handle_request(void *cls, struct MHD_Connection *connection, const char *url, const char *method,
+                                 const char *version, const char *upload_data, size_t *upload_data_size, void **con_cls);
 
 /********************** PushObjectIngester::Request ***********************/
 
@@ -79,17 +86,6 @@ void PushObjectIngester::Request::completed(struct MHD_Connection *connection,
     m_condVar.notify_all();
 }
 
-
-static MHD_Result gatherHeaders(void *cls, MHD_ValueKind kind, char const *key, char const *value)
-{
-    std::list<std::pair<std::string, std::string> > *headers =
-        reinterpret_cast<std::list<std::pair<std::string, std::string> >*>(cls);
-
-    headers->push_back(std::make_pair(std::string(key), std::string(value)));
-
-    return MHD_YES;
-}
-
 bool PushObjectIngester::Request::setError(unsigned int status_code, const std::string &reason)
 {
     if (m_noMoreBodyData) return false;
@@ -111,7 +107,8 @@ std::optional<std::string> PushObjectIngester::Request::getHeader(const std::str
     return std::string(ret); // Wrap the string in std::optional
 }
 
-void PushObjectIngester::Request::processRequest() {
+void PushObjectIngester::Request::processRequest()
+{
     //const char *contentLength = MHD_lookup_connection_value(m_mhdConnection, MHD_HEADER_KIND, MHD_HTTP_HEADER_CONTENT_LENGTH);
     const char *contentType = MHD_lookup_connection_value(m_mhdConnection, MHD_HEADER_KIND, MHD_HTTP_HEADER_CONTENT_TYPE);
     auto lastModified = std::chrono::system_clock::now();
@@ -121,7 +118,15 @@ void PushObjectIngester::Request::processRequest() {
         url = m_pushObjectIngester.getIngestServerPrefix() + url.substr(1,url.size()-1);
     }
 
-    ObjectStore::Metadata metadata(contentType, url, url, m_urlPath, lastModified, m_pushObjectIngester.getIngestServerPrefix());
+    std::optional<std::string> object_distrib_base_url = std::nullopt;
+    try {
+        ObjectListController &list_control(dynamic_cast<ObjectListController&>(m_pushObjectIngester.controller()));
+        object_distrib_base_url = list_control.objectDistributionBaseUrl();
+    } catch (std::bad_cast &ex) {
+        // Ignore bad cast, we just won't set the distribution base url if this happens
+    }
+
+    ObjectStore::Metadata metadata(contentType, url, url, m_urlPath, lastModified, m_pushObjectIngester.getIngestServerPrefix(), object_distrib_base_url);
     metadata.cacheExpires(std::chrono::system_clock::now() + std::chrono::minutes(ObjectStore::Metadata::cacheExpiry()));
 
     // Pull all body blocks together into one vector
@@ -195,61 +200,6 @@ PushObjectIngester::~PushObjectIngester()
     abort();
 }
 
-static void request_completion_callback(void *cls, struct MHD_Connection *connection, void **con_cls, enum MHD_RequestTerminationCode termination_code)
-{
-    PushObjectIngester *ingester = reinterpret_cast<PushObjectIngester*>(cls);
-
-    // Convert *con_cls into a shared pointer
-    std::shared_ptr<PushObjectIngester::Request> &req = *reinterpret_cast<std::shared_ptr<PushObjectIngester::Request>*>(*con_cls);
-
-    ogs_info("request_completion_callback[%u])", termination_code);
-
-    req->completed(connection, termination_code);
-
-    ingester->removeRequest(req);
-
-    delete reinterpret_cast<std::shared_ptr<PushObjectIngester::Request>*>(*con_cls);
-    *con_cls = nullptr;
-}
-
-static MHD_Result handle_request(void *cls, struct MHD_Connection *connection, const char *url, const char *method, const char *version, const char *upload_data, size_t *upload_data_size, void **con_cls)
-{
-    PushObjectIngester *ingester = reinterpret_cast<PushObjectIngester*>(cls);
-    ogs_debug("handle_request[%p, %p, %s, %s, %s, %p, %lu, %p]", cls, connection, url, method, version, upload_data, *upload_data_size, *con_cls);
-
-    if (*con_cls == nullptr) {
-        ogs_debug("handle_request: creating new PushObjectIngester::Request('%s', '%s', '%s')", url, method, version);
-        PushObjectIngester::Request *req = new PushObjectIngester::Request(connection, *ingester);
-        req->urlPath(url);
-        req->method(method);
-        req->protocolVersion(version);
-        std::shared_ptr<PushObjectIngester::Request> *req_ptr = new std::shared_ptr<PushObjectIngester::Request>(req);
-        *con_cls = req_ptr;
-        ingester->addRequest(*req_ptr);
-        return MHD_YES;
-    }
-
-    std::shared_ptr<PushObjectIngester::Request> req = *reinterpret_cast<std::shared_ptr<PushObjectIngester::Request>*>(*con_cls);
-
-    if (*upload_data_size > 0) {
-        ogs_debug("handle_request: Adding %zu bytes of ingest data", *upload_data_size);
-        req->addBodyBlock(std::vector<unsigned char>(upload_data, upload_data + *upload_data_size));
-        *upload_data_size = 0;
-    } else if (*upload_data_size == 0) {
-        ogs_debug("handle_request: Completed request processing.");
-        ogs_info("Received client %s request for %s", method, url);
-        req->requestHandler(connection);
-    } else if (*upload_data_size < 0) {
-        ogs_info("handle_request: Request cancelled.");
-        *upload_data_size = 0;
-        return MHD_NO;
-    }
-
-    ogs_debug("handle_request: Request processed.");
-
-    return MHD_YES;
-}
-
 bool PushObjectIngester::start()
 {
     if (m_mhdDaemon) return false;
@@ -257,15 +207,7 @@ bool PushObjectIngester::start()
     ogs_info("PushObjectIngester::start(): Starting MHD");
     m_sockaddr.ss_family = AF_INET;
     struct sockaddr_in *sockaddr = reinterpret_cast<struct sockaddr_in *>(&m_sockaddr);
-    sockaddr->sin_addr.s_addr = INADDR_ANY;
- /*
-     if (inet_pton(AF_INET, "127.0.0.1", &sockaddr->sin_addr) <= 0) {
-            ogs_info("inet_pton error\n");
-            return 1;
-        }
-        sockaddr->sin_port = htons(9090);
-        */
-
+    sockaddr->sin_addr.s_addr = INADDR_ANY; // TODO: get this from a configuration file variable (default: INADDR_ANY)
     sockaddr->sin_port = htons(0);
 
     {
@@ -427,6 +369,75 @@ const std::string &PushObjectIngester::getIngestServerPrefix()
     }
 
     return m_urlPrefix;
+}
+
+/********* private functions **********/
+
+#if 0
+static MHD_Result gatherHeaders(void *cls, MHD_ValueKind kind, char const *key, char const *value)
+{
+    std::list<std::pair<std::string, std::string> > *headers =
+        reinterpret_cast<std::list<std::pair<std::string, std::string> >*>(cls);
+
+    headers->push_back(std::make_pair(std::string(key), std::string(value)));
+
+    return MHD_YES;
+}
+#endif
+
+static void request_completion_callback(void *cls, struct MHD_Connection *connection, void **con_cls, enum MHD_RequestTerminationCode termination_code)
+{
+    PushObjectIngester *ingester = reinterpret_cast<PushObjectIngester*>(cls);
+
+    // Convert *con_cls into a shared pointer
+    std::shared_ptr<PushObjectIngester::Request> &req = *reinterpret_cast<std::shared_ptr<PushObjectIngester::Request>*>(*con_cls);
+
+    ogs_info("request_completion_callback[%u])", termination_code);
+
+    req->completed(connection, termination_code);
+
+    ingester->removeRequest(req);
+
+    delete reinterpret_cast<std::shared_ptr<PushObjectIngester::Request>*>(*con_cls);
+    *con_cls = nullptr;
+}
+
+static MHD_Result handle_request(void *cls, struct MHD_Connection *connection, const char *url, const char *method, const char *version, const char *upload_data, size_t *upload_data_size, void **con_cls)
+{
+    PushObjectIngester *ingester = reinterpret_cast<PushObjectIngester*>(cls);
+    ogs_debug("handle_request[%p, %p, %s, %s, %s, %p, %lu, %p]", cls, connection, url, method, version, upload_data, *upload_data_size, *con_cls);
+
+    if (*con_cls == nullptr) {
+        ogs_debug("handle_request: creating new PushObjectIngester::Request('%s', '%s', '%s')", url, method, version);
+        PushObjectIngester::Request *req = new PushObjectIngester::Request(connection, *ingester);
+        req->urlPath(url);
+        req->method(method);
+        req->protocolVersion(version);
+        std::shared_ptr<PushObjectIngester::Request> *req_ptr = new std::shared_ptr<PushObjectIngester::Request>(req);
+        *con_cls = req_ptr;
+        ingester->addRequest(*req_ptr);
+        return MHD_YES;
+    }
+
+    std::shared_ptr<PushObjectIngester::Request> req = *reinterpret_cast<std::shared_ptr<PushObjectIngester::Request>*>(*con_cls);
+
+    if (*upload_data_size > 0) {
+        ogs_debug("handle_request: Adding %zu bytes of ingest data", *upload_data_size);
+        req->addBodyBlock(std::vector<unsigned char>(upload_data, upload_data + *upload_data_size));
+        *upload_data_size = 0;
+    } else if (*upload_data_size == 0) {
+        ogs_debug("handle_request: Completed request processing.");
+        ogs_info("Received client %s request for %s", method, url);
+        req->requestHandler(connection);
+    } else if (*upload_data_size < 0) {
+        ogs_info("handle_request: Request cancelled.");
+        *upload_data_size = 0;
+        return MHD_NO;
+    }
+
+    ogs_debug("handle_request: Request processed.");
+
+    return MHD_YES;
 }
 
 MBSTF_NAMESPACE_STOP
