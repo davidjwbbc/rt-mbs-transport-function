@@ -39,7 +39,7 @@ public:
     Open5GSSBIMessage(const Open5GSSBIMessage &other) :m_message(other.m_message),m_owner(false) {};
     Open5GSSBIMessage &operator=(Open5GSSBIMessage &&other) {m_message = other.m_message; m_owner = other.m_owner; other.m_owner = false; return *this;};
     Open5GSSBIMessage &operator=(const Open5GSSBIMessage &other) {m_message = other.m_message; m_owner = false; return *this;};
-    virtual ~Open5GSSBIMessage() { if (m_message && m_owner) ogs_sbi_message_free(m_message); };
+    virtual ~Open5GSSBIMessage();
 
     ogs_sbi_message_t *ogsSBIMessage() { return m_message; };
     const ogs_sbi_message_t *ogsSBIMessage() const { return m_message; };

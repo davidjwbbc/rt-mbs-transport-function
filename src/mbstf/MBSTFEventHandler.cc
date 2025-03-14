@@ -107,7 +107,7 @@ void MBSTFEventHandler::dispatch(Open5GSFSM &fsm, Open5GSEvent &event)
         {
             ogs_assert(event.ogsEvent());
 
-            Open5GSSBIResponse response(event.sbiResponse());
+            Open5GSSBIResponse response(event.sbiResponse(true));
             Open5GSSBIMessage message;
             try {
                 message.parseHeader(response);

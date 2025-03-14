@@ -46,13 +46,13 @@ public:
 
     int id() const { return m_event?(m_event->id):0; };
     int timerId() const { return m_event?(m_event->timer_id):0; };
-    Open5GSSBIRequest sbiRequest() const { return Open5GSSBIRequest(m_event?(m_event->sbi.request):nullptr, false); };
-    Open5GSSBIResponse sbiResponse() const { return Open5GSSBIResponse(m_event?(m_event->sbi.response):nullptr, false); };
+    Open5GSSBIRequest sbiRequest(bool take_ownership=false) const { return Open5GSSBIRequest(m_event?(m_event->sbi.request):nullptr, take_ownership); };
+    Open5GSSBIResponse sbiResponse(bool take_ownership=false) const { return Open5GSSBIResponse(m_event?(m_event->sbi.response):nullptr, take_ownership); };
     void *sbiData() const { return m_event?(m_event->sbi.data):nullptr; };
     Open5GSSBIMessage sbiMessage() const { return Open5GSSBIMessage(m_event?(m_event->sbi.message):nullptr, false); };
-    void sbiMessage(Open5GSSBIMessage &message) { if (!m_event) return; m_event->sbi.message = message.ogsSBIMessage(); message.setOwner(false); };
-    void sbiResponse(Open5GSSBIResponse &response) { if (!m_event) return; m_event->sbi.response = response.ogsSBIResponse(); response.setOwner(false); };
-    void sbiRequest(Open5GSSBIRequest &request) { if (!m_event) return; m_event->sbi.request = request.ogsSBIRequest(); request.setOwner(false); };
+    void sbiMessage(Open5GSSBIMessage &message) { if (!m_event) return; m_event->sbi.message = message.ogsSBIMessage(); };
+    void sbiResponse(Open5GSSBIResponse &response) { if (!m_event) return; m_event->sbi.response = response.ogsSBIResponse(); };
+    void sbiRequest(Open5GSSBIRequest &request) { if (!m_event) return; m_event->sbi.request = request.ogsSBIRequest(); };
     void setSbiData(void *data) { if (!m_event) return; m_event->sbi.data = data; };
 
 private:

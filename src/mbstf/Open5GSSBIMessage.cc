@@ -17,6 +17,7 @@
  * under the License.
  */
 
+#include "ogs-app.h"
 #include "ogs-proto.h"
 
 #include <stdexcept>
@@ -29,6 +30,15 @@
 #include "Open5GSSBIMessage.hh"
 
 MBSTF_NAMESPACE_START
+
+Open5GSSBIMessage::~Open5GSSBIMessage()
+{
+    //ogs_debug("~Open5GSSBIMessage: message=%p, owner=%s", m_message, m_owner?"true":"false");
+    if (m_message != nullptr && m_owner) {
+        ogs_sbi_message_free(m_message);
+        delete m_message;
+    }
+}
 
 void Open5GSSBIMessage::parseHeader(Open5GSSBIRequest &request)
 {
