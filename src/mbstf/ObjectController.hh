@@ -35,6 +35,9 @@ public:
         :Controller(distributionSession)
         ,m_objectStore(*this)
         ,m_pullIngesters()
+        ,m_pushIngester()
+        ,m_packager()
+        ,m_nextId(1)
     {};
     ObjectController(const ObjectController &) = delete;
     ObjectController(ObjectController &&) = delete;
@@ -47,6 +50,8 @@ public:
     const ObjectStore &objectStore() const { return m_objectStore; };
     ObjectStore &objectStore() { return m_objectStore; };
 
+    virtual std::string nextObjectId();
+
 protected:
     std::shared_ptr<PullObjectIngester> &addPullObjectIngester(PullObjectIngester*);
     bool removePullObjectIngester(std::shared_ptr<PullObjectIngester> &);
@@ -58,6 +63,7 @@ private:
     std::list<std::shared_ptr<PullObjectIngester>> m_pullIngesters;
     std::shared_ptr<PushObjectIngester> m_pushIngester;
     std::shared_ptr<ObjectPackager> m_packager;
+    std::atomic_int m_nextId;
 };
 
 MBSTF_NAMESPACE_STOP

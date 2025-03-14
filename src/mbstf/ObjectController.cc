@@ -45,6 +45,13 @@ std::shared_ptr<PushObjectIngester> &ObjectController::setPushIngester(PushObjec
     return m_pushIngester;
 }
 
+std::string ObjectController::nextObjectId()
+{
+    std::ostringstream oss;
+    oss << m_nextId;
+    m_nextId++;
+    return oss.str();
+}
 
 MBSTF_NAMESPACE_STOP
 

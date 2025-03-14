@@ -39,6 +39,7 @@ static void request_completion_callback(void *cls, struct MHD_Connection *connec
                                         enum MHD_RequestTerminationCode termination_code);
 static MHD_Result handle_request(void *cls, struct MHD_Connection *connection, const char *url, const char *method,
                                  const char *version, const char *upload_data, size_t *upload_data_size, void **con_cls);
+static std::optional<PushObjectIngester::Request::time_type> parse_http_date_time(const std::optional<std::string> &date_time_str);
 
 /********************** PushObjectIngester::Request ***********************/
 
@@ -50,6 +51,10 @@ PushObjectIngester::Request::Request(struct MHD_Connection *mhd_connection, Push
     ,m_method()
     ,m_urlPath()
     ,m_protocolVersion()
+    ,m_etag()
+    ,m_contentType()
+    ,m_expires()
+    ,m_lastModified()
     ,m_bodyBlocks()
     ,m_totalBodySize(0)
     ,m_statusCode(0)
@@ -66,14 +71,8 @@ bool PushObjectIngester::Request::addBodyBlock(const std::vector<unsigned char> 
     m_bodyBlocks.push_back(body_block);
     m_totalBodySize += body_block.size();
 
-    if (m_totalBodySize > 65536) {
-        return false;
-    }
-
     return true;
 }
-
-
 
 void PushObjectIngester::Request::completed(struct MHD_Connection *connection,
                                             enum MHD_RequestTerminationCode term_code)
@@ -109,9 +108,10 @@ std::optional<std::string> PushObjectIngester::Request::getHeader(const std::str
 
 void PushObjectIngester::Request::processRequest()
 {
-    //const char *contentLength = MHD_lookup_connection_value(m_mhdConnection, MHD_HEADER_KIND, MHD_HTTP_HEADER_CONTENT_LENGTH);
-    const char *contentType = MHD_lookup_connection_value(m_mhdConnection, MHD_HEADER_KIND, MHD_HTTP_HEADER_CONTENT_TYPE);
-    auto lastModified = std::chrono::system_clock::now();
+    auto now = std::chrono::system_clock::now();
+    static const std::string app_octet("application/octet-stream");
+    const auto &last_modified = m_lastModified.value_or(now);
+    const auto &content_type = m_contentType.value_or(app_octet);
 
     std::string url(m_urlPath);
     if (url.front() == '/') {
@@ -126,8 +126,14 @@ void PushObjectIngester::Request::processRequest()
         // Ignore bad cast, we just won't set the distribution base url if this happens
     }
 
-    ObjectStore::Metadata metadata(contentType, url, url, m_urlPath, lastModified, m_pushObjectIngester.getIngestServerPrefix(), object_distrib_base_url);
-    metadata.cacheExpires(std::chrono::system_clock::now() + std::chrono::minutes(ObjectStore::Metadata::cacheExpiry()));
+    {
+        std::ostringstream oss;
+        oss << "Object transferring to ObjectStore: content-type=" << content_type << ", url=" << url << ", id=" << m_urlPath << ", modified=" << last_modified;
+        ogs_debug("%s", oss.str().c_str());
+    }
+    
+    ObjectStore::Metadata metadata(content_type, url, url, m_urlPath, last_modified, m_pushObjectIngester.getIngestServerPrefix(), object_distrib_base_url);
+    metadata.cacheExpires(m_expires?m_expires.value():(std::chrono::system_clock::now() + std::chrono::minutes(ObjectStore::Metadata::cacheExpiry())));
 
     // Pull all body blocks together into one vector
     std::vector<unsigned char> body;
@@ -136,6 +142,10 @@ void PushObjectIngester::Request::processRequest()
     for (auto& block : m_bodyBlocks) {
         ogs_debug("Adding body block of %zu bytes", block.size());
         body.insert(body.end(), block.begin(), block.end());
+    }
+
+    if (m_objectId.empty()) {
+        m_objectId = m_pushObjectIngester.controller().nextObjectId();
     }
 
     m_pushObjectIngester.objectStore().addObject(m_objectId, std::move(body), std::move(metadata));
@@ -248,7 +258,7 @@ bool PushObjectIngester::stop()
     return true;
 }
 
-void PushObjectIngester::addRequest(std::shared_ptr<PushObjectIngester::Request> req)
+void PushObjectIngester::addRequest(const std::shared_ptr<PushObjectIngester::Request> &req)
 {
     {
         std::lock_guard<std::recursive_mutex> lock(m_mtx);
@@ -264,7 +274,7 @@ void PushObjectIngester::addRequest(std::shared_ptr<PushObjectIngester::Request>
     delete evt;
 }
 
-void PushObjectIngester::removeRequest(std::shared_ptr<PushObjectIngester::Request> req)
+void PushObjectIngester::removeRequest(const std::shared_ptr<PushObjectIngester::Request> &req)
 {
 
     std::lock_guard<std::recursive_mutex> lock(m_mtx);
@@ -281,6 +291,13 @@ void PushObjectIngester::removeRequest(std::shared_ptr<PushObjectIngester::Reque
 
 void PushObjectIngester::doObjectIngest() {
     start();
+}
+
+void PushObjectIngester::addedBodyBlock(const std::shared_ptr<Request> &request, std::vector<unsigned char>::size_type block_size,
+                        std::vector<unsigned char>::size_type body_size)
+{
+    std::shared_ptr<Event> evt(ObjectPushEvent::makeBlockReceivedEvent(request));
+    sendEventAsynchronous(evt);
 }
 
 const std::string &PushObjectIngester::getIngestServerPrefix()
@@ -413,6 +430,26 @@ static MHD_Result handle_request(void *cls, struct MHD_Connection *connection, c
         req->urlPath(url);
         req->method(method);
         req->protocolVersion(version);
+        req->etag(req->getHeader("ETag"));
+        req->contentType(req->getHeader("Content-Type"));
+        std::optional<std::string> cache_control(req->getHeader("Cache-Control"));
+        if (cache_control) {
+            const std::string &cache_control_value(cache_control.value());
+            if (cache_control_value.starts_with("max-age=")) {
+                std::optional<std::string> age(req->getHeader("Age"));
+                unsigned long max_age = std::stoul(cache_control_value.substr(8,cache_control_value.size()-8));
+                if (age) {
+                    unsigned long age_val = std::stoul(age.value());
+                    if (age_val >= max_age) {
+                        max_age = 0;
+                    } else {
+                        max_age -= age_val;
+                    }
+                }
+                req->expiryTime(std::chrono::system_clock::now() + std::chrono::seconds(max_age));
+            }
+        }
+        req->lastModified(parse_http_date_time(req->getHeader("Last-Modified")));
         std::shared_ptr<PushObjectIngester::Request> *req_ptr = new std::shared_ptr<PushObjectIngester::Request>(req);
         *con_cls = req_ptr;
         ingester->addRequest(*req_ptr);
@@ -424,6 +461,7 @@ static MHD_Result handle_request(void *cls, struct MHD_Connection *connection, c
     if (*upload_data_size > 0) {
         ogs_debug("handle_request: Adding %zu bytes of ingest data", *upload_data_size);
         req->addBodyBlock(std::vector<unsigned char>(upload_data, upload_data + *upload_data_size));
+        ingester->addedBodyBlock(req, *upload_data_size, req->bodySize());
         *upload_data_size = 0;
     } else if (*upload_data_size == 0) {
         ogs_debug("handle_request: Completed request processing.");
@@ -438,6 +476,27 @@ static MHD_Result handle_request(void *cls, struct MHD_Connection *connection, c
     ogs_debug("handle_request: Request processed.");
 
     return MHD_YES;
+}
+
+static std::optional<PushObjectIngester::Request::time_type> parse_http_date_time(const std::optional<std::string> &date_time_str)
+{
+    if (!date_time_str.has_value()) return std::nullopt;
+
+    PushObjectIngester::Request::time_type date_time;
+    std::istringstream iss(date_time_str.value());
+    iss.imbue(std::locale("C"));
+    iss >> std::chrono::parse("%a, %d %b %Y %H:%M:%S GMT", date_time); // RFC822/RFC1123
+    if (iss.fail()) {
+        iss.str(date_time_str.value());
+        iss >> std::chrono::parse("%A, %d-%b-%y %H:%M:%S GMT", date_time); // RFC1036
+        if (iss.fail()) {
+            iss.str(date_time_str.value());
+            iss >> std::chrono::parse("%a %b %d %H:%M:%S %Y", date_time); // ANSI C asctime format
+        }
+    }
+    if (iss.fail()) return std::nullopt;
+
+    return date_time;
 }
 
 MBSTF_NAMESPACE_STOP

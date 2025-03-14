@@ -33,6 +33,10 @@ public:
 	
     class Request {
     public:
+        using data_type = std::vector<unsigned char>;
+        using data_size_type = data_type::size_type;
+        using time_type = std::chrono::system_clock::time_point;
+
         Request() = delete;
         Request(const Request&) = delete;
         Request(Request&&) = delete;
@@ -57,16 +61,36 @@ public:
         
 	Request &protocolVersion(std::string &&proto_ver) { m_protocolVersion = std::move(proto_ver); return *this;};
 	
+        const std::optional<std::string> &etag() const { return m_etag; };
+        Request &etag(std::nullopt_t) { m_etag.reset(); return *this; };
+        Request &etag(const std::string &tag) { m_etag = tag; return *this; };
+        Request &etag(const std::optional<std::string> &tag) { m_etag = tag; return *this; };
+
+        const std::optional<std::string> &contentType() const { return m_contentType; };
+        Request &contentType(std::nullopt_t) { m_contentType.reset(); return *this; };
+        Request &contentType(const std::string &content_type) { m_contentType = content_type; return *this; };
+        Request &contentType(const std::optional<std::string> &content_type) { m_contentType = content_type; return *this; };
+
+        const std::optional<time_type> &expiryTime() const { return m_expires; };
+        Request &expiryTime(std::nullopt_t) { m_expires.reset(); return *this; };
+        Request &expiryTime(const time_type &expires) { m_expires = expires; return *this; };
+        Request &expiryTime(const std::optional<time_type> &expires) { m_expires = expires; return *this; };
+
+        const std::optional<time_type> &lastModified() const { return m_lastModified; };
+        Request &lastModified(std::nullopt_t) { m_lastModified.reset(); return *this; };
+        Request &lastModified(const time_type &last_modified) { m_lastModified = last_modified; return *this; };
+        Request &lastModified(const std::optional<time_type> &last_modified) { m_lastModified = last_modified; return *this; };
+
 	std::optional<std::string> getHeader(const std::string &field) const;
+        data_size_type bodySize() const { return m_totalBodySize; };
 	
-	bool addBodyBlock(const std::vector<unsigned char> &body_block);
+	bool addBodyBlock(const data_type &body_block);
 	bool setError(unsigned int status_code = 0, const std::string &reason = std::string());
         void completed(struct MHD_Connection *connection, enum MHD_RequestTerminationCode term_code);
 	virtual void waitClose() {};
 	void requestHandler(struct MHD_Connection *connection);
 	typedef bool (*HeaderProcessingCallback)(const std::string &key, const std::string &value, void *data);
 	void processRequestHeader(HeaderProcessingCallback callback, void *data) const;
-
 
     protected:
 	//Request(const std::string &url, const std::string &method, const std::string &version);
@@ -76,16 +100,19 @@ public:
         struct MHD_Response *m_mhdResponse;
 
     private:
-      
         PushObjectIngester &m_pushObjectIngester;
         std::string m_objectId;
         std::string m_method;
         std::string m_urlPath;
         std::string m_protocolVersion;
         //MHD_connection *m_mhdConnection;
+        std::optional<std::string> m_etag;
+        std::optional<std::string> m_contentType;
+        std::optional<time_type> m_expires;
+        std::optional<time_type> m_lastModified;
 
-        std::list<std::vector<unsigned char> > m_bodyBlocks;
-        std::vector<unsigned char>::size_type m_totalBodySize;
+        std::list<data_type> m_bodyBlocks;
+        data_size_type m_totalBodySize;
 
         unsigned int m_statusCode;
         std::string m_errorReason;
@@ -93,7 +120,6 @@ public:
 
 	std::unique_ptr<std::recursive_mutex> m_mutex;
         std::condition_variable_any m_condVar; /**< CondVar for new response content/eof */
-
     };
 
     class ObjectPushEvent : public Event {
@@ -138,8 +164,8 @@ public:
 
     bool start();
     bool stop();
-    void addRequest(std::shared_ptr<Request> request);
-    void removeRequest(std::shared_ptr<Request> request);
+    void addRequest(const std::shared_ptr<Request> &request);
+    void removeRequest(const std::shared_ptr<Request> &request);
 
     //void addConnection(Request *request);
     //void removeConnection(Request *request);
@@ -148,6 +174,9 @@ public:
     virtual ~PushObjectIngester();
 
     //static int client_notify_cb(int status, ogs_sbi_response_t *response, void *data);
+    // Notifications from microhttpd handlers
+    void addedBodyBlock(const std::shared_ptr<Request> &, std::vector<unsigned char>::size_type block_size,
+                        std::vector<unsigned char>::size_type body_size);
 
 protected:
     virtual void doObjectIngest();

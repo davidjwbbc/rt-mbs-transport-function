@@ -143,8 +143,15 @@ void ObjectListPackager::doObjectPackage() {
                 }
 
                 m_queued = true;
-                m_queuedToi = m_transmitter->send(location, "application/octet-stream",
-                    m_transmitter->seconds_since_epoch() + 60, // 1 minute from now
+                uint64_t expires_in;
+                const auto &cache_expires = metadata.cacheExpires();
+                if (cache_expires) {
+                    expires_in = std::chrono::duration_cast<std::chrono::seconds>(cache_expires.value().time_since_epoch()).count() + 2208988800;
+                } else {
+                    expires_in = m_transmitter->seconds_since_epoch() + 60;
+                }
+                m_queuedToi = m_transmitter->send(location, metadata.mediaType(),
+                    expires_in,
                     reinterpret_cast<char*>(objData.data()),
                     objData.size()
                 );

@@ -94,6 +94,12 @@ void ObjectListController::processEvent(Event &event, SubscriptionService &event
         } else {
             ogs_error("ObjectListPackager is not initialized.");
         }
+    } else if (event.eventName() == "ObjectPushStart") {
+        PushObjectIngester::ObjectPushEvent &obj_push_event = dynamic_cast<PushObjectIngester::ObjectPushEvent&>(event);
+        const PushObjectIngester::Request &request(obj_push_event.request());
+        const std::optional<std::string> &content_type(request.contentType());
+        ogs_debug("Check mime_type [%s] is ok?", content_type?content_type.value().c_str():"<none>");
+        // event.preventDefault() if checks fail
     }
 }
 
@@ -131,7 +137,7 @@ void ObjectListController::initPullObjectIngester()
 
                 }
 
-                urls.emplace_back(std::move(PullObjectIngester::IngestItem(generateUUID(), obj_ingest_url, url_str,
+                urls.emplace_back(std::move(PullObjectIngester::IngestItem(nextObjectId(), obj_ingest_url, url_str,
                                                                            object_ingest_base_url, object_distribution_base_url)));
             }
         }
@@ -148,23 +154,24 @@ void ObjectListController::initPushObjectIngester()
     PushObjectIngester *pushIngester = new PushObjectIngester(objectStore(), *this);
 
     set_object_ingest_base_url(distributionSession(), pushIngester->getIngestServerPrefix());
+    subscribeTo({"ObjectPushStart"}, *pushIngester);
     setPushIngester(pushIngester);
 }
 
 void ObjectListController::initObjectIngester()
 {
-    if(get_object_acquisition_method(distributionSession()) == "PULL")
-    {
+    if (get_object_acquisition_method(distributionSession()) == "PULL") {
         initPullObjectIngester();
-
-    } else
-    if(get_object_acquisition_method(distributionSession()) == "PUSH")
-    {
+    } else if (get_object_acquisition_method(distributionSession()) == "PUSH") {
         initPushObjectIngester();
-
     } else {
         ogs_error("Invalid Acq. method");
     }
+}
+
+std::string ObjectListController::nextObjectId()
+{
+    return generateUUID();
 }
 
 const std::optional<std::string> &ObjectListController::objectDistributionBaseUrl() const

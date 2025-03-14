@@ -59,6 +59,7 @@ public:
                 return os.str();
     }
     const std::optional<std::string> &objectDistributionBaseUrl() const;
+    virtual std::string nextObjectId();
 
 private:
     std::string generateUUID();
