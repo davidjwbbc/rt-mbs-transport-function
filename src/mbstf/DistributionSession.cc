@@ -64,24 +64,17 @@ static const NfServer::InterfaceMetadata g_nmbstf_distributionsession_api_metada
 );
 
 DistributionSession::DistributionSession(CJson &json, bool as_request)
-    : m_createReqData(std::make_shared<CreateReqData>(json, as_request)) {
-
-    ogs_uuid_t uuid;
-
-    char id[OGS_UUID_FORMATTED_LENGTH + 1];
-
-    ogs_uuid_get(&uuid);
-    ogs_uuid_format(id, &uuid);
+    : m_createReqData(std::make_shared<CreateReqData>(json, as_request))
+{
 
     std::shared_ptr<DistSession> distSession = m_createReqData->getDistSession();
-    distSession->setDistSessionId(std::string(id));
 
     m_generated = std::chrono::system_clock::now();
     m_lastUsed = m_generated;
 
     std::string json_str(json.serialise());
     m_hash = calculate_hash(std::vector<std::string::value_type>(json_str.begin(), json_str.end()));
-    m_distributionSessionId = id;
+    m_distributionSessionId = distSession->getDistSessionId();
 
     //App::self().context()->addDistributionSession(m_distributionSessionId, std::shared_ptr<DistributionSession> DistributionSession)
 
