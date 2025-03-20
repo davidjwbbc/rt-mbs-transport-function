@@ -10,6 +10,7 @@
  * https://drive.google.com/file/d/1cinCiA778IErENZ3JN52VFW-1ffHpx7Z/view
  */
 
+#include <algorithm>
 #include <deque>
 #include <list>
 #include <map>
@@ -141,6 +142,31 @@ bool Subscriber::subscribeTo(std::initializer_list<const char*> events_list, Sub
     bool ret = service.subscribe(events_list, *this);
     if (ret) m_subscriptions.insert(&service);
     return ret;
+}
+
+bool Subscriber::isSubscribedTo(SubscriptionService &service) const
+{
+    return (m_subscriptions.find(&service) != m_subscriptions.end());
+}
+
+bool Subscriber::isSubscribedTo(std::initializer_list<const char*> events_list, SubscriptionService &service)
+{
+    // Quick check for service in our services list, if not there then false
+    if (m_subscriptions.find(&service) == m_subscriptions.end()) return false;
+
+    auto subscribed_events = service.subscribedEvents(*this);
+    // If we aren't subscribed at all then false (shouldn't happen)
+    if (subscribed_events.size() == 0) return false;
+    // If we are subscribed to all events then true (no need to check individual ones)
+    if (subscribed_events.size() == 1 && subscribed_events.front() == nullptr) return true;
+    // otherwise make sure we have a subscription to event event in the list
+    std::list<const char*> check_events(events_list);
+    for (auto chk_evt : check_events) {
+        if (std::find_if(subscribed_events.begin(), subscribed_events.end(), [chk_evt](const char *evt) {return std::string(evt) == chk_evt;}) == subscribed_events.end()) {
+            return false;
+        }
+    }
+    return true;
 }
 
 MBSTF_NAMESPACE_STOP

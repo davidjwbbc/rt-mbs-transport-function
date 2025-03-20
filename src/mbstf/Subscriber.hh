@@ -47,6 +47,8 @@ public:
 protected:
     bool subscribeTo(SubscriptionService &service); // subscribe to all events
     bool subscribeTo(std::initializer_list<const char*> events_list, SubscriptionService &service); // subscribe to specific events
+    bool isSubscribedTo(SubscriptionService &service) const; // Check if we are subscribed in any way to service
+    bool isSubscribedTo(std::initializer_list<const char*> events_list, SubscriptionService &service); // Check if we are subscribed to the given events on service
 
 private:
     std::set<SubscriptionService*> m_subscriptions;
