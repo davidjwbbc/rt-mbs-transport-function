@@ -31,10 +31,11 @@
 #include "common.hh"
 #include "App.hh"
 #include "Context.hh"
+#include "Controller.hh"
+#include "ControllerFactory.hh"
 #include "hash.hh"
 #include "MBSTFNetworkFunction.hh"
 #include "NfServer.hh"
-#include "ObjectListController.hh"
 #include "Open5GSEvent.hh"
 #include "Open5GSSBIMessage.hh"
 #include "Open5GSSBIRequest.hh"
@@ -190,7 +191,7 @@ bool DistributionSession::processEvent(Open5GSEvent &event)
 
                         App::self().context()->addDistributionSession(distributionSession);
 
-                        distributionSession->m_controller.reset(new ObjectListController(*distributionSession));
+                        distributionSession->m_controller.reset(ControllerFactory::makeController(*distributionSession));
 
                         CJson createdReqData_json(distributionSession->json(false));
                         std::string body(createdReqData_json.serialise());

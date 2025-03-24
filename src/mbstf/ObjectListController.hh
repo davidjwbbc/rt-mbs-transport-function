@@ -61,6 +61,8 @@ public:
     const std::optional<std::string> &objectDistributionBaseUrl() const;
     virtual std::string nextObjectId();
 
+    static unsigned int factoryPriority() { return 100; };
+
 private:
     std::string generateUUID();
 

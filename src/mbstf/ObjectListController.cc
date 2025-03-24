@@ -22,7 +22,9 @@
 #include <uuid/uuid.h>
 
 #include "ogs-app.h"
+
 #include "common.hh"
+#include "ControllerFactory.hh"
 #include "DistributionSession.hh"
 #include "Event.hh"
 #include "ObjectController.hh"
@@ -58,6 +60,7 @@ static uint32_t get_rate_limit(DistributionSession &distributionSession);
 static const std::optional<std::string> &get_object_ingest_base_url(DistributionSession &distributionSession);
 static const std::string &get_object_acquisition_method(DistributionSession &distributionSession);
 static void set_object_ingest_base_url(DistributionSession &distributionSession, std::string ingestBaseUrl);
+
 ObjectListController::ObjectListController(DistributionSession &distributionSession)
     :ObjectController(distributionSession)
     ,Subscriber()
@@ -188,6 +191,8 @@ const std::optional<std::string> &ObjectListController::objectDistributionBaseUr
         return nullValue;
     }
 }
+
+static const struct init { init() {ControllerFactory::registerController(new ControllerConstructor<ObjectListController>);};} g_init;
 
 static std::string trim_slashes(const std::string &path)
 {

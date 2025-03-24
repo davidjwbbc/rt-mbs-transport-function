@@ -71,6 +71,8 @@ libmbstf_dist_sources = files('''
     Context.hh
     Controller.cc
     Controller.hh
+    ControllerFactory.cc
+    ControllerFactory.hh
     Curl.cc
     Curl.hh
     DistributionSession.cc
@@ -170,6 +172,15 @@ libmbstf_dep = declare_dependency(
                     rt_libflute_dep,
                     boost_dep,
                     uuid_dep])
+libmbstf_whole_dep = declare_dependency(
+    link_whole : libmbstf,
+    dependencies : [libsbi_dep,
+                    libsbi_openapi_dep,
+                    libapp_dep,
+                    libcrypt_dep,
+                    rt_libflute_dep,
+                    boost_dep,
+                    uuid_dep])
 
 mbstf_sources = files('''
     App.cc
@@ -187,7 +198,7 @@ executable('open5gs-mbstfd',
     c_args : '-DDEFAULT_CONFIG_FILENAME="@0@/mbstf.yaml"'.format(open5gs_sysconfdir),
     cpp_args : '-DDEFAULT_CONFIG_FILENAME="@0@/mbstf.yaml"'.format(open5gs_sysconfdir),
     include_directories : [srcinc ],
-    dependencies : [libmbstf_dep],
+    dependencies : [libmbstf_whole_dep],
     install_rpath : libdir,
     install : true)
 
