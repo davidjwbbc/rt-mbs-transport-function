@@ -65,7 +65,9 @@ static const NfServer::InterfaceMetadata g_nmbstf_distributionsession_api_metada
 );
 
 DistributionSession::DistributionSession(CJson &json, bool as_request)
-    : m_createReqData(std::make_shared<CreateReqData>(json, as_request))
+    :m_createReqData(std::make_shared<CreateReqData>(json, as_request))
+    ,m_controller()
+    //,m_eventSubscriptions()
 {
 
     std::shared_ptr<DistSession> distSession = m_createReqData->getDistSession();
@@ -78,12 +80,11 @@ DistributionSession::DistributionSession(CJson &json, bool as_request)
     m_distributionSessionId = distSession->getDistSessionId();
 
     //App::self().context()->addDistributionSession(m_distributionSessionId, std::shared_ptr<DistributionSession> DistributionSession)
-
 }
 
 DistributionSession::~DistributionSession()
 {
-
+    // TODO: if session is in ACTIVE state then send SESSION_DEACTIVED event to any event subscribers that are listening for it.
 }
 
 CJson DistributionSession::json(bool as_request = false) const
@@ -192,6 +193,8 @@ bool DistributionSession::processEvent(Open5GSEvent &event)
                         App::self().context()->addDistributionSession(distributionSession);
 
                         distributionSession->m_controller.reset(ControllerFactory::makeController(*distributionSession));
+
+                        // TODO: Subscribe to Events from the Controller - to be forwarded to DistributionSessionSubscriptions
 
                         CJson createdReqData_json(distributionSession->json(false));
                         std::string body(createdReqData_json.serialise());

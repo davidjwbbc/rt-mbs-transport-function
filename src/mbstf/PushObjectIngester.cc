@@ -83,6 +83,7 @@ void PushObjectIngester::Request::completed(struct MHD_Connection *connection,
     ogs_info("End of request for %s", std::string(m_urlPath).c_str());
     m_noMoreBodyData = true;
     m_condVar.notify_all();
+    // if (term_code != MHD_REQUEST_TERMINATED_COMPLETED_OK) m_pushObjectIngester.emitObjectIngestFailedEvent();
 }
 
 bool PushObjectIngester::Request::setError(unsigned int status_code, const std::string &reason)
@@ -232,6 +233,7 @@ bool PushObjectIngester::start()
                                     MHD_OPTION_END
                                     );
         m_condVar.notify_all();
+        // emitObjectPushListeningEvent();
     }
     ogs_debug("PushObjectIngester::start(): Started MHD (%p)", m_mhdDaemon);
 
@@ -246,9 +248,8 @@ bool PushObjectIngester::stop()
 
     if (m_mhdDaemon == 0) return false;
 
-    //delete m_sockaddr;
     MHD_stop_daemon(m_mhdDaemon);
-    //delete m_sockaddr;
+    // emitObjectPushClosedEvent();
 
     m_activeRequests.clear();
 
@@ -323,7 +324,7 @@ const std::string &PushObjectIngester::getIngestServerPrefix()
                             static const struct sockaddr_in known_public_ipv4 = {
                                 .sin_family=AF_INET,
                                 .sin_port=htons(53),
-                                .sin_addr={static_cast<in_addr_t>(0x08080808)} /* 8.8.8.8 */
+                                .sin_addr={static_cast<in_addr_t>(0x08080808)} /* 8.8.8.8 (dns.google.com) */
                             };
                             struct sockaddr_in local_def_route;
                             socklen_t local_def_route_len = sizeof(local_def_route);
@@ -346,7 +347,7 @@ const std::string &PushObjectIngester::getIngestServerPrefix()
                             static const struct sockaddr_in6 known_public_ipv6 = {
                                 .sin6_family=AF_INET6,
                                 .sin6_port=htons(53),
-                                .sin6_addr={ { { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 } } } /* :: */
+                                .sin6_addr={ { { 0x20,0x01,0x48,0x60,0x48,0x60,0,0,0,0,0,0,0,0,0x88,0x88 } } } /* 2001:4860:4860::8888 (dns.google.com) */
                             };
                             struct sockaddr_in6 local_def_route;
                             socklen_t local_def_route_len = sizeof(local_def_route);

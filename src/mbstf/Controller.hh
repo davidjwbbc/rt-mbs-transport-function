@@ -3,7 +3,7 @@
 /******************************************************************************
  * 5G-MAG Reference Tools: MBS Traffic Function: Session Controller Base
  ******************************************************************************
- * Copyright: (C)2024 British Broadcasting Corporation
+ * Copyright: (C)2024-2025 British Broadcasting Corporation
  * Author(s): Dev Audsin <dev.audsin@bbc.co.uk>
  * License: 5G-MAG Public License v1
  *
@@ -18,7 +18,7 @@ MBSTF_NAMESPACE_START
 
 class DistributionSession;
 
-class Controller {
+class Controller { // : public SubscriptionService {
 public:
     Controller() = delete;
     Controller(DistributionSession &distributionSession);

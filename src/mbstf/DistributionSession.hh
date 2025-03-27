@@ -27,6 +27,7 @@
 #include <memory>
 
 #include "common.hh"
+//#include "Subscriber.hh"
 
 namespace fiveg_mag_reftools {
     class CJson;
@@ -44,7 +45,7 @@ MBSTF_NAMESPACE_START
 class Open5GSEvent;
 class Controller;
 
-class DistributionSession {
+class DistributionSession { // : public Subscriber {
 public:
     using SysTimeMS = std::chrono::system_clock::time_point;
     DistributionSession(CJson &json, bool as_request);
@@ -68,6 +69,9 @@ public:
 
     static bool processEvent(Open5GSEvent &event);
 
+    // TODO: Forwarding Events from the Controller to m_eventSubscriptions
+    // virtual void processEvent(Event &event, SubscriptionService &event_service);
+
 private:
     std::shared_ptr<CreateReqData> m_createReqData;
     SysTimeMS m_generated;
@@ -75,7 +79,8 @@ private:
     std::string m_hash;
     std::string m_distributionSessionId;
     std::shared_ptr<Controller> m_controller;
-    //ObjectStore m_objectStore;
+    // MBSTF event notification (TODO)
+    //std::list<DistributionSessionSubscription> m_eventSubscriptions;
 };
 
 MBSTF_NAMESPACE_STOP

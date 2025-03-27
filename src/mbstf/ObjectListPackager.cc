@@ -120,9 +120,12 @@ void ObjectListPackager::doObjectPackage() {
                         if (m_queuedToi == toi) {
                             m_queued = false;
                             ogs_info("Object with TOI: %d", toi);
+                        } else {
+                            ogs_error("Unscheduled completion of Object with TOI: %d", toi);
                         }
                     }
                 );
+                // emitFluteSessionStartedEvent();
             }
 
             if (!m_packageItems.empty() && !m_queued) {
@@ -162,6 +165,7 @@ void ObjectListPackager::doObjectPackage() {
         }
     } catch (std::exception &ex) {
         ogs_error("Exiting on unhandled exception: %s", ex.what());
+        // emitFluteSessionFailedEvent();
     }
 }
 

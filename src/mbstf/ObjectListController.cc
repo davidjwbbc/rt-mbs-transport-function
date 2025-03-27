@@ -104,6 +104,12 @@ void ObjectListController::processEvent(Event &event, SubscriptionService &event
         ogs_debug("Check mime_type [%s] is ok?", content_type?content_type.value().c_str():"<none>");
         // event.preventDefault() if checks fail
     }
+    // TODO: Forward ingest and packager events for DistributionSessionSubscriptions notifications
+    // else if (event.eventName() == "ObjectIngestFailed") { emitDataIngestFailedEvent(); }
+    // else if (event.eventName() == "FluteSessionStarted") { emitSessionActivatedEvent(); }
+    // else if (event.eventName() == "FluteSessionFailed") { emitServiceManagementFailureEvent(); }
+    // else if (event.eventName() == "ObjectPushListening") { emitDataIngestSessionEstablished(); }
+    // else if (event.eventName() == "ObjectPushClosed") { emitDataIngestSessionTerminated(); }
 }
 
 std::string ObjectListController::generateUUID() {

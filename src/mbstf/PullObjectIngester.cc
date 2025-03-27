@@ -107,7 +107,7 @@ void PullObjectIngester::doObjectIngest() {
 
         // Check the result
         if (bytesReceived >= 0) {
-            ogs_info("Received %ld bytes of data", bytesReceived);
+            ogs_debug("Received %ld bytes of data", bytesReceived);
 	    auto lastModified = std::chrono::system_clock::now();
             std::string fetched_url = m_curl->getPermanentRedirectUrl();
             if (fetched_url.empty()) fetched_url = item.url();
@@ -121,8 +121,10 @@ void PullObjectIngester::doObjectIngest() {
 	    
         } else if (bytesReceived == -1) {
             ogs_error("Request timed out.");
+            // emitObjectIngestFailedEvent();
         } else {
             ogs_error("An error occurred while fetching the data."); 	     
+            // emitObjectIngestFailedEvent();
         }
     }
 }
