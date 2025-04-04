@@ -19,6 +19,19 @@ project('rt-mbs-transport-function', 'c', 'cpp',
     ],
 )
 
+cplusplus = meson.get_compiler('cpp')
+if not cplusplus.links('''#include <chrono>
+
+int main(int argc, char *argv[])
+{
+  std::chrono::system_clock::time_point tmptime;
+  std::chrono::parse("%Y", tmptime);
+  return 0;
+}
+''', name: 'STL contains std::chrono::parse')
+  error('std::chrono::parse function not found in STL, please use gcc 14.1 or later as the compiler')
+endif
+
 cmake=import('cmake')
 
 open5gs_project=subproject('open5gs', required: true)
