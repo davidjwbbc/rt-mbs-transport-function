@@ -43,6 +43,9 @@ Controller *ControllerFactory::makeController(DistributionSession &distributionS
     for (const auto &cc : g_constructors) {
         try {
             return cc->makeController(distributionSession);
+	} catch (const std::runtime_error& e) {
+            // Handle runtime_error specifically
+            throw std::runtime_error(e.what());
         } catch (std::exception &ex) {
             // That controller couldn't handle that DistributionSession, let's try the next
         }

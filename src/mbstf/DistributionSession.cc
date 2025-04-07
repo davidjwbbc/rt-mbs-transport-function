@@ -192,7 +192,18 @@ bool DistributionSession::processEvent(Open5GSEvent &event)
 
                         App::self().context()->addDistributionSession(distributionSession);
 
-                        distributionSession->m_controller.reset(ControllerFactory::makeController(*distributionSession));
+			try {
+
+                            distributionSession->m_controller.reset(ControllerFactory::makeController(*distributionSession));
+                        } catch (std::runtime_error &err) {
+                            ogs_error("Error while populating MBSTF Distribution Session: %s", err.what());
+                            char *error = ogs_msprintf("Bad request [%s]", err.what());
+                            ogs_error("%s", error);
+                            ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST, 0, message,
+                                                                            app_meta, api, "Bad Request", error));
+                            ogs_free(error);
+                            return true;
+                        }
 
                         // TODO: Subscribe to Events from the Controller - to be forwarded to DistributionSessionSubscriptions
 
