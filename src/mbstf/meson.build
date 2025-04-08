@@ -75,12 +75,17 @@ libmbstf_dist_sources = files('''
     ControllerFactory.hh
     Curl.cc
     Curl.hh
+    DASHManifestHandler.cc
+    DASHManifestHandler.hh
     DistributionSession.cc
     DistributionSession.hh
     Event.cc
     Event.hh
     EventHandler.hh
     hash.hh
+    ManifestHandler.hh
+    ManifestHandlerFactory.cc
+    ManifestHandlerFactory.hh
     MBSTFEventHandler.cc
     MBSTFEventHandler.hh
     MBSTFNetworkFunction.hh
