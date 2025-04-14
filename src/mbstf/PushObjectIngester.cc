@@ -122,7 +122,7 @@ void PushObjectIngester::Request::processRequest()
     std::optional<std::string> object_distrib_base_url = std::nullopt;
     try {
         ObjectListController &list_control(dynamic_cast<ObjectListController&>(m_pushObjectIngester.controller()));
-        object_distrib_base_url = list_control.objectDistributionBaseUrl();
+        object_distrib_base_url = list_control.getObjectDistributionBaseUrl();
     } catch (std::bad_cast &ex) {
         // Ignore bad cast, we just won't set the distribution base url if this happens
     }
@@ -259,7 +259,7 @@ bool PushObjectIngester::stop()
     return true;
 }
 
-void PushObjectIngester::addRequest(const std::shared_ptr<PushObjectIngester::Request> &req)
+bool PushObjectIngester::addRequest(const std::shared_ptr<PushObjectIngester::Request> &req)
 {
     {
         std::lock_guard<std::recursive_mutex> lock(m_mtx);
@@ -267,12 +267,12 @@ void PushObjectIngester::addRequest(const std::shared_ptr<PushObjectIngester::Re
         ogs_debug( "Added new request, there are now %ld active requests", m_activeRequests.size());
     }
     ObjectPushEvent *evt = ObjectPushEvent::makeStartEvent(req);
-    if (sendEventSynchronous(*evt)) {
+    bool result = sendEventSynchronous(*evt);
+    if (result) {
         ogs_debug("Request accepted, receiving...");
-    } else {
-        // error - do immediate client response
     }
     delete evt;
+    return result;
 }
 
 void PushObjectIngester::removeRequest(const std::shared_ptr<PushObjectIngester::Request> &req)
@@ -453,8 +453,8 @@ static MHD_Result handle_request(void *cls, struct MHD_Connection *connection, c
         req->lastModified(parse_http_date_time(req->getHeader("Last-Modified")));
         std::shared_ptr<PushObjectIngester::Request> *req_ptr = new std::shared_ptr<PushObjectIngester::Request>(req);
         *con_cls = req_ptr;
-        ingester->addRequest(*req_ptr);
-        return MHD_YES;
+        if(ingester->addRequest(*req_ptr)) return MHD_YES;
+        return MHD_NO;
     }
 
     std::shared_ptr<PushObjectIngester::Request> req = *reinterpret_cast<std::shared_ptr<PushObjectIngester::Request>*>(*con_cls);

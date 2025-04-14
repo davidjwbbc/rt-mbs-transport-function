@@ -25,7 +25,7 @@
 
 #include <chrono>
 #include <memory>
-
+#include "openapi/model/ObjDistributionData.h"
 #include "common.hh"
 //#include "Subscriber.hh"
 
@@ -35,10 +35,12 @@ namespace fiveg_mag_reftools {
 
 namespace reftools::mbstf {
     class CreateReqData;
+    class ObjDistributionData;
 }
 
 using fiveg_mag_reftools::CJson; 
 using reftools::mbstf::CreateReqData;
+using reftools::mbstf::ObjDistributionData;
 
 MBSTF_NAMESPACE_START
 
@@ -68,6 +70,18 @@ public:
     void setController(std::shared_ptr<Controller> controller) {m_controller = controller;};
 
     static bool processEvent(Open5GSEvent &event);
+    const ObjDistributionData::ObjAcquisitionIdsPullType &getObjectAcquisitionPullUrls();
+    const std::string &getObjectDistributionOperatingMode(); 
+    const std::optional<std::string> &getDestIpAddr();
+    in_port_t getPortNumber();
+    uint32_t getRateLimit();
+    const std::optional<std::string> &getObjectIngestBaseUrl();
+    const std::string &getObjectAcquisitionMethod();
+    void setObjectIngestBaseUrl(std::string ingestBaseUrl);
+    const std::optional<std::string> &getObjectAcquisitionPushId();
+    bool setObjectAcquisitionIdPush(std::optional<std::string> &id);
+    const std::optional<std::string> &objectDistributionBaseUrl() const;
+
 
     // TODO: Forwarding Events from the Controller to m_eventSubscriptions
     // virtual void processEvent(Event &event, SubscriptionService &event_service);

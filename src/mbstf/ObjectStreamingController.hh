@@ -1,7 +1,7 @@
-#ifndef _MBS_TF_OBJECT_LIST_CONTROLLER_HH_
-#define _MBS_TF_OBJECT_LIST_CONTROLLER_HH_
+#ifndef _MBS_TF_OBJECT_STREAMING_CONTROLLER_HH_
+#define _MBS_TF_OBJECT_STREAMING_CONTROLLER_HH_
 /******************************************************************************
- * 5G-MAG Reference Tools: MBS Traffic Function: Object List Controller class
+ * 5G-MAG Reference Tools: MBS Traffic Function: Object Streaming Controller class
  ******************************************************************************
  * Copyright: (C)2025 British Broadcasting Corporation
  * Author(s): Dev Audsin <dev.audsin@bbc.co.uk>
@@ -18,59 +18,57 @@
 
 #include "common.hh"
 #include "openapi/model/ObjDistributionData.h"
-#include "ObjectController.hh"
+#include "ObjectManifestController.hh"
 #include "Subscriber.hh"
 
 MBSTF_NAMESPACE_START
 
 class DistributionSession;
 class Event;
-class ObjectListPackager;
+class ObjectStreamingPackager;
 class PullObjectIngester;
 class SubscriptionService;
+class ObjectManifestController;
 
-class ObjectListController : public ObjectController, public Subscriber {
+class ObjectStreamingController : public ObjectManifestController, public Subscriber {
 public:
-    ObjectListController() = delete;
-    ObjectListController(DistributionSession &distributionSession);
-    ObjectListController(const ObjectListController &) = delete;
-    ObjectListController(ObjectListController &&) = delete;
+    ObjectStreamingController() = delete;
+    ObjectStreamingController(DistributionSession&);
+    ObjectStreamingController(const ObjectStreamingController&) = delete;
+    ObjectStreamingController(ObjectStreamingController&&) = delete;
 
-    virtual ~ObjectListController();
+    virtual ~ObjectStreamingController();
 
-    ObjectListController &operator=(const ObjectListController &) = delete;
-    ObjectListController &operator=(ObjectListController &&) = delete;
+    ObjectStreamingController &operator=(const ObjectStreamingController&) = delete;
+    ObjectStreamingController &operator=(ObjectStreamingController&&) = delete;
 
     void initObjectIngester();
     void initPullObjectIngester();
     void initPushObjectIngester();
 
+    const std::optional<std::string> &getObjectDistributionBaseUrl() const;
+    virtual std::string nextObjectId();
 
-    void fetchItems();
-    std::shared_ptr<ObjectListPackager> &setObjectListPackager();
-    std::shared_ptr<ObjectListPackager> &setObjectListPackager(ObjectListPackager&&);
+    static unsigned int factoryPriority() { return 50; };
 
     // Subscriber virtual methods
     virtual void processEvent(Event &event, SubscriptionService &event_service);
+
     // Optional: virtual void subscriberRemoved(SubscriptionService &event_service);
     std::string reprString() const {
                 std::ostringstream os;
-                os << "ObjectListController(controller =" << this << ")";
+                os << "ObjectStreamingController(controller =" << this << ")";
                 return os.str();
     }
-    virtual std::string nextObjectId();
-
-    static unsigned int factoryPriority() { return 100; };
-    const std::optional<std::string> &getObjectDistributionBaseUrl() const;
 
 private:
     std::string generateUUID();
-
-    std::shared_ptr<ObjectListPackager> m_objectListPackager;
+    void validateStreamingDistributionSession(DistributionSession &distributionSession);
+    std::thread m_ingestSchedulingThread;
 };
 
 MBSTF_NAMESPACE_STOP
 
 /* vim:ts=8:sts=4:sw=4:expandtab:
  */
-#endif /* _MBS_TF_OBJECT_LIST_CONTROLLER_HH_ */
+#endif /* _MBS_TF_OBJECT_STREAMING_CONTROLLER_HH_ */

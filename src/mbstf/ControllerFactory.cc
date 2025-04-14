@@ -45,8 +45,11 @@ Controller *ControllerFactory::makeController(DistributionSession &distributionS
             return cc->makeController(distributionSession);
 	} catch (const std::runtime_error& e) {
             // Handle runtime_error specifically
-            throw std::runtime_error(e.what());
-        } catch (std::exception &ex) {
+            throw;
+        } catch (const std::logic_error &e) {
+            // That controller couldn't handle that DistributionSession, let's try the next
+        }
+	catch (std::exception &ex) {
             // That controller couldn't handle that DistributionSession, let's try the next
         }
     }

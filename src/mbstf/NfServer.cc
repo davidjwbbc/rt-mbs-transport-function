@@ -113,18 +113,16 @@ bool NfServer::sendError(Open5GSSBIStream &stream, int status, size_t number_of_
                          const std::optional<std::map<std::string,std::string> > &invalid_params,
                          const std::optional<std::string> &problem_type)
 {
-    OpenAPI_problem_details_t problem;
+    OpenAPI_problem_details_t *problem = OpenAPI_problem_details_create(nullptr, nullptr, false, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
     OpenAPI_problem_details_t *problem_details = NULL;
 
     ogs_assert(stream);
-
-    memset(&problem, 0, sizeof(problem));
 
     if (problem_detail_json) {
         CJson copy(problem_detail_json.value());
         cJSON *copy_impl(copy.exportCJSON());
         problem_details = OpenAPI_problem_details_parseFromJSON(copy_impl);
-        problem.invalid_params = problem_details->invalid_params;
+        problem->invalid_params = problem_details->invalid_params;
 	problem_details->invalid_params = NULL;
 	OpenAPI_problem_details_free(problem_details);
         cJSON_Delete(copy_impl);
@@ -132,30 +130,30 @@ bool NfServer::sendError(Open5GSSBIStream &stream, int status, size_t number_of_
 
     if (message) {
 	if (problem_type) {
-            problem.type = ogs_strdup(problem_type.value().c_str());
-            ogs_expect(problem.type);
+            problem->type = ogs_strdup(problem_type.value().c_str());
+            ogs_expect(problem->type);
         }
 
         if (invalid_params) {
-            if (problem.invalid_params) {
+            if (problem->invalid_params) {
                 OpenAPI_lnode_t *node;
-                OpenAPI_list_for_each(problem.invalid_params, node) {
+                OpenAPI_list_for_each(problem->invalid_params, node) {
                     OpenAPI_invalid_param_free(reinterpret_cast<OpenAPI_invalid_param_t*>(node->data));
                 }
-                OpenAPI_list_clear(problem.invalid_params);
+                OpenAPI_list_clear(problem->invalid_params);
             }
             if (invalid_params->size() > 0) {
-                if (!problem.invalid_params) {
-                    problem.invalid_params = OpenAPI_list_create();
+                if (!problem->invalid_params) {
+                    problem->invalid_params = OpenAPI_list_create();
                 }
                 for (const auto& [key, value] : invalid_params.value()) {
                     OpenAPI_invalid_param_t *invalid_param = OpenAPI_invalid_param_create(ogs_strdup(key.c_str()), ogs_strdup(value.c_str()));
-                    OpenAPI_list_add(problem.invalid_params, invalid_param);
+                    OpenAPI_list_add(problem->invalid_params, invalid_param);
                 }
             } else {
-                if (problem.invalid_params) {
-                    OpenAPI_list_free(problem.invalid_params);
-                    problem.invalid_params = nullptr;
+                if (problem->invalid_params) {
+                    OpenAPI_list_free(problem->invalid_params);
+                    problem->invalid_params = nullptr;
                 }
             }
         }
@@ -167,36 +165,18 @@ bool NfServer::sendError(Open5GSSBIStream &stream, int status, size_t number_of_
             if (!path_comp) break;
             ostr << "/" << path_comp;
         }
-        problem.instance = ogs_strdup(ostr.str().c_str());
+        problem->instance = ogs_strdup(ostr.str().c_str());
     }
 
     if (status) {
-        problem.is_status = true;
-        problem.status = status;
+        problem->is_status = true;
+        problem->status = status;
     }
 
-    if (title) problem.title = ogs_strdup(title->c_str());
-    if (detail) problem.detail = ogs_strdup(detail->c_str());
+    if (title) problem->title = ogs_strdup(title->c_str());
+    if (detail) problem->detail = ogs_strdup(detail->c_str());
 
-    send_problem(stream, &problem, interface, app);
-
-    if (problem.type)
-        ogs_free(problem.type);
-    if (problem.instance)
-        ogs_free(problem.instance);
-    if (problem.title)
-        ogs_free(problem.title);
-    if (problem.detail)
-        ogs_free(problem.detail);
-    if (problem.invalid_params) {
-	OpenAPI_lnode_t *node = NULL;    
-        OpenAPI_list_for_each(problem.invalid_params, node) {
-            OpenAPI_invalid_param_free((OpenAPI_invalid_param_t*)node->data);
-        }
-        OpenAPI_list_free(problem.invalid_params);
-        problem.invalid_params = NULL;
-    }
-
+    send_problem(stream, problem, interface, app);
     return true;
 }
 
@@ -287,13 +267,15 @@ static Open5GSSBIResponse new_response(const NfServer::AppMetadata &app,
 static bool send_problem(Open5GSSBIStream &stream, OpenAPI_problem_details_t *problem,
                          const std::optional<NfServer::InterfaceMetadata> &interface, const NfServer::AppMetadata &app)
 {
-    Open5GSSBIMessage message;
-    message.contentType(const_cast<char*>("application/problem+json"));
+    Open5GSSBIMessage message(new ogs_sbi_message_t({}), true);;
+    char *content_type = ogs_strdup("application/problem+json");
+    message.contentType(content_type);
     message.problemDetails(problem);
 
     Open5GSSBIResponse response(build_response(message, problem->status, interface, app));
 
     Open5GSSBIServer::sendResponse(stream, response);
+    ogs_free(content_type);
 
     return true;
 }

@@ -164,7 +164,7 @@ public:
 
     bool start();
     bool stop();
-    void addRequest(const std::shared_ptr<Request> &request);
+    bool addRequest(const std::shared_ptr<Request> &request);
     void removeRequest(const std::shared_ptr<Request> &request);
 
     //void addConnection(Request *request);

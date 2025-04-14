@@ -95,8 +95,12 @@ libmbstf_dist_sources = files('''
     ObjectController.cc
     ObjectListController.cc
     ObjectListController.hh
+    ObjectManifestController.cc
+    ObjectManifestController.hh
     ObjectStore.cc
     ObjectStore.hh
+    ObjectStreamingController.cc
+    ObjectStreamingController.hh
     ObjectIngester.cc
     ObjectIngester.hh
     ObjectPackager.cc
