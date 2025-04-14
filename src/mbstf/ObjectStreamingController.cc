@@ -32,19 +32,18 @@
 #include "PullObjectIngester.hh"
 #include "PushObjectIngester.hh"
 #include "SubscriptionService.hh"
-#include "ObjectManifestController.hh"
 
 #include "ObjectStreamingController.hh"
 
 MBSTF_NAMESPACE_START
 
 static std::string trim_slashes(const std::string &path);
+static void validate_distribution_session(DistributionSession &distributionSession);
 
 ObjectStreamingController::ObjectStreamingController(DistributionSession &distributionSession)
     :ObjectManifestController(distributionSession)
-    ,Subscriber()
 {
-    validateStreamingDistributionSession(distributionSession);
+    validate_distribution_session(distributionSession);
     subscribeToService(objectStore());
     initObjectIngester();
 }
@@ -60,7 +59,7 @@ void ObjectStreamingController::processEvent(Event &event, SubscriptionService &
         ogs_info("Object added with ID: %s", objectId.c_str());
 
     } else if (event.eventName() == "ObjectPushStart") {
-	validateObjectPushStart(event, event_service);    
+	//validateObjectPushStart(event, event_service);    
     }
 }
 
@@ -139,19 +138,17 @@ const std::optional<std::string> &ObjectStreamingController::getObjectDistributi
     return distributionSession().objectDistributionBaseUrl();
 }
 
-void ObjectStreamingController::validateStreamingDistributionSession(DistributionSession &distributionSession)
+namespace {
+static const struct init { init() {ControllerFactory::registerController(new ControllerConstructor<ObjectStreamingController>);};} g_init;
+}
+
+static void validate_distribution_session(DistributionSession &distributionSession)
 {
     if (distributionSession.getObjectDistributionOperatingMode() != "STREAMING") {
         throw std::logic_error("Expected objDistributionOperatingMode to be set to STREAMING.");
     }
-    if (distributionSession.getObjectAcquisitionMethod() == "PULL") validatePullAcquisitionMethod(distributionSession);
-    if (distributionSession.getObjectAcquisitionMethod() == "PUSH") validatePushAcquisitionMethod(distributionSession);
 }
 
-
-namespace {
-static const struct init { init() {ControllerFactory::registerController(new ControllerConstructor<ObjectStreamingController>);};} g_init;
-}
 
 static std::string trim_slashes(const std::string &path)
 {

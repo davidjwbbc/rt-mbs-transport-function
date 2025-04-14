@@ -17,6 +17,7 @@
 
 #include "common.hh"
 #include "ObjectController.hh"
+#include "Subscriber.hh"
 
 MBSTF_NAMESPACE_START
 
@@ -25,13 +26,10 @@ class ManifestHandler;
 class Event;
 class SubscriptionService;
 
-class ObjectManifestController : public ObjectController {
+class ObjectManifestController : public ObjectController, public Subscriber {
 public:
     ObjectManifestController() = delete;
-    ObjectManifestController(DistributionSession &dist_session)
-        :ObjectController(dist_session)
-        ,m_manifestHandler(nullptr)
-        {};
+    ObjectManifestController(DistributionSession &dist_session);
     ObjectManifestController(const ObjectManifestController&) = delete;
     ObjectManifestController(ObjectManifestController&&) = delete;
 
@@ -40,16 +38,14 @@ public:
     ObjectManifestController &operator=(const ObjectManifestController&) = delete;
     ObjectManifestController &operator=(ObjectManifestController&&) = delete;
 
+    virtual void processEvent(Event &event, SubscriptionService &event_service);
+
 protected:
     ObjectManifestController &manifestHandler(ManifestHandler *manifest_handler) {
-        m_manifestHandler.reset(manifest_handler);
-        //m_manifestHandler = manifest_handler;
+        m_manifestHandler = manifest_handler;
         return *this;
     };
     ManifestHandler *manifestHandler() const { return m_manifestHandler.get(); };
-    void validatePullAcquisitionMethod(DistributionSession &distributionSession);
-    void validatePushAcquisitionMethod(DistributionSession &distributionSession);
-    void validateObjectPushStart(Event &event, SubscriptionService &event_service);
 
 private:
     std::unique_ptr<ManifestHandler> m_manifestHandler;

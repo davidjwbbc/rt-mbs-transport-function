@@ -19,7 +19,6 @@
 #include "common.hh"
 #include "openapi/model/ObjDistributionData.h"
 #include "ObjectManifestController.hh"
-#include "Subscriber.hh"
 
 MBSTF_NAMESPACE_START
 
@@ -30,7 +29,7 @@ class PullObjectIngester;
 class SubscriptionService;
 class ObjectManifestController;
 
-class ObjectStreamingController : public ObjectManifestController, public Subscriber {
+class ObjectStreamingController : public ObjectManifestController {
 public:
     ObjectStreamingController() = delete;
     ObjectStreamingController(DistributionSession&);
@@ -63,7 +62,6 @@ public:
 
 private:
     std::string generateUUID();
-    void validateStreamingDistributionSession(DistributionSession &distributionSession);
     std::thread m_ingestSchedulingThread;
 };
 

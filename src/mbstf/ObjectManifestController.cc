@@ -35,8 +35,44 @@
 MBSTF_NAMESPACE_START
 
 static bool validate_push_url(DistributionSession &distributionSession, const std::string &url);
+static void validate_pull_acquisition_method(DistributionSession &distributionSession);
+static bool validate_push_acquisition_method(DistributionSession &distributionSession);
 
-void ObjectManifestController::validatePullAcquisitionMethod(DistributionSession &distributionSession) {
+ObjectManifestController::ObjectManifestController(DistributionSession &dist_session)
+        :ObjectController(dist_session)
+	,Subscriber()
+        ,m_manifestHandler(nullptr)
+{
+
+    if (dist_session.getObjectAcquisitionMethod() == "PULL") validate_pull_acquisition_method(dist_session);
+    if (dist_session.getObjectAcquisitionMethod() == "PUSH") {
+        if(validate_push_acquisition_method(dist_session)){
+            subscribeTo({"ObjectPushStart"}, objectStore());
+	
+	}
+    
+    }
+
+};
+
+
+void ObjectManifestController::processEvent(Event &event, SubscriptionService &event_service) {
+    if (event.eventName() == "ObjectPushStart") {
+        PushObjectIngester::ObjectPushEvent &obj_push_event = dynamic_cast<PushObjectIngester::ObjectPushEvent&>(event);
+        const PushObjectIngester::Request &request(obj_push_event.request());
+        const std::optional<std::string> &content_type(request.contentType());
+        const std::string &url(request.urlPath());
+        ogs_debug("Check mime_type [%s] is ok?", content_type?content_type.value().c_str():"<none>");
+        if(!validate_push_url(distributionSession(), url)) {
+            const_cast<PushObjectIngester::Request&>(request).setError(400, "Bad Request");
+            event.preventDefault();
+        }
+        // event.preventDefault() if checks fail
+    }
+}
+
+
+static void validate_pull_acquisition_method(DistributionSession &distributionSession) {
     if (distributionSession.getObjectAcquisitionMethod() == "PULL") {
         auto &pull_urls = distributionSession.getObjectAcquisitionPullUrls();
         if (pull_urls.has_value() && pull_urls->size() != 1) {
@@ -50,7 +86,7 @@ void ObjectManifestController::validatePullAcquisitionMethod(DistributionSession
     }
 }
 
-void ObjectManifestController::validatePushAcquisitionMethod(DistributionSession &distributionSession) {
+static bool validate_push_acquisition_method(DistributionSession &distributionSession) {
     if (distributionSession.getObjectAcquisitionMethod() == "PUSH") {
         auto &pull_urls = distributionSession.getObjectAcquisitionPullUrls();
         if (pull_urls.has_value()) {
@@ -61,26 +97,12 @@ void ObjectManifestController::validatePushAcquisitionMethod(DistributionSession
                 std::optional<std::string> id = "manifest";
                 distributionSession.setObjectAcquisitionIdPush(id);
             }
+	    return true;
         }
     }
+    return false;
 
 }
-
-void ObjectManifestController::validateObjectPushStart(Event &event, SubscriptionService &event_service) {
-    if (event.eventName() == "ObjectPushStart") {
-        PushObjectIngester::ObjectPushEvent &obj_push_event = dynamic_cast<PushObjectIngester::ObjectPushEvent&>(event);
-        const PushObjectIngester::Request &request(obj_push_event.request());
-        const std::optional<std::string> &content_type(request.contentType());
-        const std::string &url(request.urlPath());
-        ogs_debug("Check mime_type [%s] is ok?", content_type?content_type.value().c_str():"<none>");
-	if(!validate_push_url(distributionSession(), url)) {
-	    const_cast<PushObjectIngester::Request&>(request).setError(400, "Bad Request");	
-            event.preventDefault();
-	}
-        // event.preventDefault() if checks fail
-    }
-}
-
 
 static bool validate_push_url(DistributionSession &distributionSession, const std::string &url)
 {
