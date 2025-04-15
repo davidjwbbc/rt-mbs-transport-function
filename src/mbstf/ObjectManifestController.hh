@@ -16,13 +16,13 @@
 #include <list>
 
 #include "common.hh"
+#include "ManifestHandler.hh"
 #include "ObjectController.hh"
 #include "Subscriber.hh"
 
 MBSTF_NAMESPACE_START
 
 class DistributionSession;
-class ManifestHandler;
 class Event;
 class SubscriptionService;
 
@@ -42,7 +42,7 @@ public:
 
 protected:
     ObjectManifestController &manifestHandler(ManifestHandler *manifest_handler) {
-        m_manifestHandler = manifest_handler;
+        m_manifestHandler.reset(manifest_handler);
         return *this;
     };
     ManifestHandler *manifestHandler() const { return m_manifestHandler.get(); };
