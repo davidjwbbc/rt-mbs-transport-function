@@ -10,16 +10,21 @@
  * https://drive.google.com/file/d/1cinCiA778IErENZ3JN52VFW-1ffHpx7Z/view
  */
 
+#include "spdlog/spdlog.h"
+
 #include "common.hh"
 #include "ObjectPackager.hh"
 
 MBSTF_NAMESPACE_START
 
+// Prevent spdlog default logger being deleted too early on exit.
+auto spdlog_logger = spdlog::default_logger();
+
 void ObjectPackager::workerLoop(ObjectPackager *packager)
 {
     while(!packager->m_workerCancel){
        packager->doObjectPackage();
-    }	    
+    }
 }
 
 ObjectPackager& ObjectPackager::setDestIpAddr(const std::optional<std::string> &dest_ip_addr) {
