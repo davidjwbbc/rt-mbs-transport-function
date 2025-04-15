@@ -22,25 +22,30 @@
 
 MBSTF_NAMESPACE_START
 
-struct ControllerConstructorCompare {
-    bool operator()(const std::unique_ptr<ControllerFactoryConstructor> &a, const std::unique_ptr<ControllerFactoryConstructor> &b)
-    {
-        return (a->priority() > b->priority());
-    };
-} g_factoryCompare;
+namespace {
+    static struct ControllerConstructorCompare {
+        bool operator()(const std::unique_ptr<ControllerFactoryConstructor> &a, const std::unique_ptr<ControllerFactoryConstructor> &b)
+        {
+            return (a->priority() > b->priority());
+        };
+    } g_factoryCompare;
 
-static std::list<std::unique_ptr<ControllerFactoryConstructor> > g_constructors;
+    static std::list<std::unique_ptr<ControllerFactoryConstructor> > &constructors() {
+        static std::list<std::unique_ptr<ControllerFactoryConstructor> > g_constructors;
+        return g_constructors;
+    };
+}
 
 bool ControllerFactory::registerController(ControllerFactoryConstructor *controller_constructor)
 {
-        std::unique_ptr<ControllerFactoryConstructor> cc(controller_constructor);
-        g_constructors.insert(std::lower_bound(g_constructors.begin(), g_constructors.end(), cc, g_factoryCompare), std::move(cc));
-        return true;
+    std::unique_ptr<ControllerFactoryConstructor> cc(controller_constructor);
+    constructors().insert(std::lower_bound(constructors().begin(), constructors().end(), cc, g_factoryCompare), std::move(cc));
+    return true;
 }
 
 Controller *ControllerFactory::makeController(DistributionSession &distributionSession)
 {
-    for (const auto &cc : g_constructors) {
+    for (const auto &cc : constructors()) {
         try {
             return cc->makeController(distributionSession);
 	} catch (const std::runtime_error& e) {

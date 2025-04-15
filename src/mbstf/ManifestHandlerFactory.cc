@@ -22,19 +22,25 @@
 
 MBSTF_NAMESPACE_START
 
-static struct ManifestHandlerConstructorCompare {
-    bool operator()(const std::unique_ptr<ManifestHandlerConstructor> &a, const std::unique_ptr<ManifestHandlerConstructor> &b)
-    {
-        return (a->priority() > b->priority());
-    };
-} g_factoryCompare;
+namespace {
+    static struct ManifestHandlerConstructorCompare {
+        bool operator()(const std::unique_ptr<ManifestHandlerConstructor> &a, const std::unique_ptr<ManifestHandlerConstructor> &b)
+        {
+            return (a->priority() > b->priority());
+        };
+    } g_factoryCompare;
 
-static std::map<std::string, std::list<std::unique_ptr<ManifestHandlerConstructor> > > g_constructorsByContentType;
+    static std::map<std::string, std::list<std::unique_ptr<ManifestHandlerConstructor> > > &constructorsByContentType()
+    {
+         static std::map<std::string, std::list<std::unique_ptr<ManifestHandlerConstructor> > > g_constructorsByContentType;
+         return g_constructorsByContentType;
+    }
+}
 
 bool ManifestHandlerFactory::registerManifestHandler(const std::string &content_type, ManifestHandlerConstructor *manifest_handler_constructor)
 {
     // Find the prioritised list for the content_type, make new list of one doesn't exist
-    std::list<std::unique_ptr<ManifestHandlerConstructor> > &list = g_constructorsByContentType[content_type];
+    std::list<std::unique_ptr<ManifestHandlerConstructor> > &list = constructorsByContentType()[content_type];
     // Make the value to store in the list (take ownership of manifest_handler_constructor)
     std::unique_ptr<ManifestHandlerConstructor> cc(manifest_handler_constructor);
     // Add the ManifestHandlerConstructor to the list in priority order
@@ -48,8 +54,8 @@ ManifestHandler *ManifestHandlerFactory::makeManifestHandler(const ObjectStore::
     std::string media_type = object.second.mediaType();
     // Try manifest handlers for the media type of the object, fallback to any media type (empty string)
     while (true) {
-        auto it = g_constructorsByContentType.find(media_type);
-        if (it != g_constructorsByContentType.end()) {
+        auto it = constructorsByContentType().find(media_type);
+        if (it != constructorsByContentType().end()) {
             std::list<std::unique_ptr<ManifestHandlerConstructor> > &list = it->second;
             for (const auto &mhc : list) {
                 try {
