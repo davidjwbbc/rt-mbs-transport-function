@@ -33,7 +33,7 @@ DASHManifestHandler::~DASHManifestHandler()
 {
 }
 
-std::pair<ManifestHandler::time_type, PullObjectIngester::IngestItem> DASHManifestHandler::nextIngestItem()
+std::pair<ManifestHandler::time_type, ManifestHandler::ingest_list> DASHManifestHandler::nextIngestItems()
 {
     // TODO: make this work properly with a DASH MPD contents - just fake ingest items for now.
     auto fetch_time = std::chrono::system_clock::now() + 4s;
@@ -41,8 +41,21 @@ std::pair<ManifestHandler::time_type, PullObjectIngester::IngestItem> DASHManife
     std::string base_url("http://localhost/");
     std::string url("http://localhost/dummy-object");
     static const std::string empty;
+    std::list<PullObjectIngester::IngestItem> ingest_items({PullObjectIngester::IngestItem(empty, url, empty, base_url, std::nullopt, deadline)});
 
-    return std::make_pair(fetch_time, PullObjectIngester::IngestItem(empty, url, empty, base_url, std::nullopt, deadline));
+    return std::make_pair(fetch_time, ingest_items);
+}
+
+ManifestHandler::durn_type DASHManifestHandler::mediaSegmentLength()
+{
+    // TODO: get the segment length from the DASH MPD
+    return 4s;
+}
+
+bool DASHManifestHandler::update(const ObjectStore::Object &new_manifest)
+{
+    // TODO: process the new MPD and see what has changed, throw an exception of the Object is not understood or invalid
+    return true; // assume manifest updated, use false for no manifest change
 }
 
 static bool g_registered = ManifestHandlerFactory::registerManifestHandler("application/dash+xml", new ManifestHandlerConstructorClass<DASHManifestHandler>());

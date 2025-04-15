@@ -31,7 +31,9 @@ public:
     DASHManifestHandler &operator=(const DASHManifestHandler &) = delete;
     DASHManifestHandler &operator=(DASHManifestHandler &&) = delete;
 
-    virtual std::pair<ManifestHandler::time_type, PullObjectIngester::IngestItem> nextIngestItem();
+    virtual std::pair<ManifestHandler::time_type, ManifestHandler::ingest_list> nextIngestItems();
+    virtual ManifestHandler::durn_type mediaSegmentLength();
+    virtual bool update(const ObjectStore::Object &new_manifest);
 
     static unsigned int factoryPriority() { return 100; };
 };

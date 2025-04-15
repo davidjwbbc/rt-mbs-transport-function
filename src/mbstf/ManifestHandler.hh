@@ -15,6 +15,7 @@
 #include <utility>
 
 #include "common.hh"
+#include "ObjectStore.hh"
 #include "PullObjectIngester.hh"
 
 MBSTF_NAMESPACE_START
@@ -22,8 +23,12 @@ MBSTF_NAMESPACE_START
 class ManifestHandler {
 public:
     using time_type = std::chrono::system_clock::time_point;
+    using durn_type = std::chrono::system_clock::duration;
+    using ingest_list = std::list<PullObjectIngester::IngestItem>;
 
-    virtual std::pair<time_type, PullObjectIngester::IngestItem> nextIngestItem() = 0;
+    virtual std::pair<time_type, ingest_list> nextIngestItems() = 0;
+    virtual durn_type mediaSegmentLength() = 0;
+    virtual bool update(const ObjectStore::Object &new_manifest) = 0;
 };
 
 MBSTF_NAMESPACE_STOP
