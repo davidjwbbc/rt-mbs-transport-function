@@ -57,7 +57,7 @@ protected:
     bool removePullObjectIngester(std::shared_ptr<PullObjectIngester> &);
     std::shared_ptr<PushObjectIngester> &setPushIngester(PushObjectIngester* pushIngester);
     std::shared_ptr<ObjectPackager> &setPackager(ObjectPackager&&);
-	
+
 private:
     ObjectStore m_objectStore;
     std::list<std::shared_ptr<PullObjectIngester>> m_pullIngesters;

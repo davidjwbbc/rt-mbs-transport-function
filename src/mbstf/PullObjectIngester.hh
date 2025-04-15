@@ -26,7 +26,7 @@ class Curl;
 
 class PullObjectIngester : public ObjectIngester {
 public:
-	
+
     using time_type = std::chrono::system_clock::time_point;
 
     class IngestItem {

@@ -29,7 +29,7 @@ template <class C>
 class ControllerConstructor : public ControllerFactoryConstructor {
 public:
     using controller = C;
-    
+
     virtual unsigned int priority() { return controller::factoryPriority(); };
     virtual Controller *makeController(DistributionSession &distributionSession) {
         return new controller(distributionSession);

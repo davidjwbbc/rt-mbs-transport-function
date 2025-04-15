@@ -32,7 +32,7 @@
 MBSTF_NAMESPACE_START
 
 Open5GSSBIRequest::Open5GSSBIRequest(const std::string &method, const std::string &uri, const std::string &apiVersion, const std::optional<std::string> &data, const std::optional<std::string> &type)
-    :m_request(ogs_sbi_request_new()) 
+    :m_request(ogs_sbi_request_new())
     ,m_owner(true)
 {
 
@@ -40,7 +40,7 @@ Open5GSSBIRequest::Open5GSSBIRequest(const std::string &method, const std::strin
     m_request->h.method = (char *)method.c_str();
     m_request->h.uri = (char *)uri.c_str();
     m_request->h.api.version = (char *)apiVersion.c_str();
-    
+
     if (data) {
         m_request->http.content = const_cast<char*>(data->c_str());
         m_request->http.content_length = data->size();

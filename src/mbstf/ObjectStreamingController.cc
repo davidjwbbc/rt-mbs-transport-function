@@ -59,7 +59,7 @@ void ObjectStreamingController::processEvent(Event &event, SubscriptionService &
         ogs_info("Object added with ID: %s", objectId.c_str());
 
     } else if (event.eventName() == "ObjectPushStart") {
-	//validateObjectPushStart(event, event_service);    
+	//validateObjectPushStart(event, event_service);
     }
 }
 

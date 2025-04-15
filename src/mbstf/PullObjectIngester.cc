@@ -52,7 +52,7 @@ PullObjectIngester::IngestItem::IngestItem(IngestItem &&other)
     ,m_acquisitionId(std::move(other.m_acquisitionId))
     ,m_objIngestBaseUrl(std::move(other.m_objIngestBaseUrl))
     ,m_objDistributionBaseUrl(std::move(other.m_objDistributionBaseUrl))
-    ,m_deadline(std::move(other.m_deadline)) 
+    ,m_deadline(std::move(other.m_deadline))
 {
 }
 
@@ -118,12 +118,12 @@ void PullObjectIngester::doObjectIngest() {
                 metadata.entityTag(etag);
 	    }
 	    this->objectStore().addObject(item.objectId(), std::move(m_curl->getData()), std::move(metadata));
-	    
+
         } else if (bytesReceived == -1) {
             ogs_error("Request timed out.");
             // emitObjectIngestFailedEvent();
         } else {
-            ogs_error("An error occurred while fetching the data."); 	     
+            ogs_error("An error occurred while fetching the data.");
             // emitObjectIngestFailedEvent();
         }
     }

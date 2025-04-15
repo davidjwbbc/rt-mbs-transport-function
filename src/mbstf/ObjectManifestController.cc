@@ -48,9 +48,9 @@ ObjectManifestController::ObjectManifestController(DistributionSession &dist_ses
     if (dist_session.getObjectAcquisitionMethod() == "PUSH") {
         if(validate_push_acquisition_method(dist_session)){
             subscribeTo({"ObjectPushStart"}, objectStore());
-	
+
 	}
-    
+
     }
 
 };
@@ -111,15 +111,15 @@ static bool validate_push_url(DistributionSession &distributionSession, const st
 	std::string push_id = object_acquisition_push_id.value();
 	std::string url_path(url);
 	if ((push_id.front() == '/' && url_path.front() != '/')) {
-	    url_path = '/' + url_path;	
+	    url_path = '/' + url_path;
 	} else if ((url_path.front() == '/' && push_id.front() != '/')) {
 	    push_id = '/' + push_id;
 	}
-	if(push_id == url_path) { 
+	if(push_id == url_path) {
 	    return true;
 	} else {
 	    return false;
-	} 
+	}
     }
 
     return true;

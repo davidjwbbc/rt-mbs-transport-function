@@ -4,7 +4,7 @@
  * Copyright: (C) 2024 British Broadcasting Corporation
  * Author: David Waring <david.waring2@bbc.co.uk>
  * License: 5G-MAG Public License (v1.0)
- * 
+ *
  * Licensed under the License terms and conditions for use, reproduction, and
  * distribution of 5G-MAG software (the “License”).  You may not use this file
  * except in compliance with the License.  You may obtain a copy of the License at

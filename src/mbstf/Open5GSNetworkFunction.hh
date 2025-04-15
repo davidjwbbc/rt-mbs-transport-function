@@ -73,7 +73,7 @@ public:
     const std::string &serverName();
     const std::string &serverName() const { return m_serverName; };
 
-   
+
 private:
     int setServerName();
     static void eventThread(void *data);

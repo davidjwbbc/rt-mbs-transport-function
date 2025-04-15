@@ -25,7 +25,7 @@
 // Standard Template Library header includes
 #include <memory>
 #include <stdexcept>
-#include <netdb.h>  
+#include <netdb.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 
@@ -59,7 +59,7 @@ Open5GSNetworkFunction::Open5GSNetworkFunction()
     if (ogs_env_set("LC_TIME", "C") != OGS_OK) {
         throw std::runtime_error("Failed to set time locale to C");
     }
-    
+
     //ogs_sbi_context_init(nfType());
 }
 
@@ -90,9 +90,9 @@ Open5GSNetworkFunction::~Open5GSNetworkFunction()
 
     ogs_queue_term(ogs_app()->queue);
     ogs_pollset_notify(ogs_app()->pollset);
-    
+
     stopEventHandler();
-    
+
     removeTimer(event_term_timer);
     event_term_timer.reset();
 

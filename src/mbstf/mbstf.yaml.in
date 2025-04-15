@@ -190,7 +190,7 @@ mbstf:
     serverResponseCacheControl:
       - distMaxAge: 60
         ObjectMaxAge: 60
-      
+
 
 # nrf:
 #

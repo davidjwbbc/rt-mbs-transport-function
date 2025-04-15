@@ -75,8 +75,8 @@ bool Context::parseConfig()
                         break;
                     } else {
                         throw std::out_of_range("Bad configuration node at mbstf.serverResponseCacheControl");
-                     }         	
- 
+                     }
+
 		} else if (mbstf_key == "distSessionAPI" || mbstf_key == "httpPushIngest" || mbstf_key == "rtpIngest") {
                     Open5GSYamlIter distSess_array(mbstf_iter);
                     do {
@@ -104,7 +104,7 @@ bool Context::parseConfig()
     //if (!validate()) {
     //    return false;
     //}
-    
+
     return true;
 }
 

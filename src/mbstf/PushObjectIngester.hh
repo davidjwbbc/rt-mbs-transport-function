@@ -30,7 +30,7 @@ class ObjectController;
 
 class PushObjectIngester : public ObjectIngester, public SubscriptionService {
 public:
-	
+
     class Request {
     public:
         using data_type = std::vector<unsigned char>;
@@ -46,21 +46,21 @@ public:
 
         Request &operator=(const Request&) = delete;
         Request &operator=(Request&&) = delete;
-        	
+
 	const std::string &method() const { return m_urlPath; };
-          
+
 	Request &method(const std::string &method) { m_method = method; return *this; };
         Request &method(std::string &&method) { m_method = std::move(method); return *this; };
-        
+
         const std::string &urlPath() const { return m_urlPath; };
         Request &urlPath(const std::string &url_path) { m_urlPath = url_path; return *this; };
         Request &urlPath(std::string &&url_path) { m_urlPath = std::move(url_path); return *this; };
-        
+
         const std::string &protocolVersion() const { return m_urlPath; };
         Request &protocolVersion(const std::string &proto_ver) { m_protocolVersion = proto_ver; return *this; };
-        
+
 	Request &protocolVersion(std::string &&proto_ver) { m_protocolVersion = std::move(proto_ver); return *this;};
-	
+
         const std::optional<std::string> &etag() const { return m_etag; };
         Request &etag(std::nullopt_t) { m_etag.reset(); return *this; };
         Request &etag(const std::string &tag) { m_etag = tag; return *this; };
@@ -83,7 +83,7 @@ public:
 
 	std::optional<std::string> getHeader(const std::string &field) const;
         data_size_type bodySize() const { return m_totalBodySize; };
-	
+
 	bool addBodyBlock(const data_type &body_block);
 	bool setError(unsigned int status_code = 0, const std::string &reason = std::string());
         void completed(struct MHD_Connection *connection, enum MHD_RequestTerminationCode term_code);
@@ -116,7 +116,7 @@ public:
 
         unsigned int m_statusCode;
         std::string m_errorReason;
-        bool m_noMoreBodyData;	
+        bool m_noMoreBodyData;
 
 	std::unique_ptr<std::recursive_mutex> m_mutex;
         std::condition_variable_any m_condVar; /**< CondVar for new response content/eof */
@@ -159,7 +159,7 @@ public:
       ,m_domain()
       ,m_urlPrefix()
       ,m_port(0)
-      ,m_mtx()	
+      ,m_mtx()
     { startWorker(); };
 
     bool start();

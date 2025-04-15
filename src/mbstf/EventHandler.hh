@@ -35,7 +35,7 @@ public:
     virtual ~EventHandler() = default;
 
     virtual void dispatch(Open5GSFSM &fsm, Open5GSEvent &event) = 0;
-    
+
 private:
 };
 

@@ -29,15 +29,15 @@ public:
         : m_objectStore(objectStore), m_controller(controller), m_workerThread(), m_workerCancel(false) {}
 
     void abort() {
-	m_workerCancel = true;    
+	m_workerCancel = true;
         if (m_workerThread.joinable()) {
 	    m_workerThread.join();
         }
-	    
+
     }
 
     virtual ~ObjectIngester() {
-	abort();    
+	abort();
     }
 
 protected:

@@ -12,9 +12,9 @@
  * program. If this file is missing then the license can be retrieved from
  * https://drive.google.com/file/d/1cinCiA778IErENZ3JN52VFW-1ffHpx7Z/view
  */
-    
+
 #pragma once
-    
+
 #include <curl/curl.h>
 #include <iostream>
 #include <string>

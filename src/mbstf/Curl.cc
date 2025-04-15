@@ -31,7 +31,7 @@ public:
 };
 
 // Ensure cURL clean up called on program exit
-static CurlGlobalCleanup g_curl_global_cleanup;  
+static CurlGlobalCleanup g_curl_global_cleanup;
 
 enum HeaderProcessingState {
     HEADER_START,
@@ -96,19 +96,19 @@ long Curl::get(const std::string& url, std::chrono::milliseconds timeout) {
         CURLcode res = curl_easy_perform(m_curl);
         if (res == CURLE_OK) {
 	    struct curl_header *type;
-            CURLHcode h;	    
+            CURLHcode h;
             h = curl_easy_header(m_curl, "ETag", 0, CURLH_HEADER, -1, &type);
             if (h == CURLHE_OK && type) {
                 m_etag = std::string(type->value);
 		ogs_info("ETag: %s", m_etag.c_str());
             } else {
-		ogs_info("ETag header not found.");    
+		ogs_info("ETag header not found.");
             }
 
             // Get the Content-Type header
 	    char *ct = NULL;
 	    res = curl_easy_getinfo(m_curl, CURLINFO_CONTENT_TYPE, &ct);
-	    if (!res && ct) { 
+	    if (!res && ct) {
 	        m_contentType = std::string(ct);
 	    }
 
@@ -248,5 +248,5 @@ size_t Curl::writeCallback(void* contents, size_t memberSize, size_t numberOfMem
 MBSTF_NAMESPACE_STOP
 
 /* vim:ts=8:sts=4:sw=4:expandtab:
- */ 
+ */
 

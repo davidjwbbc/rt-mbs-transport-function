@@ -153,7 +153,7 @@ Open5GSYamlDocument App::configDocument() const
 
 int App::queuePush(const std::shared_ptr<Open5GSEvent> &event) const
 {
-   return m_app->pushEvent(event);	
+   return m_app->pushEvent(event);
 
 }
 

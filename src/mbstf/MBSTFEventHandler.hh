@@ -39,7 +39,7 @@ public:
     virtual ~MBSTFEventHandler() = default;
 
     virtual void dispatch(Open5GSFSM &fsm, Open5GSEvent &event);
-    
+
 private:
 };
 

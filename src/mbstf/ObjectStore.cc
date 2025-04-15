@@ -32,7 +32,7 @@ ObjectStore::Metadata::Metadata()
     ,m_objIngestBaseUrl()
     ,m_objDistributionBaseUrl()
     ,m_cacheExpires(std::nullopt)
-    ,m_created(std::chrono::system_clock::now()) 
+    ,m_created(std::chrono::system_clock::now())
     ,m_modified(std::chrono::system_clock::now())
 {
 }
@@ -88,7 +88,7 @@ ObjectStore::ObjectStore(ObjectController &controller)
 {
 }
 
-ObjectStore::~ObjectStore() 
+ObjectStore::~ObjectStore()
 {
 }
 
@@ -162,7 +162,7 @@ std::map<std::string, const ObjectStore::Object&> ObjectStore::getStale() const 
 
 bool ObjectStore::removeObject(const std::string& objectId) {
     std::lock_guard<std::recursive_mutex> lock(m_mutex);
-    
+
     auto it = m_store.find(objectId);
     if (it != m_store.end()) {
         m_store.erase(it);
@@ -180,7 +180,7 @@ bool ObjectStore::removeObjects(const std::list<std::string>& objectIds) {
         if (it != m_store.end()) {
             m_store.erase(it);
         } /*else {
-            return false;		
+            return false;
             // Optionally handle the case where the objectId is not found
         } */
     }

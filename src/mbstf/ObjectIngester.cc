@@ -20,7 +20,7 @@ void ObjectIngester::workerLoop(ObjectIngester *ingester)
 {
     while(!ingester->m_workerCancel){
        ingester->doObjectIngest();
-    }	    
+    }
 
 }
 

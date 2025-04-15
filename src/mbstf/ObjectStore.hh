@@ -145,7 +145,7 @@ public:
     std::map<std::string, const Object&> getStale() const;
 
 private:
-    void checkExpiredObjects();        
+    void checkExpiredObjects();
     mutable std::recursive_mutex m_mutex;
     ObjectController &m_controller;
     std::map<std::string, Object> m_store;

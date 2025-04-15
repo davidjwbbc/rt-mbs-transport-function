@@ -45,14 +45,14 @@ public:
     void initialise() {};
 
     virtual OpenAPI_nf_type_e nfType() const { return OpenAPI_nf_type_MBSTF; };
-   
+
 private:
     void addAddressesToNFService(ogs_sbi_nf_service_t *nf_service, ogs_sockaddr_t *addrs);
     char *m_serviceName;
     char *m_supportedFeatures;
     char *m_apiVersion;
     ogs_sockaddr_t *m_addr;
-    
+
 };
 
 MBSTF_NAMESPACE_STOP

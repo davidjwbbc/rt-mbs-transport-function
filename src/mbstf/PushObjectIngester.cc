@@ -132,7 +132,7 @@ void PushObjectIngester::Request::processRequest()
         oss << "Object transferring to ObjectStore: content-type=" << content_type << ", url=" << url << ", id=" << m_urlPath << ", modified=" << last_modified;
         ogs_debug("%s", oss.str().c_str());
     }
-    
+
     ObjectStore::Metadata metadata(content_type, url, url, m_urlPath, last_modified, m_pushObjectIngester.getIngestServerPrefix(), object_distrib_base_url);
     metadata.cacheExpires(m_expires?m_expires.value():(std::chrono::system_clock::now() + std::chrono::minutes(ObjectStore::Metadata::cacheExpiry())));
 
