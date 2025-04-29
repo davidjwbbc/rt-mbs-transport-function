@@ -24,7 +24,7 @@ MBSTF_NAMESPACE_START
 
 class DistributionSession;
 class Event;
-class ObjectStreamingPackager;
+class ObjectListPackager;
 class PullObjectIngester;
 class SubscriptionService;
 class ObjectManifestController;
@@ -41,9 +41,8 @@ public:
     ObjectStreamingController &operator=(const ObjectStreamingController&) = delete;
     ObjectStreamingController &operator=(ObjectStreamingController&&) = delete;
 
-    void initObjectIngester();
-    void initPullObjectIngester();
-    void initPushObjectIngester();
+    std::shared_ptr<ObjectListPackager> &setObjectListPackager();
+    std::shared_ptr<ObjectListPackager> &setObjectListPackager(ObjectListPackager&&);
 
     const std::optional<std::string> &getObjectDistributionBaseUrl() const;
     virtual std::string nextObjectId();
@@ -60,8 +59,15 @@ public:
                 return os.str();
     }
 
+    void unsetObjectListPackager() {
+        // Reset the shared pointer to release ownership.
+        if(m_objectListPackager) m_objectListPackager.reset();
+    };
+
+
 private:
     std::string generateUUID();
+    std::shared_ptr<ObjectListPackager> m_objectListPackager;
     std::thread m_ingestSchedulingThread;
 };
 

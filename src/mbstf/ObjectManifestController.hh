@@ -16,13 +16,15 @@
 #include <list>
 
 #include "common.hh"
-#include "ManifestHandler.hh"
 #include "ObjectController.hh"
+#include "ManifestHandler.hh"
+#include "DASHManifestHandler.hh"
 #include "Subscriber.hh"
 
 MBSTF_NAMESPACE_START
 
 class DistributionSession;
+class ManifestHandler;
 class Event;
 class SubscriptionService;
 
@@ -30,25 +32,62 @@ class ObjectManifestController : public ObjectController, public Subscriber {
 public:
     ObjectManifestController() = delete;
     ObjectManifestController(DistributionSession &dist_session);
+
+    /*
+    ObjectManifestController(DistributionSession &dist_session)
+        :ObjectController(dist_session)
+	,Subscriber()
+        ,m_manifestHandler(nullptr)
+	,m_scheduledPullCancel(false) 
+        {};
+	*/
     ObjectManifestController(const ObjectManifestController&) = delete;
     ObjectManifestController(ObjectManifestController&&) = delete;
 
-    virtual ~ObjectManifestController() {};
+    void abort() {
+        m_scheduledPullCancel = true;
+        if (m_scheduledPullThread.joinable()) {
+            m_scheduledPullThread.join();
+        }
+
+    }
+
+    virtual ~ObjectManifestController() {
+	abort();    
+    };
 
     ObjectManifestController &operator=(const ObjectManifestController&) = delete;
     ObjectManifestController &operator=(ObjectManifestController&&) = delete;
 
     virtual void processEvent(Event &event, SubscriptionService &event_service);
+    std::string &getManifestUrl();
+    void manifestUrl();
 
 protected:
-    ObjectManifestController &manifestHandler(ManifestHandler *manifest_handler) {
-        m_manifestHandler.reset(manifest_handler);
+    void startWorker(){m_scheduledPullThread = std::thread(&ObjectManifestController::workerLoop, this);};
+    void initObjectIngester();
+    void initPullObjectIngester();
+    void initPushObjectIngester();
+
+    ObjectManifestController &manifestHandler(std::unique_ptr<ManifestHandler> manifest_handler) {
+        std::lock_guard guard(m_manifestHandlerMutex);
+        m_manifestHandler = std::move(manifest_handler);
+        m_manifestHandlerChange.notify_all();
         return *this;
     };
-    ManifestHandler *manifestHandler() const { return m_manifestHandler.get(); };
+    ManifestHandler *manifestHandler() const {
+        std::lock_guard guard(m_manifestHandlerMutex);
+        return m_manifestHandler.get();
+    };
 
 private:
+    static void workerLoop(ObjectManifestController *controller);
+    std::string m_manifestUrl;
     std::unique_ptr<ManifestHandler> m_manifestHandler;
+    std::condition_variable_any m_manifestHandlerChange;
+    mutable std::recursive_mutex m_manifestHandlerMutex;
+    std::thread m_scheduledPullThread;
+    std::atomic_bool m_scheduledPullCancel;
 };
 
 MBSTF_NAMESPACE_STOP

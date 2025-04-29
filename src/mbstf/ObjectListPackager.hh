@@ -25,7 +25,7 @@
 
 MBSTF_NAMESPACE_START
 
-class ObjectListController;
+class ObjectController;
 class ObjectStore;
 
 class ObjectListPackager : public ObjectPackager {
@@ -57,12 +57,12 @@ public:
     };
 
     ObjectListPackager() = delete;
-    ObjectListPackager(ObjectStore &object_store, ObjectListController &controller,
+    ObjectListPackager(ObjectStore &object_store, ObjectController &controller,
                        const std::list<PackageItem> &object_to_package, const std::optional<std::string> &address,
                        uint32_t rateLimit, unsigned short mtu, in_port_t port);
-    ObjectListPackager(ObjectStore &object_store, ObjectListController &controller, std::list<PackageItem> &&object_to_package,
+    ObjectListPackager(ObjectStore &object_store, ObjectController &controller, std::list<PackageItem> &&object_to_package,
                        const std::optional<std::string> &address, uint32_t rateLimit, unsigned short mtu, in_port_t port);
-    ObjectListPackager(ObjectStore &object_store, ObjectListController &controller, const std::optional<std::string> &address,
+    ObjectListPackager(ObjectStore &object_store, ObjectController &controller, const std::optional<std::string> &address,
                        uint32_t rateLimit, unsigned short mtu, in_port_t port);
     virtual ~ObjectListPackager();
 

@@ -32,9 +32,9 @@ public:
     DASHManifestHandler &operator=(DASHManifestHandler &&) = delete;
 
     virtual std::pair<ManifestHandler::time_type, ManifestHandler::ingest_list> nextIngestItems();
-    virtual ManifestHandler::durn_type mediaSegmentLength();
-    virtual bool update(const ObjectStore::Object &new_manifest);
-
+    virtual ManifestHandler::durn_type getDefaultDeadline();
+    virtual bool update(const ObjectStore::Object &new_manifest, const ObjectStore::ObjectData &manifest_data, const ObjectStore::Metadata &metadata);
+    virtual bool validateManifest(const ObjectStore::Object &new_manifest, const ObjectStore::ObjectData &manifest_data, const ObjectStore::Metadata &metadata);
     static unsigned int factoryPriority() { return 100; };
 };
 

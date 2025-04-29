@@ -81,6 +81,7 @@ public:
     const std::optional<std::string> &getObjectAcquisitionPushId();
     bool setObjectAcquisitionIdPush(std::optional<std::string> &id);
     const std::optional<std::string> &objectDistributionBaseUrl() const;
+    std::string trimSlashes(const std::string &path);
 
 
     // TODO: Forwarding Events from the Controller to m_eventSubscriptions

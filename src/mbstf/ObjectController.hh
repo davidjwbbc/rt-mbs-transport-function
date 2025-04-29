@@ -50,6 +50,8 @@ public:
     const ObjectStore &objectStore() const { return m_objectStore; };
     ObjectStore &objectStore() { return m_objectStore; };
 
+    std::list<std::shared_ptr<PullObjectIngester>> &getPullObjectIngesters() {return m_pullIngesters;};
+
     virtual std::string nextObjectId();
 
 protected:

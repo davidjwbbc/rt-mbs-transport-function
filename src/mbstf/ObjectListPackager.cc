@@ -24,6 +24,7 @@
 #include "Transmitter.h" // LibFlute
 
 #include "common.hh"
+#include "ObjectController.hh"
 #include "ObjectListController.hh"
 #include "ObjectPackager.hh"
 #include "ObjectStore.hh"
@@ -54,7 +55,7 @@ ObjectListPackager::PackageItem::PackageItem(PackageItem &&other)
 
 // ObjectListPackager
 
-ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectListController &controller,
+ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectController &controller,
                                        const std::list<PackageItem> &object_to_package,
                                        const std::optional<std::string> &address,
                                        uint32_t rateLimit, unsigned short mtu, in_port_t port)
@@ -65,7 +66,7 @@ ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectListCont
     startWorker();
 }
 
-ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectListController &controller,
+ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectController &controller,
                                        std::list<PackageItem> &&object_to_package, const std::optional<std::string> &address,
                                        uint32_t rateLimit, unsigned short mtu, in_port_t port)
     :ObjectPackager(object_store, controller, address, rateLimit, mtu, port)
@@ -75,7 +76,7 @@ ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectListCont
     startWorker();
 }
 
-ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectListController &controller,
+ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectController &controller,
                                        const std::optional<std::string> &address, uint32_t rateLimit, unsigned short mtu,
                                        in_port_t port)
     :ObjectPackager(object_store, controller, address, rateLimit, mtu, port)

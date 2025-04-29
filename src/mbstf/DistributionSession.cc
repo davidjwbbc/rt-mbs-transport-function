@@ -520,6 +520,15 @@ const std::optional<std::string> &DistributionSession::objectDistributionBaseUrl
     }
 }
 
+std::string DistributionSession::trimSlashes(const std::string &path)
+{
+    size_t start = path.starts_with('/') ? 1 : 0;
+    size_t end = path.ends_with('/') ? path.size() - 1 : path.size();
+
+    return path.substr(start, end - start);
+}
+
+
 MBSTF_NAMESPACE_STOP
 
 /* vim:ts=8:sts=4:sw=4:expandtab:

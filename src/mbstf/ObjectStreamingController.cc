@@ -27,39 +27,98 @@
 #include "ControllerFactory.hh"
 #include "DistributionSession.hh"
 #include "Event.hh"
+#include "ManifestHandlerFactory.hh"
 #include "ObjectController.hh"
 #include "ObjectStore.hh"
 #include "PullObjectIngester.hh"
 #include "PushObjectIngester.hh"
 #include "SubscriptionService.hh"
+#include "ObjectListPackager.hh"
+#include "DASHManifestHandler.hh"
 
 #include "ObjectStreamingController.hh"
 
 MBSTF_NAMESPACE_START
 
-static std::string trim_slashes(const std::string &path);
 static void validate_distribution_session(DistributionSession &distributionSession);
+static bool check_if_object_added_is_manifest(std::string &objectId, ObjectStore &objectStore, std::string &manifest_url);
 
 ObjectStreamingController::ObjectStreamingController(DistributionSession &distributionSession)
     :ObjectManifestController(distributionSession)
 {
     validate_distribution_session(distributionSession);
     subscribeToService(objectStore());
-    initObjectIngester();
+    setObjectListPackager();
+    startWorker();
 }
 
 ObjectStreamingController::~ObjectStreamingController()
 {
+    abort();	
 }
+
+std::shared_ptr<ObjectListPackager> &ObjectStreamingController::setObjectListPackager() {
+    std::optional<std::string> dest_ip_addr = distributionSession().getDestIpAddr();
+    uint32_t rate_limit = distributionSession().getRateLimit();
+    in_port_t port = distributionSession().getPortNumber();
+    //TODO: get the MTU for the dest_ip_addr
+    unsigned short mtu = 1500;
+    m_objectListPackager.reset(new ObjectListPackager(objectStore(), *this, dest_ip_addr, rate_limit, mtu, port));
+    return m_objectListPackager;
+}
+
 
 void ObjectStreamingController::processEvent(Event &event, SubscriptionService &event_service) {
     if (event.eventName() == "ObjectAdded") {
         ObjectStore::ObjectAddedEvent &objAddedEvent = dynamic_cast<ObjectStore::ObjectAddedEvent&>(event);
         std::string objectId = objAddedEvent.objectId();
         ogs_info("Object added with ID: %s", objectId.c_str());
+	if(check_if_object_added_is_manifest(objectId, objectStore(), getManifestUrl())) {
+	    const ObjectStore::Object &object = objectStore()[objectId];
+	    const ObjectStore::ObjectData &object_data = objectStore().getObjectData(objectId);
+ 
+	    if(manifestHandler()) {
+	        try {
+		    const ObjectStore::Metadata &metadata = objectStore().getMetadata(objectId);
+	            if(!manifestHandler()->update(object, object_data, metadata)) {
+		        ogs_error("Failed to update Manifest");
+			unsetObjectListPackager();
+			return;
+		    }
+	        } catch (std::exception &ex) {
+                    ogs_error("Invalid Manifest update: %s", ex.what());
+		    unsetObjectListPackager();
+		    return;
+                }
+		if (!m_objectListPackager) {
+                    setObjectListPackager();
+                }
 
-    } else if (event.eventName() == "ObjectPushStart") {
-	//validateObjectPushStart(event, event_service);
+	    } else {
+		std::unique_ptr<ManifestHandler> manifest_handler(ManifestHandlerFactory::makeManifestHandler(object));
+                manifestHandler(std::move(manifest_handler));
+		/*
+		const ObjectStore::Metadata &metadata = objectStore().getMetadata(objectId);
+                try {
+                    manifestHandler()->validateManifest(object, object_data, metadata);
+                }  catch (std::exception &ex) {
+                    ogs_info("InVALID Manifest Validation: %s", ex.what());
+                    unsetObjectListPackager();
+                    return;
+                }
+		*/
+		if (!m_objectListPackager) {
+                    setObjectListPackager();
+		}
+	    }
+	} else {
+	    ObjectListPackager::PackageItem item(objectId);
+            if (m_objectListPackager) {
+                m_objectListPackager->add(item);
+            } else {
+                ogs_error("ObjectListPackager is not initialized.");
+            }
+	}
     }
 }
 
@@ -69,64 +128,6 @@ std::string ObjectStreamingController::generateUUID() {
     char uuid_str[37];
     uuid_unparse(uuid, uuid_str);
     return std::string(uuid_str);
-}
-
-void ObjectStreamingController::initPullObjectIngester()
-{
-    std::optional<std::string> object_ingest_base_url = distributionSession().getObjectIngestBaseUrl();
-    std::optional<std::string> object_distribution_base_url = distributionSession().objectDistributionBaseUrl();
-
-    auto &pull_urls = distributionSession().getObjectAcquisitionPullUrls();
-    if (pull_urls.has_value()) {
-        std::list<PullObjectIngester::IngestItem> urls;
-
-        for (auto &url : pull_urls.value()) {
-            std::string obj_ingest_url;
-
-            if (url.has_value()) {
-                const std::string &url_str = url.value();
-                if (object_ingest_base_url.has_value()) {
-                    if (url_str.starts_with("https:") || url_str.starts_with("http:") || url_str.starts_with("//")) {
-                        ogs_error("Invalid objectAcquisitionPullUrl when objectIngestBaseUrl is set: %s", url.value().c_str());
-                        continue;
-                    } else {
-                        obj_ingest_url = object_ingest_base_url.value();
-                        if (!obj_ingest_url.ends_with("/")) obj_ingest_url += "/";
-                        obj_ingest_url += trim_slashes(url_str);
-                    }
-
-                }
-
-                urls.emplace_back(std::move(PullObjectIngester::IngestItem(nextObjectId(), obj_ingest_url, url_str,
-                                                                           object_ingest_base_url, object_distribution_base_url)));
-            }
-        }
-
-        addPullObjectIngester(new PullObjectIngester(objectStore(), *this, urls));
-    }
-}
-
-
-void ObjectStreamingController::initPushObjectIngester()
-{
-    const std::string objIngestBaseUrl;
-
-    PushObjectIngester *pushIngester = new PushObjectIngester(objectStore(), *this);
-
-    distributionSession().setObjectIngestBaseUrl(pushIngester->getIngestServerPrefix());
-    subscribeTo({"ObjectPushStart"}, *pushIngester);
-    setPushIngester(pushIngester);
-}
-
-void ObjectStreamingController::initObjectIngester()
-{
-    if (distributionSession().getObjectAcquisitionMethod() == "PULL") {
-        initPullObjectIngester();
-    } else if (distributionSession().getObjectAcquisitionMethod() == "PUSH") {
-        initPushObjectIngester();
-    } else {
-        ogs_error("Invalid Acq. method");
-    }
 }
 
 std::string ObjectStreamingController::nextObjectId()
@@ -149,13 +150,16 @@ static void validate_distribution_session(DistributionSession &distributionSessi
     }
 }
 
-
-static std::string trim_slashes(const std::string &path)
-{
-    size_t start = path.starts_with('/') ? 1 : 0;
-    size_t end = path.ends_with('/') ? path.size() - 1 : path.size();
-
-    return path.substr(start, end - start);
+static bool check_if_object_added_is_manifest(std::string &objectId, ObjectStore &objectStore, std::string &manifest_url) {
+    const ObjectStore::Metadata &metadata = objectStore.getMetadata(objectId);
+    if(metadata.getOriginalUrl() == manifest_url || metadata.getFetchedUrl() == manifest_url) return true;
+    /*
+    if (metadata.mediaType() == "application/dash+xml" ){
+	 return true;
+        
+    } */
+    return false;
+     
 }
 
 MBSTF_NAMESPACE_STOP
