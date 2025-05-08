@@ -80,7 +80,7 @@ void ObjectStreamingController::processEvent(Event &event, SubscriptionService &
 	    if(manifestHandler()) {
 	        try {
 		    const ObjectStore::Metadata &metadata = objectStore().getMetadata(objectId);
-	            if(!manifestHandler()->update(object, object_data, metadata)) {
+	            if(!manifestHandler()->update(object)) {
 		        ogs_error("Failed to update Manifest");
 			unsetObjectListPackager();
 			return;

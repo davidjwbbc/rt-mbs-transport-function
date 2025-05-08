@@ -14,7 +14,6 @@
 #include <cstring>
 #include <stdexcept>
 #include <exception>
-#include "tinyxml2.h"
 
 #include "common.hh"
 #include "ManifestHandler.hh"
@@ -25,16 +24,14 @@
 #include "DASHManifestHandler.hh"
 
 using namespace std::literals::chrono_literals;
-using namespace tinyxml2;
 
 MBSTF_NAMESPACE_START
 
-static bool is_valid_manifest(const ObjectStore::ObjectData &manifest_data);
-static bool validate_manifest(const ObjectStore::Object &new_manifest, const ObjectStore::ObjectData &manifest_data, const ObjectStore::Metadata &metadata);
-
+static LIBMPDPP_NAMESPACE_CLASS(MPD) ingest_manifest(const ObjectStore::Object &new_manifest);
 
 DASHManifestHandler::DASHManifestHandler(const ObjectStore::Object &object)
     :ManifestHandler()
+    ,m_mpd(ingest_manifest(object))
 {
 }
 
@@ -61,79 +58,25 @@ ManifestHandler::durn_type DASHManifestHandler::getDefaultDeadline()
     return 4s;
 }
 
-bool DASHManifestHandler::update(const ObjectStore::Object &new_manifest, const ObjectStore::ObjectData &manifest_data, const ObjectStore::Metadata &metadata)
+bool DASHManifestHandler::update(const ObjectStore::Object &new_manifest)
 {
     // TODO: process the new MPD and see what has changed, throw an exception of the Object is not understood or invalid
     
-    validate_manifest(new_manifest, manifest_data, metadata);
+    m_mpd = ingest_manifest(new_manifest);
     return true; // assume manifest updated, use false for no manifest change
-}
-
-bool DASHManifestHandler::validateManifest(const ObjectStore::Object &new_manifest, const ObjectStore::ObjectData &manifest_data, const ObjectStore::Metadata &metadata) {
-    return validate_manifest(new_manifest, manifest_data, metadata);
-
 }
 
 static bool g_registered = ManifestHandlerFactory::registerManifestHandler("application/dash+xml", new ManifestHandlerConstructorClass<DASHManifestHandler>());
 
-static bool validate_manifest(const ObjectStore::Object &new_manifest, const ObjectStore::ObjectData &manifest_data, const ObjectStore::Metadata &metadata)
+static LIBMPDPP_NAMESPACE_CLASS(MPD) ingest_manifest(const ObjectStore::Object &new_manifest)
 {
-    if ( !metadata.mediaType().empty()  && metadata.mediaType() != "application/dash+xml" ){
+    if ( new_manifest.second.mediaType() != "application/dash+xml" ){
          throw std::invalid_argument("Does not look like a DASH Manifest as the media type is invalid. Expected media type: application/dash+xml");
     }
-
-    if(is_valid_manifest(manifest_data)) return true;
-
-    return true;
+    return LIBMPDPP_NAMESPACE_CLASS(MPD) (new_manifest.first);
 
 
 }
-
-static bool is_valid_manifest(const ObjectStore::ObjectData &manifest_data) {
-    std::string xml_data(manifest_data.begin(), manifest_data.end());
-    XMLDocument doc;
-    // Parse the XML content (returns XML_SUCCESS if no errors were found)
-    XMLError error = doc.Parse(xml_data.c_str());
-    if (error != XML_SUCCESS) {
-
-        throw std::invalid_argument("Error parsing XML:" + std::string(doc.ErrorStr()));
-    }
-    // Retrieve the root element.
-    XMLElement* root = doc.RootElement();
-    if (!root) {
-        throw std::invalid_argument("Error parsing XML: No root element found.");
-    }
-    // Verify that the root element is named "MPD".
-    if (std::string(root->Name()) != "MPD") {
-        throw std::invalid_argument("Error parsing XML: Invalid element found. Expected 'MPD', found: " + std::string(root->Name()));
-    }
-    // Check for the required 'xmlns' attribute in the MPD element.
-    const char* xmlnsAttr = root->Attribute("xmlns");
-    if (!xmlnsAttr) {
-
-        throw std::invalid_argument("Missing 'xmlns' attribute in MPD element.");
-    }
-    // Define a list of accepted standard MPD namespaces.
-    std::vector<std::string> validNamespaces = {
-        "urn:mpeg:dash:schema:mpd:2011"
-        // Add more valid namespaces here if needed.
-    };
-
-    // Validate that the namespace matches one of the accepted ones.
-    bool validNamespace = false;
-    for (const auto& ns : validNamespaces) {
-        if (ns == std::string(xmlnsAttr)) {
-            validNamespace = true;
-            break;
-        }
-    }
-    if (!validNamespace) {
-        throw std::invalid_argument("Invalid MPD namespace. Found: " + std::string(xmlnsAttr));
-    }
-    return true;
-}
-
-
 
 MBSTF_NAMESPACE_STOP
 

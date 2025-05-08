@@ -28,8 +28,7 @@ public:
 
     virtual std::pair<time_type, ingest_list> nextIngestItems() = 0;
     virtual durn_type getDefaultDeadline() = 0;
-    virtual bool update(const ObjectStore::Object &new_manifest, const ObjectStore::ObjectData &manifest_data, const ObjectStore::Metadata &metadata) = 0;
-    virtual bool validateManifest(const ObjectStore::Object &new_manifest, const ObjectStore::ObjectData &manifest_data, const ObjectStore::Metadata &metadata) =  0;
+    virtual bool update(const ObjectStore::Object &new_manifest) = 0;
 
 };
 

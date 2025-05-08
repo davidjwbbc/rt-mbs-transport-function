@@ -12,6 +12,8 @@
  * https://drive.google.com/file/d/1cinCiA778IErENZ3JN52VFW-1ffHpx7Z/view
  */
 
+#include <libmpd++/libmpd++.hh>
+
 #include "common.hh"
 #include "ManifestHandler.hh"
 #include "ObjectStore.hh"
@@ -33,9 +35,12 @@ public:
 
     virtual std::pair<ManifestHandler::time_type, ManifestHandler::ingest_list> nextIngestItems();
     virtual ManifestHandler::durn_type getDefaultDeadline();
-    virtual bool update(const ObjectStore::Object &new_manifest, const ObjectStore::ObjectData &manifest_data, const ObjectStore::Metadata &metadata);
-    virtual bool validateManifest(const ObjectStore::Object &new_manifest, const ObjectStore::ObjectData &manifest_data, const ObjectStore::Metadata &metadata);
+    virtual bool update(const ObjectStore::Object &new_manifest);
     static unsigned int factoryPriority() { return 100; };
+private:
+
+  LIBMPDPP_NAMESPACE_CLASS(MPD)  m_mpd;
+
 };
 
 MBSTF_NAMESPACE_STOP
