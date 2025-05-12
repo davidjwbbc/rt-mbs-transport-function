@@ -59,11 +59,13 @@ ObjectStreamingController::~ObjectStreamingController()
 
 std::shared_ptr<ObjectListPackager> &ObjectStreamingController::setObjectListPackager() {
     std::optional<std::string> dest_ip_addr = distributionSession().getDestIpAddr();
+    std::optional<std::string> tunnel_addr = distributionSession().getTunnelAddr();
     uint32_t rate_limit = distributionSession().getRateLimit();
     in_port_t port = distributionSession().getPortNumber();
+    in_port_t tunnel_port = distributionSession().getTunnelPortNumber();
     //TODO: get the MTU for the dest_ip_addr
     unsigned short mtu = 1500;
-    m_objectListPackager.reset(new ObjectListPackager(objectStore(), *this, dest_ip_addr, rate_limit, mtu, port));
+    m_objectListPackager.reset(new ObjectListPackager(objectStore(), *this, dest_ip_addr, rate_limit, mtu, port, tunnel_addr, tunnel_port));
     return m_objectListPackager;
 }
 
@@ -75,11 +77,9 @@ void ObjectStreamingController::processEvent(Event &event, SubscriptionService &
         ogs_info("Object added with ID: %s", objectId.c_str());
 	if(check_if_object_added_is_manifest(objectId, objectStore(), getManifestUrl())) {
 	    const ObjectStore::Object &object = objectStore()[objectId];
-	    const ObjectStore::ObjectData &object_data = objectStore().getObjectData(objectId);
  
 	    if(manifestHandler()) {
 	        try {
-		    const ObjectStore::Metadata &metadata = objectStore().getMetadata(objectId);
 	            if(!manifestHandler()->update(object)) {
 		        ogs_error("Failed to update Manifest");
 			unsetObjectListPackager();
