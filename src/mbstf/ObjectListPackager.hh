@@ -20,6 +20,8 @@
 
 #include <netinet/in.h>
 
+#include <boost/asio.hpp>
+
 #include "common.hh"
 #include "ObjectPackager.hh"
 
@@ -59,11 +61,14 @@ public:
     ObjectListPackager() = delete;
     ObjectListPackager(ObjectStore &object_store, ObjectController &controller,
                        const std::list<PackageItem> &object_to_package, const std::optional<std::string> &address,
-                       uint32_t rateLimit, unsigned short mtu, in_port_t port);
+                       uint32_t rateLimit, unsigned short mtu, in_port_t port,
+                       const std::optional<std::string> &tunnel_address, in_port_t tunnel_port);
     ObjectListPackager(ObjectStore &object_store, ObjectController &controller, std::list<PackageItem> &&object_to_package,
-                       const std::optional<std::string> &address, uint32_t rateLimit, unsigned short mtu, in_port_t port);
+                       const std::optional<std::string> &address, uint32_t rateLimit, unsigned short mtu, in_port_t port,
+                       const std::optional<std::string> &tunnel_address, in_port_t tunnel_port);
     ObjectListPackager(ObjectStore &object_store, ObjectController &controller, const std::optional<std::string> &address,
-                       uint32_t rateLimit, unsigned short mtu, in_port_t port);
+                       uint32_t rateLimit, unsigned short mtu, in_port_t port,
+                       const std::optional<std::string> &tunnel_address, in_port_t tunnel_port);
     virtual ~ObjectListPackager();
 
     bool add(const PackageItem &item);
@@ -75,6 +80,7 @@ protected:
 private:
     void sortListByPolicy();
     std::list<PackageItem> m_packageItems;
+    std::optional<boost::asio::ip::udp::endpoint> m_tunnelEndpoint;
 };
 
 MBSTF_NAMESPACE_STOP

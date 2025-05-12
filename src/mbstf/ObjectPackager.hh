@@ -38,11 +38,13 @@ public:
     ObjectPackager(ObjectPackager &&) = delete;
     ObjectPackager(const ObjectPackager &) = delete;
 
-    ObjectPackager(ObjectStore &objectStore, ObjectController &controller, std::optional<std::string> destIpAddr = std::nullopt, uint32_t rateLimit = 0, unsigned short mtu = 0, in_port_t port = 0)
+    ObjectPackager(ObjectStore &objectStore, ObjectController &controller, std::optional<std::string> destIpAddr = std::nullopt, uint32_t rateLimit = 0, unsigned short mtu = 0, in_port_t port = 0, const std::optional<std::string> &tunnel_address = std::nullopt, in_port_t tunnel_port = 0)
         :m_transmitter(nullptr), m_io(), m_queuedToi(0), m_queued(false)
         ,m_objectStore(objectStore), m_controller(controller), m_destIpAddr(destIpAddr), m_rateLimit(rateLimit), m_mtu(mtu)
         ,m_port(port), m_workerThread(), m_workerCancel(false)
-    {};
+        ,m_tunnelAddress(tunnel_address), m_tunnelPort(tunnel_port)
+    {
+    };
 
     void abort() {
         m_workerCancel = true;
@@ -71,9 +73,11 @@ protected:
     const ObjectController &controller() const { return m_controller; };
     ObjectController &controller() { return m_controller; };
     const std::optional<std::string> &destIpAddr() const { return m_destIpAddr; };
+    const std::optional<std::string> &tunnelAddr() const { return m_tunnelAddress; };
     uint32_t rateLimit() const { return m_rateLimit; };
     unsigned short mtu() const { return m_mtu; };
     in_port_t port() const { return m_port; };
+    in_port_t tunnelPort() const { return m_tunnelPort; };
 
     virtual void doObjectPackage() = 0;
 
@@ -92,6 +96,8 @@ private:
     in_port_t m_port;
     std::thread m_workerThread;
     std::atomic_bool m_workerCancel;
+    std::optional<std::string> m_tunnelAddress;
+    in_port_t m_tunnelPort;
 };
 
 MBSTF_NAMESPACE_STOP

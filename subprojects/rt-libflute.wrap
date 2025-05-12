@@ -3,4 +3,4 @@ url = https://github.com/5G-MAG/rt-libflute.git
 revision = development
 method = cmake
 
-diff_files = rt-libflute/IpSec-xfrm_algo.patch
+#diff_files = rt-libflute/IpSec-xfrm_algo.patch

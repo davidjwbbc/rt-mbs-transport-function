@@ -49,6 +49,7 @@
 #include "openapi/model/DistSession.h"
 #include "openapi/model/ObjDistributionData.h"
 #include "openapi/model/ObjAcquisitionMethod.h"
+#include "openapi/model/TunnelAddress.h"
 
 #include "openapi/api/IndividualMBSDistributionSessionApi-info.h"
 #include "TimerFunc.hh"
@@ -64,6 +65,7 @@ using reftools::mbstf::ObjDistributionData;
 using reftools::mbstf::UpTrafficFlowInfo;
 using reftools::mbstf::ObjAcquisitionMethod;
 using reftools::mbstf::ObjDistributionOperatingMode;
+using reftools::mbstf::TunnelAddress;
 
 MBSTF_NAMESPACE_START
 
@@ -375,6 +377,19 @@ const std::optional<std::string> &DistributionSession::getDestIpAddr()
     return empty;
 }
 
+const std::optional<std::string> &DistributionSession::getTunnelAddr()
+{
+    std::shared_ptr<CreateReqData> createReqData = distributionSessionReqData();
+    std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
+    std::optional<std::shared_ptr<TunnelAddress> > mbUpfTunAddr = distSession->getMbUpfTunAddr();
+    if (mbUpfTunAddr.has_value()) {
+        return mbUpfTunAddr.value()->getIpv4Addr();
+    }
+
+    static const std::optional<std::string> empty = std::nullopt;
+    return empty;
+}
+
 in_port_t DistributionSession::getPortNumber()
 {
     in_port_t portNumber = 0;
@@ -384,6 +399,18 @@ in_port_t DistributionSession::getPortNumber()
     if (upTrafficFlowInfo.has_value()) {
         std::shared_ptr<UpTrafficFlowInfo> upTrafficFlow = upTrafficFlowInfo.value();
         portNumber = static_cast<in_port_t>(upTrafficFlow->getPortNumber());
+    }
+    return portNumber;
+}
+
+in_port_t DistributionSession::getTunnelPortNumber()
+{
+    in_port_t portNumber = 0;
+    std::shared_ptr<CreateReqData> createReqData = distributionSessionReqData();
+    std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
+    std::optional<std::shared_ptr<TunnelAddress> > mbUpfTunAddr = distSession->getMbUpfTunAddr();
+    if (mbUpfTunAddr.has_value()) {
+        portNumber = static_cast<in_port_t>(mbUpfTunAddr.value()->getPortNumber());
     }
     return portNumber;
 }

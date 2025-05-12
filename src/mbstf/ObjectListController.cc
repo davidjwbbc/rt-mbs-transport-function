@@ -53,7 +53,7 @@ ObjectListController::ObjectListController(DistributionSession &distributionSess
    if(!validate_distribution_session(distributionSession)) {
         throw std::runtime_error("Invalid Distribution Session");
     }
-	
+
     subscribeToService(objectStore());
     initObjectIngester();
     setObjectListPackager();
@@ -65,11 +65,13 @@ ObjectListController::~ObjectListController()
 
 std::shared_ptr<ObjectListPackager> &ObjectListController::setObjectListPackager() {
     std::optional<std::string> dest_ip_addr = distributionSession().getDestIpAddr();
+    std::optional<std::string> tunnel_addr = distributionSession().getTunnelAddr();
     uint32_t rate_limit = distributionSession().getRateLimit();
     in_port_t port = distributionSession().getPortNumber();
-    //TODO: get the MTU for the dest_ip_addr
+    in_port_t tunnel_port = distributionSession().getTunnelPortNumber();
+    //TODO: get the MTU for the dest_ip_addr or tunnel_addr
     unsigned short mtu = 1500;
-    m_objectListPackager.reset(new ObjectListPackager(objectStore(), *this, dest_ip_addr, rate_limit, mtu, port));
+    m_objectListPackager.reset(new ObjectListPackager(objectStore(), *this, dest_ip_addr, rate_limit, mtu, port, tunnel_addr, tunnel_port));
     return m_objectListPackager;
 }
 
@@ -200,15 +202,15 @@ static bool validate_push_url(DistributionSession &distributionSession, const st
 	std::string push_id = object_acquisition_push_id.value();
 	std::string url_path(url);
 	if ((push_id.front() == '/' && url_path.front() != '/')) {
-	    url_path = '/' + url_path;	
+	    url_path = '/' + url_path;
 	} else if ((url_path.front() == '/' && push_id.front() != '/')) {
 	    push_id = '/' + push_id;
 	}
-	if(push_id == url_path) { 
+	if(push_id == url_path) {
 	    return true;
 	} else {
 	    return false;
-	} 
+	}
     }
 
     return true;
@@ -225,8 +227,6 @@ static int validate_distribution_session(DistributionSession &distributionSessio
 
     return 1;
 }
-
-
 
 MBSTF_NAMESPACE_STOP
 

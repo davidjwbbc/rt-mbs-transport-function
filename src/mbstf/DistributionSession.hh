@@ -38,7 +38,7 @@ namespace reftools::mbstf {
     class ObjDistributionData;
 }
 
-using fiveg_mag_reftools::CJson; 
+using fiveg_mag_reftools::CJson;
 using reftools::mbstf::CreateReqData;
 using reftools::mbstf::ObjDistributionData;
 
@@ -71,9 +71,11 @@ public:
 
     static bool processEvent(Open5GSEvent &event);
     const ObjDistributionData::ObjAcquisitionIdsPullType &getObjectAcquisitionPullUrls();
-    const std::string &getObjectDistributionOperatingMode(); 
+    const std::string &getObjectDistributionOperatingMode();
     const std::optional<std::string> &getDestIpAddr();
+    const std::optional<std::string> &getTunnelAddr();
     in_port_t getPortNumber();
+    in_port_t getTunnelPortNumber();
     uint32_t getRateLimit();
     const std::optional<std::string> &getObjectIngestBaseUrl();
     const std::string &getObjectAcquisitionMethod();

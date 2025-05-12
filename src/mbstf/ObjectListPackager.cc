@@ -58,30 +58,42 @@ ObjectListPackager::PackageItem::PackageItem(PackageItem &&other)
 ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectController &controller,
                                        const std::list<PackageItem> &object_to_package,
                                        const std::optional<std::string> &address,
-                                       uint32_t rateLimit, unsigned short mtu, in_port_t port)
-    :ObjectPackager(object_store, controller, address, rateLimit, mtu, port)
+                                       uint32_t rateLimit, unsigned short mtu, in_port_t port, const std::optional<std::string> &tunnel_address, in_port_t tunnel_port)
+    :ObjectPackager(object_store, controller, address, rateLimit, mtu, port, tunnel_address, tunnel_port)
     ,m_packageItems(object_to_package)
+    ,m_tunnelEndpoint()
 {
     sortListByPolicy();
+    if (tunnel_address) {
+        m_tunnelEndpoint = boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string(tunnel_address.value()), tunnel_port);
+    }
     startWorker();
 }
 
 ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectController &controller,
                                        std::list<PackageItem> &&object_to_package, const std::optional<std::string> &address,
-                                       uint32_t rateLimit, unsigned short mtu, in_port_t port)
-    :ObjectPackager(object_store, controller, address, rateLimit, mtu, port)
+                                       uint32_t rateLimit, unsigned short mtu, in_port_t port, const std::optional<std::string> &tunnel_address, in_port_t tunnel_port)
+    :ObjectPackager(object_store, controller, address, rateLimit, mtu, port, tunnel_address, tunnel_port)
     ,m_packageItems(std::move(object_to_package))
+    ,m_tunnelEndpoint()
 {
     sortListByPolicy();
+    if (tunnel_address) {
+        m_tunnelEndpoint = boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string(tunnel_address.value()), tunnel_port);
+    }
     startWorker();
 }
 
 ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectController &controller,
                                        const std::optional<std::string> &address, uint32_t rateLimit, unsigned short mtu,
-                                       in_port_t port)
-    :ObjectPackager(object_store, controller, address, rateLimit, mtu, port)
+                                       in_port_t port, const std::optional<std::string> &tunnel_address, in_port_t tunnel_port)
+    :ObjectPackager(object_store, controller, address, rateLimit, mtu, port, tunnel_address, tunnel_port)
     ,m_packageItems()
+    ,m_tunnelEndpoint()
 {
+    if (tunnel_address) {
+        m_tunnelEndpoint = boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string(tunnel_address.value()), tunnel_port);
+    }
     startWorker();
 }
 
@@ -115,7 +127,8 @@ void ObjectListPackager::doObjectPackage() {
                     0,
                     mtu(),
                     rateLimit(),
-                    m_io);
+                    m_io,
+                    m_tunnelEndpoint);
                 m_transmitter->register_completion_callback(
                     [this](uint32_t toi) {
                         if (m_queuedToi == toi) {

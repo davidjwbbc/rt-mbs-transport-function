@@ -27,11 +27,37 @@
 #include <netinet/in.h>
 
 #include "common.hh"
+#include "NfServer.hh"
 #include "ObjectStore.hh"
 #include "ObjectListPackager.hh"
+#include "Open5GSYamlDocument.hh"
 
 MBSTF_NAMESPACE_START
 using namespace std::literals;
+
+class App {
+public:
+    static const App &self();
+    const NfServer::AppMetadata &mbstfAppMetadata() const;
+    Open5GSYamlDocument configDocument() const;
+};
+
+const App &App::self()
+{
+    static const App instance;
+    return instance;
+}
+
+const NfServer::AppMetadata &App::mbstfAppMetadata() const
+{
+    static const NfServer::AppMetadata app_metadata("testObjectListPackager", "0.0.1", "test-host");
+    return app_metadata;
+}
+
+Open5GSYamlDocument App::configDocument() const
+{
+    return Open5GSYamlDocument(nullptr);
+}
 
 class ObjectController {};
 class ObjectListController: public ObjectController {};
@@ -109,7 +135,7 @@ void testObjectListPackager(ObjectStore &store, ObjectListController &controller
     unsigned short mtu = 1500;
     in_port_t port = 8080;
 
-    ObjectListPackager packager(store, controller, address, rateLimit, mtu, port);
+    ObjectListPackager packager(store, controller, address, rateLimit, mtu, port, std::nullopt, 0);
     packager.startWorker();
     // Add a PackageItem to ObjectPackager
     ObjectListPackager::PackageItem item("obj1");
