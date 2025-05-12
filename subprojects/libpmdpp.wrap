@@ -1,5 +1,0 @@
-[wrap-git]
-directory=libmpdpp
-url=https://github.com/bbc/libmpdpp.git
-revision=main
-
