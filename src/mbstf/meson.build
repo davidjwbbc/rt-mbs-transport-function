@@ -36,6 +36,8 @@ fs = import('fs')
 
 boost_dep = dependency('boost')
 uuid_dep = dependency('uuid')
+libmpdpp_dep = dependency('mpd++', fallback: ['libmpdpp', 'libparsempd_dep'])
+
 test_source_subscriber_subscription = files('''
   SubscriptionService.cc
   SubscriptionService.hh
@@ -169,7 +171,8 @@ libmbstf = static_library('mbstf',
                     libcrypt_dep,
                     rt_libflute_dep,
                     boost_dep,
-                    uuid_dep],
+                    uuid_dep,
+                    libmpdpp_dep],
     install : false)
 
 libmbstf_dep = declare_dependency(
@@ -180,7 +183,8 @@ libmbstf_dep = declare_dependency(
                     libcrypt_dep,
                     rt_libflute_dep,
                     boost_dep,
-                    uuid_dep])
+                    uuid_dep,
+                    libmpdpp_dep])
 libmbstf_whole_dep = declare_dependency(
     link_whole : libmbstf,
     dependencies : [libsbi_dep,
@@ -189,7 +193,8 @@ libmbstf_whole_dep = declare_dependency(
                     libcrypt_dep,
                     rt_libflute_dep,
                     boost_dep,
-                    uuid_dep])
+                    uuid_dep,
+                    libmpdpp_dep])
 
 mbstf_sources = files('''
     App.cc
