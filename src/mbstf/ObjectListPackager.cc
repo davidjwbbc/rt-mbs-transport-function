@@ -133,7 +133,8 @@ void ObjectListPackager::doObjectPackage() {
                     mtu(),
                     rateLimit(),
                     m_io,
-                    m_tunnelEndpoint);
+                    m_tunnelEndpoint,
+                    LibFlute::FileDeliveryTable::FDT_NS_DRAFT_2005);
                 m_transmitter->register_completion_callback(
                     [this](uint32_t toi) {
                         if (m_queuedToi == toi) {
