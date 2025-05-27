@@ -54,7 +54,7 @@ ObjectStreamingController::ObjectStreamingController(DistributionSession &distri
 
 ObjectStreamingController::~ObjectStreamingController()
 {
-    abort();	
+    abort();
 }
 
 std::shared_ptr<ObjectListPackager> &ObjectStreamingController::setObjectListPackager() {
@@ -75,32 +75,32 @@ void ObjectStreamingController::processEvent(Event &event, SubscriptionService &
         ObjectStore::ObjectAddedEvent &objAddedEvent = dynamic_cast<ObjectStore::ObjectAddedEvent&>(event);
         std::string objectId = objAddedEvent.objectId();
         ogs_info("Object added with ID: %s", objectId.c_str());
-	if(check_if_object_added_is_manifest(objectId, objectStore(), getManifestUrl())) {
-	    const ObjectStore::Object &object = objectStore()[objectId];
- 
-	    if(manifestHandler()) {
-	        try {
-	            if(!manifestHandler()->update(object)) {
-		        ogs_error("Failed to update Manifest");
-			unsetObjectListPackager();
+        if(check_if_object_added_is_manifest(objectId, objectStore(), getManifestUrl())) {
+            const ObjectStore::Object &object = objectStore()[objectId];
+
+            if(manifestHandler()) {
+                try {
+                    if(!manifestHandler()->update(object)) {
+                        ogs_error("Failed to update Manifest");
+                        unsetObjectListPackager();
                         event.stopProcessing();
-			return;
-		    }
-	        } catch (std::exception &ex) {
+                        return;
+                    }
+                } catch (std::exception &ex) {
                     ogs_error("Invalid Manifest update: %s", ex.what());
-		    unsetObjectListPackager();
+                    unsetObjectListPackager();
                     event.stopProcessing();
-		    return;
+                    return;
                 }
-		if (!m_objectListPackager) {
+                if (!m_objectListPackager) {
                     setObjectListPackager();
                 }
 
-	    } else {
-		std::unique_ptr<ManifestHandler> manifest_handler(ManifestHandlerFactory::makeManifestHandler(object));
+            } else {
+                std::unique_ptr<ManifestHandler> manifest_handler(ManifestHandlerFactory::makeManifestHandler(object));
                 manifestHandler(std::move(manifest_handler));
-		/*
-		const ObjectStore::Metadata &metadata = objectStore().getMetadata(objectId);
+                /*
+                const ObjectStore::Metadata &metadata = objectStore().getMetadata(objectId);
                 try {
                     manifestHandler()->validateManifest(object, object_data, metadata);
                 }  catch (std::exception &ex) {
@@ -108,19 +108,19 @@ void ObjectStreamingController::processEvent(Event &event, SubscriptionService &
                     unsetObjectListPackager();
                     return;
                 }
-		*/
-		if (!m_objectListPackager) {
+                */
+                if (!m_objectListPackager) {
                     setObjectListPackager();
-		}
-	    }
-	} else {
-	    ObjectListPackager::PackageItem item(objectId);
+                }
+            }
+        } else {
+            ObjectListPackager::PackageItem item(objectId);
             if (m_objectListPackager) {
                 m_objectListPackager->add(item);
             } else {
                 ogs_error("ObjectListPackager is not initialized.");
             }
-	}
+        }
     }
     ObjectManifestController::processEvent(event, event_service);
 }
@@ -158,11 +158,11 @@ static bool check_if_object_added_is_manifest(std::string &objectId, ObjectStore
     if(metadata.getOriginalUrl() == manifest_url || metadata.getFetchedUrl() == manifest_url) return true;
     /*
     if (metadata.mediaType() == "application/dash+xml" ){
-	 return true;
-        
+         return true;
+
     } */
     return false;
-     
+
 }
 
 MBSTF_NAMESPACE_STOP
