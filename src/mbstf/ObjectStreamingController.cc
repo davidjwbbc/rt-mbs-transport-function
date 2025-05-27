@@ -83,11 +83,13 @@ void ObjectStreamingController::processEvent(Event &event, SubscriptionService &
 	            if(!manifestHandler()->update(object)) {
 		        ogs_error("Failed to update Manifest");
 			unsetObjectListPackager();
+                        event.stopProcessing();
 			return;
 		    }
 	        } catch (std::exception &ex) {
                     ogs_error("Invalid Manifest update: %s", ex.what());
 		    unsetObjectListPackager();
+                    event.stopProcessing();
 		    return;
                 }
 		if (!m_objectListPackager) {
@@ -120,6 +122,7 @@ void ObjectStreamingController::processEvent(Event &event, SubscriptionService &
             }
 	}
     }
+    ObjectManifestController::processEvent(event, event_service);
 }
 
 std::string ObjectStreamingController::generateUUID() {
