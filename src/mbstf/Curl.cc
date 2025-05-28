@@ -50,6 +50,7 @@ Curl::Curl()
     ,m_protocol()
     ,m_statusCode(0)
     ,m_permanentRedirectUrl()
+    ,m_cacheControlMaxAge(0)
 {
     // Ensure curl_global_init is called only once
     static std::once_flag init_flag;
@@ -159,6 +160,12 @@ const std::string &Curl::getPermanentRedirectUrl() const
     return m_permanentRedirectUrl;
 }
 
+const unsigned long Curl::getCacheControlMaxAge() const
+{
+    return m_cacheControlMaxAge;
+}
+
+
 bool Curl::extractProtocolAndStatusCode(std::string_view &header_line)
 {
     header_line.remove_prefix(5); // Skip "HTTP/"
@@ -205,6 +212,34 @@ void Curl::processHeaderLine(std::string_view &header_line)
             while (header_line.front() == ' ') header_line.remove_prefix(1);
             m_permanentRedirectUrl = header_line;
             ogs_debug("Got new redirect URL: %s", m_permanentRedirectUrl.c_str());
+        } else if (header_line.starts_with("Cache-Control:") || header_line.starts_with("cache-control:")|| header_line.starts_with("Cache-control:")) {
+            // Remove "Cache-Control:" prefix (14 characters)
+            header_line.remove_prefix(14);
+            // Skip any leading whitespace after the colon
+            while (!header_line.empty() && header_line.front() == ' ')
+                header_line.remove_prefix(1);
+
+            // Look for the "max-age=" directive within the header line.
+            auto pos = header_line.find("max-age=");
+	    if (pos == std::string_view::npos) {
+	        pos = header_line.find("Max-age=");
+	    }
+            if (pos != std::string_view::npos) {
+                pos += 8; // Move past "max-age="
+                // Find where the numeric value ends (comma, space, or end-of-line)
+                auto endPos = header_line.find_first_of(", \r\n", pos);
+                if (endPos == std::string_view::npos)
+                    endPos = header_line.size();
+
+                // Convert the extracted substring to an integer.
+                std::string maxAgeStr(header_line.substr(pos, endPos - pos));
+                try {
+                    m_cacheControlMaxAge = std::stoul(maxAgeStr);
+                } catch (const std::exception&) {
+                    m_cacheControlMaxAge = 0; // Fallback in case of conversion failure
+                }
+                ogs_debug("Extracted Cache-Control max-age: %lu", m_cacheControlMaxAge);
+            }
         }
         break;
     case HEADER_BODY: // We're in the response body, so this is either a trailing header or a new status line after redirect

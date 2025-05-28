@@ -133,7 +133,7 @@ void PushObjectIngester::Request::processRequest()
         ogs_debug("%s", oss.str().c_str());
     }
 
-    ObjectStore::Metadata metadata(content_type, url, url, m_urlPath, last_modified, m_pushObjectIngester.getIngestServerPrefix(), object_distrib_base_url);
+    ObjectStore::Metadata metadata(m_objectId, content_type, url, url, m_urlPath, last_modified, m_pushObjectIngester.getIngestServerPrefix(), object_distrib_base_url);
     metadata.cacheExpires(m_expires?m_expires.value():(std::chrono::system_clock::now() + std::chrono::minutes(ObjectStore::Metadata::cacheExpiry())));
 
     // Pull all body blocks together into one vector

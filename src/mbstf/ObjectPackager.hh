@@ -22,6 +22,8 @@
 #include <boost/asio/io_service.hpp>
 
 #include "common.hh"
+#include "Event.hh"
+#include "SubscriptionService.hh"
 
 namespace LibFlute{
     class Transmitter;
@@ -31,15 +33,29 @@ MBSTF_NAMESPACE_START
 
 class ObjectStore;
 class ObjectController;
+class Event;
 
-class ObjectPackager {
+class ObjectPackager: public SubscriptionService {
 public:
+   class ObjectSendCompleted : public Event {
+    public:
+        ObjectSendCompleted(const std::string& object_id)
+            : Event("ObjectSendCompleted"), m_object_id(object_id) {}
+
+        std::string objectId() const { return m_object_id; }
+        virtual ~ObjectSendCompleted() {};
+
+    private:
+        std::string m_object_id;
+    };
+ 
+
     ObjectPackager() = delete;
     ObjectPackager(ObjectPackager &&) = delete;
     ObjectPackager(const ObjectPackager &) = delete;
 
-    ObjectPackager(ObjectStore &objectStore, ObjectController &controller, std::optional<std::string> destIpAddr = std::nullopt, uint32_t rateLimit = 0, unsigned short mtu = 0, in_port_t port = 0, const std::optional<std::string> &tunnel_address = std::nullopt, in_port_t tunnel_port = 0)
-        :m_transmitter(nullptr), m_io(), m_queuedToi(0), m_queued(false)
+    ObjectPackager(ObjectStore &objectStore, ObjectController &controller, std::optional<std::string> destIpAddr = std::nullopt, uint32_t rateLimit = 0, unsigned short mtu = 0, in_port_t port = 0, const std::optional<std::string> &tunnel_address = std::nullopt, in_port_t tunnel_port = 0 )
+        :m_transmitter(nullptr), m_io(), m_queuedToi(0), m_queued(false), m_queuedObjectId()
         ,m_objectStore(objectStore), m_controller(controller), m_destIpAddr(destIpAddr), m_rateLimit(rateLimit), m_mtu(mtu)
         ,m_port(port), m_workerThread(), m_workerCancel(false)
         ,m_tunnelAddress(tunnel_address), m_tunnelPort(tunnel_port)
@@ -85,6 +101,7 @@ protected:
     boost::asio::io_service m_io;
     uint32_t m_queuedToi;
     bool m_queued;
+    std::string m_queuedObjectId;
 
 private:
     static void workerLoop(ObjectPackager*);

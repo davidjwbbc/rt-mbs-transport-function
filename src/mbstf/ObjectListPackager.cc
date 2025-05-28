@@ -62,6 +62,7 @@ ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectControll
     :ObjectPackager(object_store, controller, address, rateLimit, mtu, port, tunnel_address, tunnel_port)
     ,m_packageItems(object_to_package)
     ,m_tunnelEndpoint()
+    ,m_packageItemsMutex (new std::recursive_mutex)
 {
     sortListByPolicy();
     if (tunnel_address) {
@@ -76,6 +77,7 @@ ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectControll
     :ObjectPackager(object_store, controller, address, rateLimit, mtu, port, tunnel_address, tunnel_port)
     ,m_packageItems(std::move(object_to_package))
     ,m_tunnelEndpoint()
+    ,m_packageItemsMutex (new std::recursive_mutex)
 {
     sortListByPolicy();
     if (tunnel_address) {
@@ -90,6 +92,7 @@ ObjectListPackager::ObjectListPackager(ObjectStore &object_store, ObjectControll
     :ObjectPackager(object_store, controller, address, rateLimit, mtu, port, tunnel_address, tunnel_port)
     ,m_packageItems()
     ,m_tunnelEndpoint()
+    ,m_packageItemsMutex (new std::recursive_mutex)
 {
     if (tunnel_address) {
         m_tunnelEndpoint = boost::asio::ip::udp::endpoint(boost::asio::ip::address::from_string(tunnel_address.value()), tunnel_port);
@@ -103,12 +106,14 @@ ObjectListPackager::~ObjectListPackager() {
 }
 
 bool ObjectListPackager::add(const PackageItem &item) {
+    std::lock_guard<std::recursive_mutex> lock(*m_packageItemsMutex);
     m_packageItems.push_back(item);
     sortListByPolicy();
     return true;
 }
 
 bool ObjectListPackager::add(PackageItem &&item) {
+    std::lock_guard<std::recursive_mutex> lock(*m_packageItemsMutex);
     m_packageItems.push_back(std::move(item));
     sortListByPolicy();
     return true;
@@ -132,48 +137,66 @@ void ObjectListPackager::doObjectPackage() {
                 m_transmitter->register_completion_callback(
                     [this](uint32_t toi) {
                         if (m_queuedToi == toi) {
+			    
                             m_queued = false;
-                            ogs_info("Object with TOI: %d", toi);
+			    objectSendCompletion(m_queuedObjectId);
+                            /*
+			    std::shared_ptr<Event> event(new ObjectListPackager::ObjectSendCompleted(m_queuedObjectId));
+                            sendEventAsynchronous(event);
+                            */ 
+			    //objectStore().deleteObject(m_queuedObjectId);
+                            ogs_info("Transmitted: Object with TOI: %d", toi);
                         } else {
                             ogs_error("Unscheduled completion of Object with TOI: %d", toi);
                         }
+
                     }
+
+
                 );
+
                 // emitFluteSessionStartedEvent();
             }
+            {
+                std::lock_guard<std::recursive_mutex> lock(*m_packageItemsMutex);
 
-            if (!m_packageItems.empty() && !m_queued) {
-                auto &item = m_packageItems.front();
-                std::string location;
-                std::vector<unsigned char> &objData = objectStore().getObjectData(item.objectId());
-                const ObjectStore::Metadata &metadata = objectStore().getMetadata(item.objectId());
-                std::string obj_ingest_base_url = metadata.objIngestBaseUrl().value_or(std::string());
-                std::string obj_distribution_base_url = metadata.objDistributionBaseUrl().value_or(std::string());
+                if (!m_packageItems.empty() && !m_queued) {
+		    
+                    auto &item = m_packageItems.front();
+	            m_packageItemsMutex->unlock();
+                    std::string location;
+		    m_queuedObjectId = item.objectId();
+                    std::vector<unsigned char> &objData = objectStore().getObjectData(item.objectId());
+                    const ObjectStore::Metadata &metadata = objectStore().getMetadata(item.objectId());
+                    std::string obj_ingest_base_url = metadata.objIngestBaseUrl().value_or(std::string());
+                    std::string obj_distribution_base_url = metadata.objDistributionBaseUrl().value_or(std::string());
 
-                // If we need to substitute objIngestBaseUrl for objDistributionBaseUrl then do so
-                if (!obj_ingest_base_url.empty() && !obj_distribution_base_url.empty() &&
-                    metadata.getFetchedUrl().starts_with(obj_ingest_base_url)) {
-                    location = obj_distribution_base_url + metadata.getFetchedUrl().substr(obj_ingest_base_url.size());
-                } else {
-                    // Just use the fetched URL
-                    location = metadata.getFetchedUrl();
+                    // If we need to substitute objIngestBaseUrl for objDistributionBaseUrl then do so
+                    if (!obj_ingest_base_url.empty() && !obj_distribution_base_url.empty() &&
+                        metadata.getFetchedUrl().starts_with(obj_ingest_base_url)) {
+                        location = obj_distribution_base_url + metadata.getFetchedUrl().substr(obj_ingest_base_url.size());
+                    } else {
+                        // Just use the fetched URL
+                        location = metadata.getFetchedUrl();
+                    }
+
+                    m_queued = true;
+                    uint64_t expires_in;
+                    const auto &cache_expires = metadata.cacheExpires();
+                    if (cache_expires) {
+                        expires_in = std::chrono::duration_cast<std::chrono::seconds>(cache_expires.value().time_since_epoch()).count() + 2208988800;
+                    } else {
+                        expires_in = m_transmitter->seconds_since_epoch() + 60;
+                    }
+                    m_queuedToi = m_transmitter->send(location, metadata.mediaType(),
+                            expires_in,
+                            reinterpret_cast<char*>(objData.data()),
+                            objData.size()
+                    );
+                    m_packageItemsMutex->lock();
+                    m_packageItems.pop_front();
                 }
-
-                m_queued = true;
-                uint64_t expires_in;
-                const auto &cache_expires = metadata.cacheExpires();
-                if (cache_expires) {
-                    expires_in = std::chrono::duration_cast<std::chrono::seconds>(cache_expires.value().time_since_epoch()).count() + 2208988800;
-                } else {
-                    expires_in = m_transmitter->seconds_since_epoch() + 60;
-                }
-                m_queuedToi = m_transmitter->send(location, metadata.mediaType(),
-                    expires_in,
-                    reinterpret_cast<char*>(objData.data()),
-                    objData.size()
-                );
-                m_packageItems.pop_front();
-            }
+	    }
 
             m_io.run_one();
         }
@@ -190,6 +213,12 @@ void ObjectListPackager::sortListByPolicy() {
         }
         return a.deadline().has_value();
     });
+}
+
+void ObjectListPackager::objectSendCompletion(std::string &object_id)
+{
+    std::shared_ptr<Event> event(new ObjectListPackager::ObjectSendCompleted(object_id));
+    sendEventAsynchronous(event);
 }
 
 MBSTF_NAMESPACE_STOP

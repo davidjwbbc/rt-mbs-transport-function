@@ -44,7 +44,6 @@ static bool validate_push_url(DistributionSession &distributionSession, const st
 
 ObjectListController::ObjectListController(DistributionSession &distributionSession)
     :ObjectController(distributionSession)
-    ,Subscriber()
 {
     if (distributionSession.getObjectDistributionOperatingMode() != "SINGLE") {
         throw std::logic_error("Expected objDistributionOperatingMode to be set to SINGLE.");

@@ -24,7 +24,7 @@ MBSTF_NAMESPACE_START
 class DASHManifestHandler : public ManifestHandler {
 public:
     DASHManifestHandler() = delete;
-    DASHManifestHandler(const ObjectStore::Object &object);
+    DASHManifestHandler(const ObjectStore::Object &object, bool pull_distribution);
     DASHManifestHandler(const DASHManifestHandler &) = delete;
     DASHManifestHandler(DASHManifestHandler &&) = delete;
 
@@ -36,10 +36,16 @@ public:
     virtual std::pair<ManifestHandler::time_type, ManifestHandler::ingest_list> nextIngestItems();
     virtual ManifestHandler::durn_type getDefaultDeadline();
     virtual bool update(const ObjectStore::Object &new_manifest);
+    virtual std::string nextObjectId();
     static unsigned int factoryPriority() { return 100; };
+
 private:
+  std::string generateUUID();
 
   LIBMPDPP_NAMESPACE_CLASS(MPD)  m_mpd;
+  const ObjectStore::Object *m_manifest;
+  bool m_refreshMpd;
+  ManifestHandler::time_type m_mpdReceivedTime;
 
 };
 

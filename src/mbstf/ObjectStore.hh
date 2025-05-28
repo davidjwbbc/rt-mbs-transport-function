@@ -25,6 +25,8 @@
 #include <list>
 #include <functional>
 #include <thread>
+#include <shared_mutex>
+
 #include "common.hh"
 #include "Event.hh"
 #include "SubscriptionService.hh"
@@ -68,7 +70,7 @@ public:
     public:
         Metadata();
 
-        Metadata(const std::string &media_type, const std::string &url, const std::string &fetched_url,
+        Metadata(const std::string &object_id, const std::string &media_type, const std::string &url, const std::string &fetched_url,
                  const std::string &acquisition_id,
                  const std::chrono::system_clock::time_point last_modified,
                  std::optional<std::string> objIngestBaseUrl = std::nullopt,
@@ -77,16 +79,20 @@ public:
 
         Metadata(const Metadata &other);
         Metadata(Metadata &&other);
-        Metadata& operator=(Metadata&& other);
+        Metadata& operator=(Metadata&& other) = default;
         virtual ~Metadata() {};
 
         const std::string &mediaType() const {return m_mediaType;};
         const std::string &getOriginalUrl() const {return m_originalUrl;};
         const std::string &getFetchedUrl() const {return m_fetchedUrl;};
         const std::string &acquisitionId() const { return m_acquisitionId;};
+        const std::string &objectId() const { return m_objectId;};
+        Metadata &objectId(const std::string &object_id) { m_objectId = object_id; return *this;};
         Metadata &acquisitionId(const std::string &acquistion_id) { m_acquisitionId = acquistion_id; return *this;};
         Metadata &mediaType(const std::string &media_type) {m_mediaType = media_type; return *this;};
         Metadata &mediaType(std::string &&media_type) {m_mediaType = std::move(media_type); return *this;};
+	bool hasExpiryTime() const { return m_cacheExpires.has_value(); };
+	const std::chrono::system_clock::time_point &ExpiryTime() const { return m_cacheExpires.value();};
         const std::optional<std::chrono::system_clock::time_point>& cacheExpires() const { return m_cacheExpires;};
         std::optional<std::chrono::system_clock::time_point>& cacheExpires(std::chrono::system_clock::time_point cacheExpires) { m_cacheExpires = cacheExpires; return m_cacheExpires;};
         static int cacheExpiry()  {return CACHE_EXPIRES;};
@@ -98,6 +104,9 @@ public:
 
         Metadata &entityTag(const std::optional<std::string>& entityTag) {m_entityTag = entityTag; return *this;};
 
+	Metadata &keepAfterSend(bool keep_after_send) {m_keepAfterSend = keep_after_send; return *this;};
+        bool keepAfterSend() const { return m_keepAfterSend;};
+
         const std::optional<std::string> &objIngestBaseUrl() const { return m_objIngestBaseUrl;};
         Metadata &objIngestBaseUrl(const std::optional<std::string> &obj_ingest_base_url) {m_objIngestBaseUrl = obj_ingest_base_url; return *this;};
         Metadata &objIngestBaseUrl(const std::string &obj_ingest_base_url) {m_objIngestBaseUrl = obj_ingest_base_url; return *this;};
@@ -108,15 +117,22 @@ public:
         Metadata &objDistributionBaseUrl(const std::string &obj_distrib_base_url) {m_objDistributionBaseUrl = obj_distrib_base_url; return *this;};
         Metadata &objDistributionBaseUrl(std::nullopt_t) {m_objDistributionBaseUrl.reset(); return *this;};
 
+	const std::chrono::system_clock::time_point receivedTime() const { return m_receivedTime;};
+	const std::chrono::system_clock::time_point created() const { return m_created;};
+	const std::chrono::system_clock::time_point modified() const { return m_modified;};
+
     private:
+	std::string m_objectId;
         std::string m_mediaType;
         std::string m_originalUrl;
         std::string m_fetchedUrl;
         std::string m_acquisitionId;
+	bool m_keepAfterSend;
         std::optional<std::string> m_objIngestBaseUrl;
         std::optional<std::string> m_objDistributionBaseUrl;
         std::optional<std::string> m_entityTag;
         std::optional<std::chrono::system_clock::time_point> m_cacheExpires;
+        std::chrono::system_clock::time_point m_receivedTime;
         std::chrono::system_clock::time_point m_created;
         std::chrono::system_clock::time_point m_modified;
     };
@@ -136,6 +152,7 @@ public:
     const ObjectData& getObjectData(const std::string& object_id) const;
     ObjectData& getObjectData(const std::string& object_id);
     const Metadata& getMetadata(const std::string& object_id) const;
+    Metadata& getMetadata(const std::string& object_id);
     void deleteObject(const std::string& object_id);
     bool removeObject(const std::string& objectId);
     bool removeObjects(const std::list<std::string>& objectIds);
@@ -149,6 +166,7 @@ private:
     mutable std::recursive_mutex m_mutex;
     ObjectController &m_controller;
     std::map<std::string, Object> m_store;
+
 };
 
 MBSTF_NAMESPACE_STOP

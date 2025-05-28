@@ -49,6 +49,7 @@ ObjectStreamingController::ObjectStreamingController(DistributionSession &distri
     validate_distribution_session(distributionSession);
     subscribeToService(objectStore());
     setObjectListPackager();
+    subscribeToService(*getObjectListPackager());
     startWorker();
 }
 
@@ -75,29 +76,33 @@ void ObjectStreamingController::processEvent(Event &event, SubscriptionService &
         ObjectStore::ObjectAddedEvent &objAddedEvent = dynamic_cast<ObjectStore::ObjectAddedEvent&>(event);
         std::string objectId = objAddedEvent.objectId();
         ogs_info("Object added with ID: %s", objectId.c_str());
-        if(check_if_object_added_is_manifest(objectId, objectStore(), getManifestUrl())) {
-            const ObjectStore::Object &object = objectStore()[objectId];
+	if(check_if_object_added_is_manifest(objectId, objectStore(), getManifestUrl())) {
+	    const ObjectStore::Object &object = objectStore()[objectId];
+	    if(manifestHandler()) {
+	        try {
+	            if(!manifestHandler()->update(object)) {
+		        ogs_error("Failed to update Manifest");
+			unsetObjectListPackager();
+			event.stopProcessing();
+			return;
+		    }
+		    startWorker();
 
-            if(manifestHandler()) {
-                try {
-                    if(!manifestHandler()->update(object)) {
-                        ogs_error("Failed to update Manifest");
-                        unsetObjectListPackager();
-                        event.stopProcessing();
-                        return;
+                    if (!m_objectListPackager) {
+                        setObjectListPackager();
                     }
-                } catch (std::exception &ex) {
+
+		    ObjectListPackager::PackageItem item(objectId);
+		    m_objectListPackager->add(item);
+	        } catch (std::exception &ex) {
                     ogs_error("Invalid Manifest update: %s", ex.what());
-                    unsetObjectListPackager();
-                    event.stopProcessing();
-                    return;
-                }
-                if (!m_objectListPackager) {
-                    setObjectListPackager();
+		    unsetObjectListPackager();
+		    event.stopProcessing();
+		    return;
                 }
 
-            } else {
-                std::unique_ptr<ManifestHandler> manifest_handler(ManifestHandlerFactory::makeManifestHandler(object));
+	    } else {
+		std::unique_ptr<ManifestHandler> manifest_handler(ManifestHandlerFactory::makeManifestHandler(object, distributionSession().getObjectAcquisitionMethod() == "PULL"));
                 manifestHandler(std::move(manifest_handler));
                 /*
                 const ObjectStore::Metadata &metadata = objectStore().getMetadata(objectId);
@@ -112,10 +117,18 @@ void ObjectStreamingController::processEvent(Event &event, SubscriptionService &
                 if (!m_objectListPackager) {
                     setObjectListPackager();
                 }
+
+		ObjectListPackager::PackageItem item(objectId);
+		m_objectListPackager->add(item);
             }
-        } else {
-            ObjectListPackager::PackageItem item(objectId);
+	} else {
+            if (!m_objectListPackager) {
+                    setObjectListPackager();
+            }
+
+	    ObjectListPackager::PackageItem item(objectId);
             if (m_objectListPackager) {
+
                 m_objectListPackager->add(item);
             } else {
                 ogs_error("ObjectListPackager is not initialized.");
@@ -154,11 +167,14 @@ static void validate_distribution_session(DistributionSession &distributionSessi
 }
 
 static bool check_if_object_added_is_manifest(std::string &objectId, ObjectStore &objectStore, std::string &manifest_url) {
-    const ObjectStore::Metadata &metadata = objectStore.getMetadata(objectId);
-    if(metadata.getOriginalUrl() == manifest_url || metadata.getFetchedUrl() == manifest_url) return true;
+    ObjectStore::Metadata &metadata = objectStore.getMetadata(objectId);
+    if(metadata.getOriginalUrl() == manifest_url || metadata.getFetchedUrl() == manifest_url) {
+        metadata.keepAfterSend(true); 
+        return true;
+    }
     /*
     if (metadata.mediaType() == "application/dash+xml" ){
-         return true;
+	 return true;
 
     } */
     return false;

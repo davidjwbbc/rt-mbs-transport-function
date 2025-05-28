@@ -26,10 +26,20 @@ public:
     using durn_type = std::chrono::system_clock::duration;
     using ingest_list = std::list<PullObjectIngester::IngestItem>;
 
+    ManifestHandler() = delete;
+    ManifestHandler(bool pull_distribution):m_pullDistribution(pull_distribution) {};
+    ManifestHandler(const ManifestHandler &other):m_pullDistribution(other.m_pullDistribution) {};
+    ManifestHandler(ManifestHandler &&other):m_pullDistribution(other.m_pullDistribution) {};
+    ManifestHandler &operator=(const ManifestHandler &other){m_pullDistribution = other.m_pullDistribution; return *this;};
+
+    ManifestHandler &operator=(ManifestHandler &&other){m_pullDistribution = other.m_pullDistribution; return *this;};
+
     virtual std::pair<time_type, ingest_list> nextIngestItems() = 0;
     virtual durn_type getDefaultDeadline() = 0;
     virtual bool update(const ObjectStore::Object &new_manifest) = 0;
 
+protected:
+   bool m_pullDistribution;
 };
 
 MBSTF_NAMESPACE_STOP

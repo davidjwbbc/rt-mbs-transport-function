@@ -16,7 +16,7 @@
 #include <memory>
 #include <optional>
 #include <string>
-
+#include <uuid/uuid.h>
 #include <netinet/in.h>
 
 #include "ogs-app.h"
@@ -41,7 +41,6 @@ static bool validate_push_acquisition_method(DistributionSession &distributionSe
 
 ObjectManifestController::ObjectManifestController(DistributionSession &dist_session)
         :ObjectController(dist_session)
-	,Subscriber()
         ,m_manifestHandler(nullptr)
 	,m_scheduledPullCancel(false)
 
@@ -112,57 +111,85 @@ void ObjectManifestController::initObjectIngester()
     }
 }
 
+std::string ObjectManifestController::nextObjectId()
+{
+    return generateUUID();
+}
+
+std::string ObjectManifestController::generateUUID() {
+    uuid_t uuid;
+    uuid_generate_random(uuid);
+    char uuid_str[37];
+    uuid_unparse(uuid, uuid_str);
+    return std::string(uuid_str);
+}
 
 void ObjectManifestController::workerLoop(ObjectManifestController *controller) {
-    while (!controller->m_scheduledPullCancel) {
-        while (true) {
-            {
-                std::lock_guard<std::recursive_mutex> lock(controller->m_manifestHandlerMutex);
 
-                if ( controller->m_scheduledPullCancel || controller->m_manifestHandler != nullptr) {
-                    break; 
-                }
+    while (true) {
+        {
+            std::lock_guard<std::recursive_mutex> lock(controller->m_manifestHandlerMutex);
+            if ( controller->m_scheduledPullCancel || controller->m_manifestHandler != nullptr) {
+                break;
             }
-            // Avoid a tight busy-loop: yield or sleep for a short time.
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
+        // Avoid a tight busy-loop: yield or sleep for a short time.
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
 
-	if (controller->m_scheduledPullCancel) break;
+    if (controller->m_scheduledPullCancel) return;
 
+    while (!controller->m_scheduledPullCancel) {
+
+        std::pair<ManifestHandler::time_type, ManifestHandler::ingest_list> next_ingest_items;
         // Get the next ingest items
-        auto next_ingest_items = controller->manifestHandler()->nextIngestItems();
-        auto fetch_time = next_ingest_items.first; // Get fetch_time using .first
-        auto &ingest_items = next_ingest_items.second; // Get ingest_items using .second
+	try {
+            next_ingest_items = controller->manifestHandler()->nextIngestItems();
+	} catch ( std::domain_error &err) {
+	    ogs_error("Next Ingest Item: %s", err.what());
+	}
+
+	if(next_ingest_items.second.empty()) break;
+
+	auto fetch_time = next_ingest_items.first; // Get fetch_time using .first
 
 	std::list<PullObjectIngester::IngestItem> urls;
 
-        std::list<std::shared_ptr<PullObjectIngester>> ingesters = controller->getPullObjectIngesters();
-	while(ingesters.size() < ingest_items.size()) {
+        std::list<std::shared_ptr<PullObjectIngester>> &ingesters = controller->getPullObjectIngesters();
+	while(ingesters.size() < next_ingest_items.second.size()) {
+
 	    controller->addPullObjectIngester(new PullObjectIngester(controller->objectStore(), *controller, urls));
 	}
 
         // Wait until the fetch_time
-        std::this_thread::sleep_until(fetch_time);
+	{
+            std::ostringstream oss;
+	    oss << fetch_time ;
+	    ogs_debug("Sleeping until...%s", oss.str().c_str());
+	}
+	std::this_thread::sleep_until(fetch_time);
 
         // Add the URLs to the PullObjectIngester instances
-        auto ingester_it = ingesters.begin();
-	while (!ingest_items.empty() && ingester_it != ingesters.end()) {
-            auto ingest_item = ingest_items.front();
-            ingest_items.pop_front();  // remove the item immediately
+        for (auto ingester_it = ingesters.begin(); ingester_it!= ingesters.end(); ++ingester_it) {
+            if(next_ingest_items.second.empty()) break;
+            auto ingest_item = next_ingest_items.second.front();
+            next_ingest_items.second.pop_front();  // remove the item
+	    ingest_item.deadline(std::nullopt);
             ingest_item.deadline(std::chrono::system_clock::now() + controller->manifestHandler()->getDefaultDeadline());
-
             if (!(*ingester_it)->fetch(ingest_item)) {
-                 ogs_info("Failed to fetch item: %s", ingest_item.url().c_str());
+                ogs_debug("Failed to fetch item: %s", ingest_item.url().c_str());
             }
-
-            ++ingester_it;
-	}
-	if(ingest_items.empty()) {
-	    std::lock_guard<std::recursive_mutex> lock(controller->m_manifestHandlerMutex);
-	    controller->m_scheduledPullCancel = true;
 	}
     }
 }
+
+void ObjectManifestController::startWorker() {
+    if(m_scheduledPullThread.get_id() == std::thread::id()) {
+        m_scheduledPullThread = std::thread(&ObjectManifestController::workerLoop, this);
+    }
+
+}
+
 
 
 void ObjectManifestController::processEvent(Event &event, SubscriptionService &event_service) {
@@ -178,6 +205,8 @@ void ObjectManifestController::processEvent(Event &event, SubscriptionService &e
         }
         // event.preventDefault() if checks fail
     }
+    ObjectController::processEvent(event, event_service);
+
 }
 
 std::string &ObjectManifestController::getManifestUrl() {

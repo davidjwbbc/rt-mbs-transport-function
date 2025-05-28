@@ -17,6 +17,7 @@
 #include "Controller.hh"
 #include "DistributionSession.hh"
 #include "ObjectStore.hh"
+#include "ObjectPackager.hh"
 #include "PullObjectIngester.hh"
 #include "PushObjectIngester.hh"
 
@@ -43,6 +44,24 @@ bool ObjectController::removePullObjectIngester(std::shared_ptr<PullObjectIngest
 std::shared_ptr<PushObjectIngester> &ObjectController::setPushIngester(PushObjectIngester *pushIngester) {
     m_pushIngester = std::shared_ptr<PushObjectIngester>(pushIngester);
     return m_pushIngester;
+}
+
+void ObjectController::processEvent(Event &event, SubscriptionService &event_service) {
+    if (event.eventName() == "ObjectSendCompleted") {
+	ObjectPackager::ObjectSendCompleted &objSendEvent = dynamic_cast<ObjectPackager::ObjectSendCompleted&>(event);
+        std::string object_id = objSendEvent.objectId();
+        ogs_info("Object [%s] sent", object_id.c_str());
+
+	const ObjectStore::Metadata &metadata = objectStore().getMetadata(object_id);
+
+	if(!metadata.keepAfterSend()) {
+	     	
+	    objectStore().deleteObject(object_id);
+	} else {
+            ogs_debug("Keeping object [%s] in object store after sending...", object_id.c_str());
+	}
+    }
+	
 }
 
 std::string ObjectController::nextObjectId()

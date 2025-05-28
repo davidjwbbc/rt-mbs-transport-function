@@ -28,7 +28,7 @@ class ManifestHandler;
 class Event;
 class SubscriptionService;
 
-class ObjectManifestController : public ObjectController, public Subscriber {
+class ObjectManifestController : public ObjectController {
 public:
     ObjectManifestController() = delete;
     ObjectManifestController(DistributionSession &dist_session);
@@ -64,7 +64,7 @@ public:
     void manifestUrl();
 
 protected:
-    void startWorker(){m_scheduledPullThread = std::thread(&ObjectManifestController::workerLoop, this);};
+    void startWorker();
     void initObjectIngester();
     void initPullObjectIngester();
     void initPushObjectIngester();
@@ -80,8 +80,13 @@ protected:
         return m_manifestHandler.get();
     };
 
+    virtual std::string nextObjectId();
+
+
 private:
     static void workerLoop(ObjectManifestController *controller);
+    std::string generateUUID();
+
     std::string m_manifestUrl;
     std::unique_ptr<ManifestHandler> m_manifestHandler;
     std::condition_variable_any m_manifestHandlerChange;

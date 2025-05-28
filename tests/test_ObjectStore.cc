@@ -45,8 +45,8 @@ void testAddObject(ObjectStore& store) {
     ObjectStore::ObjectData firstObjectData = {0x31, 0x32};
     ObjectStore::ObjectData secondObjectData = {0x50, 0x51, 0x52};
     	
-    ObjectStore::Metadata firstObjectMetadata("type1", "url1", "fetched_url1", "acquisition1", std::chrono::system_clock::now());
-    ObjectStore::Metadata secondObjectMetadata("type2", "url2", "fetched_url2", "acquisition2", std::chrono::system_clock::now() + std::chrono::minutes(1));
+    ObjectStore::Metadata firstObjectMetadata(firstObject, "type1", "url1", "fetched_url1", "acquisition1", std::chrono::system_clock::now());
+    ObjectStore::Metadata secondObjectMetadata(secondObject,"type2", "url2", "fetched_url2", "acquisition2", std::chrono::system_clock::now() + std::chrono::minutes(1));
 
     firstObjectMetadata.entityTag("etag1");
     firstObjectMetadata.cacheExpires(std::chrono::system_clock::now() + 5s);

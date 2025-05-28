@@ -79,8 +79,10 @@ protected:
 
 private:
     void sortListByPolicy();
+    void objectSendCompletion(std::string &object_id);
     std::list<PackageItem> m_packageItems;
     std::optional<boost::asio::ip::udp::endpoint> m_tunnelEndpoint;
+    std::unique_ptr<std::recursive_mutex> m_packageItemsMutex;
 };
 
 MBSTF_NAMESPACE_STOP

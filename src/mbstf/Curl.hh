@@ -38,6 +38,8 @@ public:
     const std::string &getContentType() const;
     const std::string &getEffectiveUrl() const;
     const std::string &getPermanentRedirectUrl() const;
+    const unsigned long getCacheControlMaxAge() const;
+
 
     Curl &setUserAgent(const std::string &user_agent);
 
@@ -57,6 +59,7 @@ private:
     std::string m_protocol;
     int m_statusCode;
     std::string m_permanentRedirectUrl;
+    unsigned long m_cacheControlMaxAge;
 };
 
 MBSTF_NAMESPACE_STOP

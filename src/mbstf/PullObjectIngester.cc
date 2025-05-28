@@ -60,6 +60,8 @@ PullObjectIngester::~PullObjectIngester() {abort();}
 
 bool PullObjectIngester::fetch(const std::string &object_id, const std::optional<time_type> &download_deadline)
 {
+    std::lock_guard<std::recursive_mutex> lock(*m_ingestItemsMutex);
+
     for (auto it = m_fetchList.begin(); it != m_fetchList.end(); ++it) {
         if (it->objectId() == object_id) {
             if (download_deadline.has_value()) {
@@ -75,12 +77,14 @@ bool PullObjectIngester::fetch(const std::string &object_id, const std::optional
 }
 
 bool PullObjectIngester::fetch(const IngestItem &item) {
+    std::lock_guard<std::recursive_mutex> lock(*m_ingestItemsMutex);
     m_fetchList.push_back(item);
     sortListByPolicy();
     return true;
 }
 
 bool PullObjectIngester::fetch(IngestItem &&item) {
+    std::lock_guard<std::recursive_mutex> lock(*m_ingestItemsMutex);
     m_fetchList.push_back(std::move(item));
     sortListByPolicy();
     return true;
@@ -98,34 +102,41 @@ void PullObjectIngester::sortListByPolicy() {
 void PullObjectIngester::doObjectIngest() {
     if(!m_curl) m_curl = std::make_shared<Curl>();
     std::chrono::seconds timeout(10); // 10 seconds timeout
-    if (!m_fetchList.empty()) {
-        // Make the GET request and get the number of bytes received
-        auto item = m_fetchList.front();
-	m_fetchList.pop_front();
-        ogs_debug("Fetching %s...", item.url().c_str());
-	long bytesReceived = m_curl->get(item.url(), timeout);
+    {
+        std::lock_guard<std::recursive_mutex> lock(*m_ingestItemsMutex);
 
-        // Check the result
-        if (bytesReceived >= 0) {
-            ogs_debug("Received %ld bytes of data", bytesReceived);
-	    auto lastModified = std::chrono::system_clock::now();
-            std::string fetched_url = m_curl->getPermanentRedirectUrl();
-            if (fetched_url.empty()) fetched_url = item.url();
-	    ObjectStore::Metadata metadata(m_curl->getContentType(), item.url(), fetched_url, item.acquisitionId(), lastModified, item.objIngestBaseUrl(), item.objDistributionBaseUrl());
-            metadata.cacheExpires(std::chrono::system_clock::now() + std::chrono::minutes(ObjectStore::Metadata::cacheExpiry()));
-            const std::string& etag = m_curl->getEtag();
-	    if (!etag.empty()) {
-                metadata.entityTag(etag);
-	    }
-	    this->objectStore().addObject(item.objectId(), std::move(m_curl->getData()), std::move(metadata));
+        if (!m_fetchList.empty()) {
+            // Make the GET request and get the number of bytes received
+	    m_ingestItemsMutex->lock();
+            auto item = m_fetchList.front();
+	    m_fetchList.pop_front();
+	    m_ingestItemsMutex->unlock();
+            ogs_debug("Fetching %s...", item.url().c_str());
+	    long bytesReceived = m_curl->get(item.url(), timeout);
 
-        } else if (bytesReceived == -1) {
-            ogs_error("Request timed out.");
-            // emitObjectIngestFailedEvent();
-        } else {
-            ogs_error("An error occurred while fetching the data.");
-            // emitObjectIngestFailedEvent();
-        }
+            // Check the result
+            if (bytesReceived >= 0) {
+                ogs_debug("Received %ld bytes of data", bytesReceived);
+	        auto lastModified = std::chrono::system_clock::now();
+                std::string fetched_url = m_curl->getPermanentRedirectUrl();
+                if (fetched_url.empty()) fetched_url = item.url();
+	        ObjectStore::Metadata metadata(item.objectId(), m_curl->getContentType(), item.url(), fetched_url, item.acquisitionId(), lastModified, item.objIngestBaseUrl(), item.objDistributionBaseUrl());
+                unsigned long max_age = m_curl->getCacheControlMaxAge();
+	        metadata.cacheExpires(max_age ? std::chrono::system_clock::now() + std::chrono::seconds(max_age) : std::chrono::system_clock::now() + std::chrono::seconds(ObjectStore::Metadata::cacheExpiry()));
+                const std::string& etag = m_curl->getEtag();
+	        if (!etag.empty()) {
+                    metadata.entityTag(etag);
+	        }
+	        this->objectStore().addObject(item.objectId(), std::move(m_curl->getData()), std::move(metadata));
+
+            } else if (bytesReceived == -1) {
+                ogs_error("Request timed out.");
+                // emitObjectIngestFailedEvent();
+            } else {
+                ogs_error("An error occurred while fetching the data.");
+                // emitObjectIngestFailedEvent();
+            }
+	}
     }
 }
 

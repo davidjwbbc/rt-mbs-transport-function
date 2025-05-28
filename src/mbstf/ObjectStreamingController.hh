@@ -43,7 +43,7 @@ public:
 
     std::shared_ptr<ObjectListPackager> &setObjectListPackager();
     std::shared_ptr<ObjectListPackager> &setObjectListPackager(ObjectListPackager&&);
-
+    std::shared_ptr<ObjectListPackager> &getObjectListPackager() { return m_objectListPackager;};
     const std::optional<std::string> &getObjectDistributionBaseUrl() const;
     virtual std::string nextObjectId();
 
@@ -68,7 +68,7 @@ public:
 private:
     std::string generateUUID();
     std::shared_ptr<ObjectListPackager> m_objectListPackager;
-    std::thread m_ingestSchedulingThread;
+//    std::thread m_ingestSchedulingThread;
 };
 
 MBSTF_NAMESPACE_STOP

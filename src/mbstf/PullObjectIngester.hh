@@ -14,6 +14,7 @@
 
 #include <string>
 #include <list>
+#include <mutex>
 
 #include "common.hh"
 #include "ObjectIngester.hh"
@@ -58,6 +59,8 @@ public:
 
         bool hasDeadline() const { return m_deadline.has_value(); };
         const std::optional<time_type> &deadline() const { return m_deadline; };
+	const time_type &getDeadline() const { return m_deadline.value(); };
+
         time_type deadline(const time_type &default_deadline) const { return m_deadline.value_or(default_deadline); };
         IngestItem &deadline(std::nullopt_t) { m_deadline.reset(); return *this; };
         IngestItem &deadline(const time_type &dl_deadline) { m_deadline = time_type(dl_deadline); return *this; };
@@ -76,11 +79,17 @@ public:
     PullObjectIngester(ObjectStore& object_store, ObjectController &controller, const std::list<IngestItem> &id_to_url_map)
       :ObjectIngester(object_store, controller)
       ,m_fetchList(id_to_url_map)
+      ,m_ingestItemsMutex (new std::recursive_mutex)
+
     { sortListByPolicy(); startWorker(); };
+
     PullObjectIngester(ObjectStore& object_store, ObjectController &controller, std::list<IngestItem> &&id_to_url_map)
       :ObjectIngester(object_store, controller)
       ,m_fetchList(std::move(id_to_url_map))
+      ,m_ingestItemsMutex (new std::recursive_mutex)
+
     { sortListByPolicy(); startWorker();};
+
     virtual ~PullObjectIngester();
 
     bool fetch(const IngestItem &item);
@@ -96,7 +105,9 @@ protected:
 private:
     void sortListByPolicy();
     std::list<IngestItem> m_fetchList;
+    std::unique_ptr<std::recursive_mutex> m_ingestItemsMutex;
     std::shared_ptr<Curl> m_curl;
+
 };
 
 MBSTF_NAMESPACE_STOP

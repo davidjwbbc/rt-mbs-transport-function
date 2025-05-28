@@ -19,6 +19,7 @@
 #include "Controller.hh"
 #include "ObjectStore.hh"
 #include "ObjectPackager.hh"
+#include "Subscriber.hh"
 
 MBSTF_NAMESPACE_START
 
@@ -28,11 +29,12 @@ class PushObjectIngester;
 class Controller;
 class ObjectStore;
 
-class ObjectController : public Controller {
+class ObjectController : public Controller, public Subscriber {
 public:
     ObjectController() = delete;
     ObjectController(DistributionSession &distributionSession)
         :Controller(distributionSession)
+	,Subscriber()
         ,m_objectStore(*this)
         ,m_pullIngesters()
         ,m_pushIngester()
@@ -51,6 +53,8 @@ public:
     ObjectStore &objectStore() { return m_objectStore; };
 
     std::list<std::shared_ptr<PullObjectIngester>> &getPullObjectIngesters() {return m_pullIngesters;};
+
+    virtual void processEvent(Event &event, SubscriptionService &event_service);
 
     virtual std::string nextObjectId();
 

@@ -29,7 +29,7 @@ class ObjectListPackager;
 class PullObjectIngester;
 class SubscriptionService;
 
-class ObjectListController : public ObjectController, public Subscriber {
+class ObjectListController : public ObjectController {
 public:
     ObjectListController() = delete;
     ObjectListController(DistributionSession &distributionSession);

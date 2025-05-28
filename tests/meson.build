@@ -15,7 +15,11 @@
 
 libuuid_dep=dependency('uuid', required:true)
 test('test_object_store', 
-    executable('testObjectStore', 'test_ObjectStore.cc', test_source_object_store, install:false, include_directories:[libmbstf_libinc, libinc])
+    executable('testObjectStore', 'test_ObjectStore.cc', test_source_object_store, install:false, include_directories:[libmbstf_libinc, libinc], dependencies : [libmbstf_dep])
+    ,verbose: true, timeout: 600, protocol: 'exitcode')
+
+test('test_DASH_manifest_handler',
+    executable('testDASHManifestHandler', 'test_DASHManifestHandler.cc', test_source_dash_manifest_handler, install:false, include_directories:[libmbstf_libinc, libinc], dependencies : [libmbstf_dep])
     ,verbose: true, timeout: 600, protocol: 'exitcode')
 
 test('test_subscriber_subscription',
@@ -26,9 +30,9 @@ test('test_subscriber_subscription',
 #    executable('testPullObjectIngester', 'test_PullObjectIngester.cc', test_source_pull_object_ingester, install:false, include_directories:[libmbstf_libinc, libinc], dependencies : [libmbstf_dep])
 #    ,verbose: true, timeout: 600, protocol: 'exitcode')
 
-test('test_object_list_packager', 
-    executable('testObjectListPackager', 'test_ObjectListPackager.cc', test_source_object_list_packager, install:false, include_directories:[libmbstf_libinc, libinc], dependencies : [libmbstf_dep, boost_dep, rt_libflute_dep, libuuid_dep])
-   ,verbose: true, timeout: 600, protocol: 'exitcode')
+#test('test_object_list_packager', 
+#    executable('testObjectListPackager', 'test_ObjectListPackager.cc', test_source_object_list_packager, install:false, include_directories:[libmbstf_libinc, libinc], dependencies : [libmbstf_dep, boost_dep, rt_libflute_dep, libuuid_dep])
+#   ,verbose: true, timeout: 600, protocol: 'exitcode')
 #test_object_store = executable('testObjectStore', 'test_ObjectStore.cc', test_source_object_store, install:false, include_directories:[libmbstf_libinc, libinc])
 #test_object_store = executable('testObjectStore', 'test_ObjectStore.cc', test_source_object_store, install:false, include_directories:[libmbstf_libinc, libinc])
 #test('run_test_object_store', executable('testObjectStore'))

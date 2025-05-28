@@ -36,7 +36,7 @@ fs = import('fs')
 
 boost_dep = dependency('boost')
 uuid_dep = dependency('uuid')
-libmpdpp_dep = dependency('mpd++', fallback: ['libmpdpp', 'libparsempd_dep'])
+libmpdpp_dep = dependency('mpd++', fallback: ['libmpdpp', 'libmpdpp_dep'])
 
 test_source_subscriber_subscription = files('''
   SubscriptionService.cc
@@ -64,6 +64,12 @@ test_source_pull_object_ingester = test_source_object_store + files('''
   PullObjectIngester.cc
   PullObjectIngester.hh
   '''.split())
+
+test_source_dash_manifest_handler = test_source_object_store + test_source_pull_object_ingester + files('''
+  DASHManifestHandler.cc
+  DASHManifestHandler.hh
+  '''.split())
+
 
 libmbstf_dist_sources = files('''
     common.cc
