@@ -49,7 +49,18 @@ DASHManifestHandler::DASHManifestHandler(const ObjectStore::Object &object, bool
 {
     m_mpd.selectAllRepresentations();
 
-    //TODO: Use selectedInitializationSegments() to fetch Initialization Segments
+    //Use selectedInitializationSegments() to fetch Initialization Segments
+
+    m_extraPullObjects = m_mpd.selectedInitializationSegments();
+    addMPDRefreshToExtraPullObjects();
+    ogs_debug("Extra Objects to pull: %zu", m_extraPullObjects.size());
+    for (auto &is : m_extraPullObjects) {
+      std::ostringstream oss;
+      oss << is;
+      ogs_debug("    %s", oss.str().c_str());
+    }
+
+
 }
 
 DASHManifestHandler::~DASHManifestHandler()
@@ -64,50 +75,51 @@ std::pair<ManifestHandler::time_type, ManifestHandler::ingest_list> DASHManifest
     auto current_time = std::chrono::system_clock::now();
     std::optional<std::chrono::system_clock::time_point> time_to_update;
     std::string manifest_url;
-    std::list<LIBMPDPP_NAMESPACE_CLASS(SegmentAvailability)> available_segments;
     time_type fetch_time;
 
-    available_segments = m_mpd.selectedSegmentAvailability();
-
-    for (auto &sa : available_segments) {
+    std::list<LIBMPDPP_NAMESPACE_CLASS(SegmentAvailability)> media_segments = m_mpd.selectedSegmentAvailability();
+    media_segments.insert(media_segments.end(), m_extraPullObjects.begin(), m_extraPullObjects.end());
+    for (auto &ms: media_segments) {
+        if(ms.availabilityStartTime() < current_time)
+	    ms.availabilityStartTime(current_time);
+    }
+    ogs_info("MEDIA SEGS: %zu", media_segments.size());
+    for (auto &sa : media_segments) {
       std::ostringstream oss;
       oss << sa;
       ogs_debug("    %s", oss.str().c_str());
     }
 
-    if (m_pullDistribution && !m_refreshMpd && m_mpd.hasMinimumUpdatePeriod()) {
-        auto min_update_time = m_manifest->second.receivedTime() + m_mpd.minimumUpdatePeriod().value();
-        time_to_update = m_manifest->second.hasExpiryTime() ? std::max(min_update_time, m_manifest->second.ExpiryTime()): min_update_time;
-    }
+    if(!media_segments.empty()) {
 
-    if (time_to_update && current_time > *time_to_update) {
-    // Pick the fetched URL if available; otherwise, use the original URL.
-        manifest_url = m_manifest->second.getFetchedUrl();
-	available_segments.push_back(LIBMPDPP_NAMESPACE_CLASS(SegmentAvailability) (time_to_update.value(), 0s, manifest_url, m_mpd.availabilityEndTime()));
-    }
+        media_segments.sort();
 
-    if(!available_segments.empty()) {
+        ogs_info("AVAILABLE SEGS: SORTED  %zu", media_segments.size());
+	for (auto &seg : media_segments) {
+            std::ostringstream oss;
+            oss << seg;
+            ogs_debug("    %s", oss.str().c_str());
+        }
 
-        available_segments.sort();
+        auto first_media_segment = media_segments.front();
+        fetch_time = first_media_segment.availabilityStartTime();
 
-        auto first_available_segment = available_segments.front();
-        fetch_time = first_available_segment.availabilityStartTime();
-
-        ingest_items.push_back(PullObjectIngester::IngestItem(nextObjectId(), first_available_segment.segmentURL(), empty,
-				    std::nullopt, std::nullopt, first_available_segment.availabilityEndTime()));
-
+        ingest_items.push_back(PullObjectIngester::IngestItem(nextObjectId(), first_media_segment.segmentURL(), empty,
+				    std::nullopt, std::nullopt, first_media_segment.availabilityEndTime()));
+        removeExtraPullObjectsEntry(first_media_segment);
 
 	try {
-            if(first_available_segment.segmentURL()  == manifest_url) m_refreshMpd = true;
+            if(first_media_segment.segmentURL()  == manifest_url) m_refreshMpd = true;
         } catch (std::domain_error &err) {
             ogs_error("Invalid Segment URL: %s", err.what());
 	    throw;
         }
-        auto it = available_segments.begin();
+        auto it = media_segments.begin();
         // Iterate from second element.
-        for ( ++it; it != available_segments.end(); ++it ) {
+        for ( ++it; it != media_segments.end(); ++it ) {
 
             if(it->availabilityStartTime() != fetch_time) break;
+	    removeExtraPullObjectsEntry(*it);
 	    ingest_items.push_back(PullObjectIngester::IngestItem(nextObjectId(), it->segmentURL(), empty, std::nullopt, std::nullopt, it->availabilityEndTime()));
 
              if(it->segmentURL()  == manifest_url) m_refreshMpd = true;
@@ -115,9 +127,34 @@ std::pair<ManifestHandler::time_type, ManifestHandler::ingest_list> DASHManifest
         }
     }
 
-
     return std::make_pair(fetch_time, ingest_items);
 }
+
+void DASHManifestHandler::addMPDRefreshToExtraPullObjects()
+{
+
+      if (m_pullDistribution && m_mpd.hasMinimumUpdatePeriod()) {
+        auto min_update_time = m_manifest->second.receivedTime() + m_mpd.minimumUpdatePeriod().value();
+        auto time_to_update = m_manifest->second.hasExpiryTime() ? std::max(min_update_time, m_manifest->second.ExpiryTime()): min_update_time;
+         m_extraPullObjects.push_back(SegmentAvailability(time_to_update, 0s, m_manifest->second.getFetchedUrl(), m_mpd.availabilityEndTime()));
+
+     }
+}
+
+
+void DASHManifestHandler::removeExtraPullObjectsEntry(const SegmentAvailability &segment)
+{
+    for (auto it = m_extraPullObjects.begin(); it != m_extraPullObjects.end(); it++)
+    {
+       if(it->segmentURL() == segment.segmentURL()) {
+          m_extraPullObjects.erase(it);
+	  break;
+       }
+
+    }
+
+}
+
 
 std::string DASHManifestHandler::nextObjectId()
 {
@@ -141,13 +178,28 @@ ManifestHandler::durn_type DASHManifestHandler::getDefaultDeadline()
 
 bool DASHManifestHandler::update(const ObjectStore::Object &new_manifest)
 {
-    // TODO: process the new MPD and see what has changed, throw an exception of the Object is not understood or invalid
+    // Process the new MPD and see what has changed, throw an exception of the Object is not understood or invalid
     
     m_refreshMpd = false;
     m_mpd = ingest_manifest(new_manifest);
     m_mpd.selectAllRepresentations();
-    //TO DO: SelectedInitialistionSegments(): For everything init segments in the list schedule an ingester.
+    //SelectedInitialistionSegments(): For everything init segments in the list schedule an ingester.
+    m_extraPullObjects = m_mpd.selectedInitializationSegments();
+    addMPDRefreshToExtraPullObjects();
+
     return true; // assume manifest updated, use false for no manifest change
+}
+
+void DASHManifestHandler::adjustAvailabilityStartTime() {
+    if(!m_extraPullObjects.empty()) {
+        time_type current_time = std::chrono::system_clock::now();
+        for (auto &segment : m_extraPullObjects) {
+            if (segment.availabilityStartTime() < current_time) {
+                segment.availabilityStartTime(current_time);
+            }
+        }
+        m_extraPullObjects.sort();
+    }
 }
 
 static bool g_registered = ManifestHandlerFactory::registerManifestHandler("application/dash+xml", new ManifestHandlerConstructorClass<DASHManifestHandler>());

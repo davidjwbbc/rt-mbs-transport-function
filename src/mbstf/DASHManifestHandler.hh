@@ -41,11 +41,15 @@ public:
 
 private:
   std::string generateUUID();
+  void adjustAvailabilityStartTime();
+  void addMPDRefreshToExtraPullObjects();
+  void removeExtraPullObjectsEntry(const LIBMPDPP_NAMESPACE_CLASS(SegmentAvailability) &segment);
 
   LIBMPDPP_NAMESPACE_CLASS(MPD)  m_mpd;
   const ObjectStore::Object *m_manifest;
   bool m_refreshMpd;
   ManifestHandler::time_type m_mpdReceivedTime;
+  std::list<LIBMPDPP_NAMESPACE_CLASS(SegmentAvailability)> m_extraPullObjects;
 
 };
 

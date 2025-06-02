@@ -127,12 +127,7 @@ void ObjectStreamingController::processEvent(Event &event, SubscriptionService &
             }
 
 	    ObjectListPackager::PackageItem item(objectId);
-            if (m_objectListPackager) {
-
-                m_objectListPackager->add(item);
-            } else {
-                ogs_error("ObjectListPackager is not initialized.");
-            }
+            m_objectListPackager->add(item);
         }
     }
     ObjectManifestController::processEvent(event, event_service);

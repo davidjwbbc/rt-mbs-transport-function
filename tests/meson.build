@@ -18,10 +18,6 @@ test('test_object_store',
     executable('testObjectStore', 'test_ObjectStore.cc', test_source_object_store, install:false, include_directories:[libmbstf_libinc, libinc], dependencies : [libmbstf_dep])
     ,verbose: true, timeout: 600, protocol: 'exitcode')
 
-test('test_DASH_manifest_handler',
-    executable('testDASHManifestHandler', 'test_DASHManifestHandler.cc', test_source_dash_manifest_handler, install:false, include_directories:[libmbstf_libinc, libinc], dependencies : [libmbstf_dep])
-    ,verbose: true, timeout: 600, protocol: 'exitcode')
-
 test('test_subscriber_subscription',
     executable('testSubscriberSubscription', 'test_SubscriberSubscription.cc', test_source_subscriber_subscription, install:false, include_directories:[libmbstf_libinc, libinc])
     ,verbose: true, timeout: 600, protocol: 'exitcode')

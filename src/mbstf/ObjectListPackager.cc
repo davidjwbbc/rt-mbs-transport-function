@@ -140,11 +140,6 @@ void ObjectListPackager::doObjectPackage() {
 			    
                             m_queued = false;
 			    objectSendCompletion(m_queuedObjectId);
-                            /*
-			    std::shared_ptr<Event> event(new ObjectListPackager::ObjectSendCompleted(m_queuedObjectId));
-                            sendEventAsynchronous(event);
-                            */ 
-			    //objectStore().deleteObject(m_queuedObjectId);
                             ogs_info("Transmitted: Object with TOI: %d", toi);
                         } else {
                             ogs_error("Unscheduled completion of Object with TOI: %d", toi);
