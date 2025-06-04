@@ -79,8 +79,7 @@ void ObjectManifestController::initPullObjectIngester()
 
                 }
 
-                urls.emplace_back(std::move(PullObjectIngester::IngestItem(nextObjectId(), obj_ingest_url, url_str,
-                                                                           object_ingest_base_url, object_distribution_base_url)));
+                urls.emplace_back(nextObjectId(), obj_ingest_url, url_str, object_ingest_base_url, object_distribution_base_url);
             }
         }
 

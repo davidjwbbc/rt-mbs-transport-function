@@ -132,7 +132,7 @@ void ObjectStreamingController::processEvent(Event &event, SubscriptionService &
     }
     ObjectManifestController::processEvent(event, event_service);
 }
-
+/*
 std::string ObjectStreamingController::generateUUID() {
     uuid_t uuid;
     uuid_generate_random(uuid);
@@ -145,6 +145,7 @@ std::string ObjectStreamingController::nextObjectId()
 {
     return generateUUID();
 }
+*/
 
 const std::optional<std::string> &ObjectStreamingController::getObjectDistributionBaseUrl() const {
     return distributionSession().objectDistributionBaseUrl();

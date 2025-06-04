@@ -30,6 +30,7 @@ public:
     ManifestHandler(bool pull_distribution):m_pullDistribution(pull_distribution) {};
     ManifestHandler(const ManifestHandler &other):m_pullDistribution(other.m_pullDistribution) {};
     ManifestHandler(ManifestHandler &&other):m_pullDistribution(other.m_pullDistribution) {};
+    virtual ~ManifestHandler() {};
     ManifestHandler &operator=(const ManifestHandler &other){m_pullDistribution = other.m_pullDistribution; return *this;};
 
     ManifestHandler &operator=(ManifestHandler &&other){m_pullDistribution = other.m_pullDistribution; return *this;};

@@ -104,8 +104,8 @@ std::pair<ManifestHandler::time_type, ManifestHandler::ingest_list> DASHManifest
         auto first_media_segment = media_segments.front();
         fetch_time = first_media_segment.availabilityStartTime();
 
-        ingest_items.push_back(PullObjectIngester::IngestItem(nextObjectId(), first_media_segment.segmentURL(), empty,
-				    std::nullopt, std::nullopt, first_media_segment.availabilityEndTime()));
+        ingest_items.emplace_back(nextObjectId(), first_media_segment.segmentURL(), empty,
+				    std::nullopt, std::nullopt, first_media_segment.availabilityEndTime());
         removeExtraPullObjectsEntry(first_media_segment);
 
 	try {
@@ -120,7 +120,7 @@ std::pair<ManifestHandler::time_type, ManifestHandler::ingest_list> DASHManifest
 
             if(it->availabilityStartTime() != fetch_time) break;
 	    removeExtraPullObjectsEntry(*it);
-	    ingest_items.push_back(PullObjectIngester::IngestItem(nextObjectId(), it->segmentURL(), empty, std::nullopt, std::nullopt, it->availabilityEndTime()));
+	    ingest_items.emplace_back(nextObjectId(), it->segmentURL(), empty, std::nullopt, std::nullopt, it->availabilityEndTime());
 
              if(it->segmentURL()  == manifest_url) m_refreshMpd = true;
 
