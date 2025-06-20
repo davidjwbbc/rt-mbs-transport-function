@@ -26,6 +26,7 @@
 #include <memory>
 #include <string>
 #include <cstring>
+#include <vector>
 
 #include "common.hh"
 #include "Open5GSYamlDocument.hh"
@@ -64,7 +65,7 @@ public:
     bool startEventHandler();
     void stopEventHandler();
 
-    bool setNFServiceInfo(const char *serviceName, const char *supportedFeatures, const char *apiVersion, const std::shared_ptr<Open5GSSockAddr> &addr);
+    bool setNFServiceInfo(const char *serviceName, const char *supportedFeatures, const char *apiVersion, const std::vector<std::shared_ptr<Open5GSSockAddr> > &addr);
     int setNFService();
 
     void initialise() {ogs_sbi_context_init(nfType());};
@@ -77,7 +78,7 @@ public:
 private:
     int setServerName();
     static void eventThread(void *data);
-    static void addAddressesToNFService(ogs_sbi_nf_service_t *nf_service, const std::shared_ptr<Open5GSSockAddr> &addrs);
+    static void addAddressesToNFService(ogs_sbi_nf_service_t *nf_service, const std::vector<std::shared_ptr<Open5GSSockAddr> > &addrs);
 
     static void stateInitial(ogs_fsm_t *s, ogs_event_t *e);
     static void stateFunctional(ogs_fsm_t *s, ogs_event_t *e);
@@ -88,7 +89,7 @@ private:
     const char *m_supportedFeatures;
     const char *m_apiVersion;
     std::string m_serverName;
-    std::shared_ptr<Open5GSSockAddr> m_addr;
+    std::vector<std::shared_ptr<Open5GSSockAddr> > m_addr;
 };
 
 MBSTF_NAMESPACE_STOP

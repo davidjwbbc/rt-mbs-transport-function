@@ -21,6 +21,10 @@
 
 #include <map>
 #include <memory>
+#include <vector>
+
+#include "ogs-sbi.h"
+#include "ogs-app.h"
 
 #include "common.hh"
 
@@ -42,7 +46,7 @@ public:
 
     bool parseConfig();
 
-    std::shared_ptr<Open5GSSockAddr> DistributionSessionServerAddress();
+     std::vector<std::shared_ptr<Open5GSSockAddr> > DistributionSessionServerAddress();
 
 /*
     void addDistributionSession(const std::string &session_id, const std::shared_ptr<DistributionSession> &session) {
@@ -60,7 +64,7 @@ public:
     };
 
     std::map<std::string, std::shared_ptr<DistributionSession> > distributionSessions;
-    std::shared_ptr<Open5GSSBIServer> servers[SERVER_MAX_NUM];
+    std::vector<std::shared_ptr<Open5GSSBIServer> > servers[SERVER_MAX_NUM];
     struct {
         unsigned int distMaxAge;
         unsigned int defaultObjectMaxAge; // Use if not given by push/pull resource Cache-Control.
@@ -69,6 +73,7 @@ public:
 private:
     void parseCacheControl(Open5GSYamlIter &iter);
     void parseConfiguration(std::string &pc_key, Open5GSYamlIter &iter);
+    int checkForAddr(ogs_socknode_t *node);
 
 };
 

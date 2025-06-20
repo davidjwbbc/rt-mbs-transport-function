@@ -46,9 +46,12 @@ Context::Context()
 
 Context::~Context()
 {
-    for (auto &svr : servers) {
-        svr.reset();
+    for (auto &svrs : servers) {
+        for (auto &svr: svrs) {
+            svr.reset();
+        }
     }
+
 }
 
 bool Context::parseConfig()
@@ -254,27 +257,21 @@ void Context::parseConfiguration(std::string &pc_key, Open5GSYamlIter &iter)   {
     }
     node = (ogs_socknode_t *)ogs_list_first(&list);
     if (node) {
-        int i;
         int matches = 0;
         //ogs_sbi_server_t *server;
-	for (i=0; i<SERVER_MAX_NUM; i++) {
-	    auto ogsServer = servers[i];
-            if (ogsServer && ogs_sockaddr_is_equal(node->addr, ogsServer->ogsSBIServer()->node.addr)) {
-                //server = ogsServer->ogsSBIServer();
-                matches = 1;
-                break;
-            }
-        }
+	matches = checkForAddr(node);
+	
 	if(!matches) {
+	    std::shared_ptr<Open5GSSBIServer> newServer;
+            newServer.reset(new Open5GSSBIServer(node, is_option ? &option : nullptr));
+            newServer->ogsSBIServerAdvertise(addr);
+
             if (pc_key == "distSessionAPI") {
-		(servers[SERVER_DISTRIBUTION_SESSION]).reset(new Open5GSSBIServer(node, is_option ? &option : NULL));
-	        (servers[SERVER_DISTRIBUTION_SESSION])->ogsSBIServerAdvertise(addr);
+	        servers[SERVER_DISTRIBUTION_SESSION].push_back(newServer);
             } else if (pc_key == "httpPushIngest") {
-                (servers[SERVER_OBJECT_PUSH]).reset(new Open5GSSBIServer(node, is_option ? &option : NULL));
-                (servers[SERVER_OBJECT_PUSH])->ogsSBIServerAdvertise(addr);
+		 servers[SERVER_OBJECT_PUSH].push_back(newServer);
 	    } else if (pc_key == "rtpIngest") {
-                (servers[SERVER_RTP]).reset(new Open5GSSBIServer(node, is_option ? &option : NULL));
-                (servers[SERVER_RTP])->ogsSBIServerAdvertise(addr);
+		servers[SERVER_RTP].push_back(newServer);    
             }
 
             /*
@@ -285,40 +282,57 @@ void Context::parseConfiguration(std::string &pc_key, Open5GSYamlIter &iter)   {
     }
     node6 = (ogs_socknode_t *)ogs_list_first(&list6);
     if (node6) {
-        int i;
         int matches = 0;
+	matches = checkForAddr(node);
 
-        for(i=0; i<SERVER_MAX_NUM; i++) {
-            auto ogsServer = servers[i];
-            if (ogsServer && ogs_sockaddr_is_equal(node->addr, ogsServer->ogsSBIServer()->node.addr)) {
-                matches = 1;
-                break;
-            }
-        }
         if(!matches) {
+            std::shared_ptr<Open5GSSBIServer> newServer;
+            newServer.reset(new Open5GSSBIServer(node, is_option ? &option : nullptr));
+            newServer->ogsSBIServerAdvertise(addr);
+
             if (pc_key == "distSessionAPI") {
-                (servers[SERVER_DISTRIBUTION_SESSION]).reset(new Open5GSSBIServer(node, is_option ? &option : NULL));
-                (servers[SERVER_DISTRIBUTION_SESSION])->ogsSBIServerAdvertise(addr);
+                servers[SERVER_DISTRIBUTION_SESSION].push_back(newServer);
             } else if (pc_key == "httpPushIngest") {
-                (servers[SERVER_OBJECT_PUSH]).reset(new Open5GSSBIServer(node, is_option ? &option : NULL));
-                (servers[SERVER_OBJECT_PUSH])->ogsSBIServerAdvertise(addr);
+                 servers[SERVER_OBJECT_PUSH].push_back(newServer);
             } else if (pc_key == "rtpIngest") {
-                (servers[SERVER_RTP]).reset(new Open5GSSBIServer(node, is_option ? &option : NULL));
-                (servers[SERVER_RTP])->ogsSBIServerAdvertise(addr);
+                servers[SERVER_RTP].push_back(newServer);
             }
 	}
     }
+
     if (addr) ogs_freeaddrinfo(addr);
     ogs_socknode_remove_all(&list);
     ogs_socknode_remove_all(&list6);
 }
 
-std::shared_ptr<Open5GSSockAddr> Context::DistributionSessionServerAddress()
+std::vector<std::shared_ptr<Open5GSSockAddr> > Context::DistributionSessionServerAddress()
 {
-    auto mbstfServer = servers[SERVER_DISTRIBUTION_SESSION];
-    ogs_assert(mbstfServer);
-    return std::shared_ptr<Open5GSSockAddr>(new Open5GSSockAddr(mbstfServer->ogsSBIServer()->node.addr));
+    std::vector<std::shared_ptr<Open5GSSockAddr> > sockAddrs;
+    std::vector<std::shared_ptr<Open5GSSBIServer>> srvs = servers[SERVER_DISTRIBUTION_SESSION];
+    if(!srvs.empty()) {
+        for (const auto &srv: srvs) {
+            std::shared_ptr<Open5GSSockAddr> sockAddr;
+            sockAddr.reset(new Open5GSSockAddr(srv->ogsSBIServer()->node.addr));
+            sockAddrs.push_back(sockAddr);
+        }
+    }
+    return sockAddrs;
 }
+
+int Context::checkForAddr(ogs_socknode_t *node)
+{
+    int i = 0;
+    for (i=0; i<SERVER_MAX_NUM; i++) {
+        std::vector<std::shared_ptr<Open5GSSBIServer>> srvs = servers[i];
+        for (const auto &srv: srvs) {
+            if( srv && ogs_sockaddr_is_equal(node->addr, srv->ogsSBIServer()->node.addr)) {
+                return 1;
+            }
+        }
+    }
+    return 0;
+}
+
 
 
 MBSTF_NAMESPACE_STOP

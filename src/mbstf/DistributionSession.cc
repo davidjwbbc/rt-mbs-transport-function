@@ -181,7 +181,7 @@ bool DistributionSession::processEvent(Open5GSEvent &event)
                             static const char *err = "Unable to parse MBSTF Distribution Session as JSON.";
                             ogs_error("%s", err);
                             ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST, 1, message,
-                                                                    app_meta, api, "Bad Data Reporting Session", err));
+                                                                    app_meta, api, "Bad MBSTF Distribution Session", err));
                             return true;
                         }
 
@@ -262,7 +262,7 @@ bool DistributionSession::processEvent(Open5GSEvent &event)
                             ogs_debug("Parsed JSON: %s", body.c_str());
                             std::ostringstream location;
                             location << request.uri() << "/" << distSess->distributionSessionId();
-                            std::shared_ptr<Open5GSSBIResponse> response(NfServer::newResponse(location.str(),
+                            std::shared_ptr<Open5GSSBIResponse> response(NfServer::newResponse(std::string(request.uri()),
                                                     body.empty()?nullptr:"application/json",
                                                     distSess->generated(),
                                                     distSess->hash().c_str(),

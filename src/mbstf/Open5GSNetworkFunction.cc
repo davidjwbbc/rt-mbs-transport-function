@@ -25,6 +25,7 @@
 // Standard Template Library header includes
 #include <memory>
 #include <stdexcept>
+#include <vector>
 #include <netdb.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -178,7 +179,7 @@ static int server_cb(ogs_sbi_request_t *request, void *data)
     return OGS_OK;
 }
 
-bool Open5GSNetworkFunction::setNFServiceInfo(const char *serviceName, const char *supportedFeatures, const char *apiVersion, const std::shared_ptr<Open5GSSockAddr> &addr)
+bool Open5GSNetworkFunction::setNFServiceInfo(const char *serviceName, const char *supportedFeatures, const char *apiVersion, const std::vector<std::shared_ptr<Open5GSSockAddr> > &addr)
 {
     m_serviceName = serviceName;
     m_supportedFeatures = supportedFeatures;
@@ -323,34 +324,38 @@ done:
 
 
 void Open5GSNetworkFunction::addAddressesToNFService(ogs_sbi_nf_service_t *nf_service,
-                                                     const std::shared_ptr<Open5GSSockAddr> &addrs)
+                                                     const std::vector<std::shared_ptr<Open5GSSockAddr> > &addresses)
 {
     ogs_sockaddr_t *addr = NULL;
 
-    for (ogs_copyaddrinfo(&addr, addrs->ogsSockAddr()); addr && nf_service->num_of_addr < OGS_SBI_MAX_NUM_OF_IP_ADDRESS;
-         addr = addr->next) {
-        bool is_port = true;
-        int port = 0;
+    for (const auto &addrs: addresses) {
 
-        if (addr->ogs_sa_family == AF_INET) {
-            nf_service->addr[nf_service->num_of_addr].ipv4 = addr;
-        } else if (addr->ogs_sa_family == AF_INET6) {
-            nf_service->addr[nf_service->num_of_addr].ipv6 = addr;
-        } else {
-            continue;
+        for (ogs_copyaddrinfo(&addr, addrs->ogsSockAddr()); addr && nf_service->num_of_addr < OGS_SBI_MAX_NUM_OF_IP_ADDRESS;
+			addr = addr->next) 
+	{
+            bool is_port = true;
+            int port = 0;
+
+            if (addr->ogs_sa_family == AF_INET) {
+                nf_service->addr[nf_service->num_of_addr].ipv4 = addr;
+            } else if (addr->ogs_sa_family == AF_INET6) {
+                nf_service->addr[nf_service->num_of_addr].ipv6 = addr;
+            } else {
+                continue;
+            }
+
+            port = OGS_PORT(addr);
+            if (nf_service->scheme == OpenAPI_uri_scheme_https) {
+                if (port == OGS_SBI_HTTPS_PORT) is_port = false;
+            } else if (nf_service->scheme == OpenAPI_uri_scheme_http) {
+                if (port == OGS_SBI_HTTP_PORT) is_port = false;
+            }
+
+            nf_service->addr[nf_service->num_of_addr].is_port = is_port;
+            nf_service->addr[nf_service->num_of_addr].port = port;
+
+            nf_service->num_of_addr++;
         }
-
-        port = OGS_PORT(addr);
-        if (nf_service->scheme == OpenAPI_uri_scheme_https) {
-            if (port == OGS_SBI_HTTPS_PORT) is_port = false;
-        } else if (nf_service->scheme == OpenAPI_uri_scheme_http) {
-            if (port == OGS_SBI_HTTP_PORT) is_port = false;
-        }
-
-        nf_service->addr[nf_service->num_of_addr].is_port = is_port;
-        nf_service->addr[nf_service->num_of_addr].port = port;
-
-        nf_service->num_of_addr++;
     }
 }
 
