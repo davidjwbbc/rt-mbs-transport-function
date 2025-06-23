@@ -55,7 +55,7 @@ ObjectStore::Metadata::Metadata(const std::string &object_id, const std::string 
     ,m_originalUrl(url)
     ,m_fetchedUrl(fetched_url)
     ,m_acquisitionId(acquisition_id)
-    ,m_keepAfterSend(false)	
+    ,m_keepAfterSend(false)
     ,m_objIngestBaseUrl(obj_ingest_base_url)
     ,m_objDistributionBaseUrl(obj_distribution_base_url)
     ,m_cacheExpires(cache_expires)

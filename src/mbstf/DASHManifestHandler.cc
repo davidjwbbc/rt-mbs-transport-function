@@ -179,7 +179,7 @@ ManifestHandler::durn_type DASHManifestHandler::getDefaultDeadline()
 bool DASHManifestHandler::update(const ObjectStore::Object &new_manifest)
 {
     // Process the new MPD and see what has changed, throw an exception of the Object is not understood or invalid
-    
+
     m_refreshMpd = false;
     m_mpd = ingest_manifest(new_manifest);
     m_mpd.selectAllRepresentations();

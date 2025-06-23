@@ -254,17 +254,17 @@ bool SubscriptionService::sendEventSynchronous(Event &event)
     auto it = m_namedEventSubscriptions.find(event.eventName());
     if (it != m_namedEventSubscriptions.end()) {
         for (auto &subsc : it->second) {
-            m_asyncMutex->unlock();		
+            m_asyncMutex->unlock();
             subsc->processEvent(event, *this);
-            m_asyncMutex->lock();		
+            m_asyncMutex->lock();
             if (event.stopProcessingFlag()) break;
         }
     }
     if (event.stopProcessingFlag()) return false;
     for (auto &subsc : m_allEventSubscriptions) {
-        m_asyncMutex->unlock();		
+        m_asyncMutex->unlock();
 	subsc->processEvent(event, *this);
-        m_asyncMutex->lock();		
+        m_asyncMutex->lock();
 	if (event.stopProcessingFlag()) break;
     }
     return !event.preventDefaultFlag();

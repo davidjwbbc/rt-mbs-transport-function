@@ -48,7 +48,7 @@ public:
     private:
         std::string m_object_id;
     };
- 
+
 
     ObjectPackager() = delete;
     ObjectPackager(ObjectPackager &&) = delete;

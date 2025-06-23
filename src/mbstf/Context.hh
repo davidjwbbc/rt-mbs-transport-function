@@ -46,7 +46,7 @@ public:
 
     bool parseConfig();
 
-     std::vector<std::shared_ptr<Open5GSSockAddr> > DistributionSessionServerAddress();
+    std::vector<std::shared_ptr<Open5GSSockAddr> > DistributionSessionServerAddress();
 
 /*
     void addDistributionSession(const std::string &session_id, const std::shared_ptr<DistributionSession> &session) {

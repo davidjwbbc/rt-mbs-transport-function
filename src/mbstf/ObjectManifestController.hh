@@ -38,7 +38,7 @@ public:
         :ObjectController(dist_session)
 	,Subscriber()
         ,m_manifestHandler(nullptr)
-	,m_scheduledPullCancel(false) 
+	,m_scheduledPullCancel(false)
         {};
 	*/
     ObjectManifestController(const ObjectManifestController&) = delete;
@@ -53,7 +53,7 @@ public:
     }
 
     virtual ~ObjectManifestController() {
-	abort();    
+	abort();
     };
 
     ObjectManifestController &operator=(const ObjectManifestController&) = delete;

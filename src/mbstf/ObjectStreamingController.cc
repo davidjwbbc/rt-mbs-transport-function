@@ -165,7 +165,7 @@ static void validate_distribution_session(DistributionSession &distributionSessi
 static bool check_if_object_added_is_manifest(std::string &objectId, ObjectStore &objectStore, std::string &manifest_url) {
     ObjectStore::Metadata &metadata = objectStore.getMetadata(objectId);
     if(metadata.getOriginalUrl() == manifest_url || metadata.getFetchedUrl() == manifest_url) {
-        metadata.keepAfterSend(true); 
+        metadata.keepAfterSend(true);
         return true;
     }
     /*

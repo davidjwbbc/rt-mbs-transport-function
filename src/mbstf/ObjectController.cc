@@ -55,13 +55,13 @@ void ObjectController::processEvent(Event &event, SubscriptionService &event_ser
 	const ObjectStore::Metadata &metadata = objectStore().getMetadata(object_id);
 
 	if(!metadata.keepAfterSend()) {
-	     	
+
 	    objectStore().deleteObject(object_id);
 	} else {
             ogs_debug("Keeping object [%s] in object store after sending...", object_id.c_str());
 	}
     }
-	
+
 }
 
 std::string ObjectController::nextObjectId()

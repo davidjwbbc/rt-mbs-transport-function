@@ -138,7 +138,7 @@ void ObjectListPackager::doObjectPackage() {
                 m_transmitter->register_completion_callback(
                     [this](uint32_t toi) {
                         if (m_queuedToi == toi) {
-			    
+
                             m_queued = false;
 			    objectSendCompletion(m_queuedObjectId);
                             ogs_info("Transmitted: Object with TOI: %d", toi);
@@ -157,7 +157,7 @@ void ObjectListPackager::doObjectPackage() {
                 std::lock_guard<std::recursive_mutex> lock(*m_packageItemsMutex);
 
                 if (!m_packageItems.empty() && !m_queued) {
-		    
+
                     auto &item = m_packageItems.front();
 	            m_packageItemsMutex->unlock();
                     std::string location;

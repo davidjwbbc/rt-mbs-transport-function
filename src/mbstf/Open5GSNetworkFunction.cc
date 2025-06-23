@@ -331,7 +331,7 @@ void Open5GSNetworkFunction::addAddressesToNFService(ogs_sbi_nf_service_t *nf_se
     for (const auto &addrs: addresses) {
 
         for (ogs_copyaddrinfo(&addr, addrs->ogsSockAddr()); addr && nf_service->num_of_addr < OGS_SBI_MAX_NUM_OF_IP_ADDRESS;
-			addr = addr->next) 
+			addr = addr->next)
 	{
             bool is_port = true;
             int port = 0;
