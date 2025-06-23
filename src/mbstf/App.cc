@@ -95,7 +95,7 @@ App::App(const char *const argv[])
 
 void App::initialise()
 {
-    static const char serviceName[] = NMBSTF_DISTSESSION_API_NAME;
+    static const char serviceName[] = "nmbstf-distsession" /* NMBSTF_DISTSESSION_API_NAME has the wrong case */;
     static const char supportedFeatures[] = "0";
     static const char apiVersion[] = NMBSTF_DISTSESSION_API_VERSION;
 
