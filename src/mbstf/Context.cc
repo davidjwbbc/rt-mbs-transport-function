@@ -114,6 +114,15 @@ bool Context::parseConfig()
 void Context::addDistributionSession(const std::shared_ptr<DistributionSession> &session)
 {
     std::shared_ptr<DistributionSession> map_session(session);
+    ogs_sbi_nf_service_t *svc;
+    ogs_sbi_nf_instance_t *this_nf = ogs_sbi_self()->nf_instance;
+    int new_load = map_session->getRateLimit()/1000;
+    this_nf->load += new_load;
+    ogs_list_for_each(&this_nf->nf_service_list, svc) {
+        if (std::string(svc->name) == "nmbstf-distsession") {
+            svc->load += new_load;
+        }
+    }
     distributionSessions.insert(std::make_pair<std::string, std::shared_ptr<DistributionSession> >(std::string(map_session->distributionSessionId()), std::move(map_session)));
 }
 
@@ -122,6 +131,15 @@ void Context::deleteDistributionSession(const std::string &distributionSessionid
 {
     auto it = distributionSessions.find(distributionSessionid);
     if (it != distributionSessions.end()) {
+        int old_load = it->second->getRateLimit()/1000;
+        ogs_sbi_nf_instance_t *this_nf = ogs_sbi_self()->nf_instance;
+        ogs_sbi_nf_service_t *svc;
+        this_nf->load -= old_load;
+        ogs_list_for_each(&this_nf->nf_service_list, svc) {
+           if (std::string(svc->name) == "nmbstf-distsession") {
+                svc->load -= old_load;
+            }
+        }
         distributionSessions.erase(it);
     } else {
         throw std::out_of_range("MBST Distribution session not found");
@@ -260,7 +278,7 @@ void Context::parseConfiguration(std::string &pc_key, Open5GSYamlIter &iter)   {
         int matches = 0;
         //ogs_sbi_server_t *server;
 	matches = checkForAddr(node);
-	
+
 	if(!matches) {
 	    std::shared_ptr<Open5GSSBIServer> newServer;
             newServer.reset(new Open5GSSBIServer(node, is_option ? &option : nullptr));
@@ -271,7 +289,7 @@ void Context::parseConfiguration(std::string &pc_key, Open5GSYamlIter &iter)   {
             } else if (pc_key == "httpPushIngest") {
 		 servers[SERVER_OBJECT_PUSH].push_back(newServer);
 	    } else if (pc_key == "rtpIngest") {
-		servers[SERVER_RTP].push_back(newServer);    
+		servers[SERVER_RTP].push_back(newServer);
             }
 
             /*
