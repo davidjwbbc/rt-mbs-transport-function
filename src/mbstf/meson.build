@@ -72,6 +72,8 @@ test_source_dash_manifest_handler = test_source_object_store + test_source_pull_
 
 
 libmbstf_dist_sources = files('''
+    BitRate.cc
+    BitRate.hh
     common.cc
     common.hh
     CaseInsensitiveTraits.hh
