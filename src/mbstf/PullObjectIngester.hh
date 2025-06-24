@@ -11,17 +11,17 @@
  * program. If this file is missing then the license can be retrieved from
  * https://drive.google.com/file/d/1cinCiA778IErENZ3JN52VFW-1ffHpx7Z/view
  */
-
-#include <string>
+#include <condition_variable>
 #include <list>
 #include <mutex>
+#include <string>
 
 #include "common.hh"
 #include "ObjectIngester.hh"
+#include "ObjectStore.hh"
 
 MBSTF_NAMESPACE_START
 
-class ObjectStore;
 class ObjectController;
 class Curl;
 
@@ -34,6 +34,7 @@ public:
     public:
 
         IngestItem() = delete;
+        IngestItem(const ObjectStore::Metadata &object_meta, const std::optional<time_type> &download_deadline = std::nullopt);
 	IngestItem(const std::string &object_id, const std::string &url, const std::string &acquisition_id,
                    const std::optional<std::string> &obj_ingest_base_url = std::nullopt,
                    const std::optional<std::string> &obj_distribution_base_url = std::nullopt,
@@ -106,6 +107,7 @@ private:
     void sortListByPolicy();
     std::list<IngestItem> m_fetchList;
     std::unique_ptr<std::recursive_mutex> m_ingestItemsMutex;
+    std::condition_variable_any m_ingestItemsCondVar;
     std::shared_ptr<Curl> m_curl;
 
 };

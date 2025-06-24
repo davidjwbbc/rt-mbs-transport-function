@@ -15,17 +15,17 @@
 
 #pragma once
 
-#include <memory>
-#include <utility>
 #include <chrono>
-#include <optional>
-#include <vector>
-#include <map>
-#include <mutex>
-#include <list>
 #include <functional>
-#include <thread>
+#include <list>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <optional>
 #include <shared_mutex>
+#include <thread>
+#include <utility>
+#include <vector>
 
 #include "common.hh"
 #include "Event.hh"

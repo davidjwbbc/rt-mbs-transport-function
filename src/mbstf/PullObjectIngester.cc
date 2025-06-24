@@ -24,7 +24,20 @@
 #include "Curl.hh"
 #include "ObjectStore.hh"
 
+using namespace std::literals::chrono_literals;
+
 MBSTF_NAMESPACE_START
+
+PullObjectIngester::IngestItem::IngestItem(const ObjectStore::Metadata &object_meta,
+                                           const std::optional<time_type> &download_deadline)
+    :m_objectId(object_meta.objectId())
+    ,m_url(object_meta.getFetchedUrl())
+    ,m_acquisitionId(object_meta.acquisitionId())
+    ,m_objIngestBaseUrl(object_meta.objIngestBaseUrl())
+    ,m_objDistributionBaseUrl(object_meta.objDistributionBaseUrl())
+    ,m_deadline(download_deadline)
+{
+}
 
 PullObjectIngester::IngestItem::IngestItem(const std::string &object_id, const std::string &url, const std::string &acquisition_id, const std::optional<std::string> &obj_ingest_base_url,  const std::optional<std::string> &obj_distribution_base_url, const std::optional<time_type> &download_deadline)
     :m_objectId(object_id)
@@ -62,24 +75,33 @@ bool PullObjectIngester::fetch(const std::string &object_id, const std::optional
 {
     std::lock_guard<std::recursive_mutex> lock(*m_ingestItemsMutex);
 
-    for (auto it = m_fetchList.begin(); it != m_fetchList.end(); ++it) {
+    // If this is a refetch for a pending object, just update the current fetch list item
+    decltype(m_fetchList)::iterator it;
+    for (it = m_fetchList.begin(); it != m_fetchList.end(); ++it) {
         if (it->objectId() == object_id) {
             if (download_deadline.has_value()) {
                 it->deadline(download_deadline.value());
             }
-
-            sortListByPolicy();
-            return true;
+            break;
         }
     }
 
-    return false;
+    // otherwise we need a new fetch based on the ObjectStore entry
+    if (it == m_fetchList.end()) {
+        m_fetchList.emplace_back(this->objectStore().getMetadata(object_id), download_deadline);
+    }
+
+    sortListByPolicy();
+    m_ingestItemsCondVar.notify_all();
+
+    return true;
 }
 
 bool PullObjectIngester::fetch(const IngestItem &item) {
     std::lock_guard<std::recursive_mutex> lock(*m_ingestItemsMutex);
     m_fetchList.push_back(item);
     sortListByPolicy();
+    m_ingestItemsCondVar.notify_all();
     return true;
 }
 
@@ -87,6 +109,7 @@ bool PullObjectIngester::fetch(IngestItem &&item) {
     std::lock_guard<std::recursive_mutex> lock(*m_ingestItemsMutex);
     m_fetchList.push_back(std::move(item));
     sortListByPolicy();
+    m_ingestItemsCondVar.notify_all();
     return true;
 }
 
@@ -101,18 +124,27 @@ void PullObjectIngester::sortListByPolicy() {
 
 void PullObjectIngester::doObjectIngest() {
     if(!m_curl) m_curl = std::make_shared<Curl>();
-    std::chrono::seconds timeout(10); // 10 seconds timeout
     {
         std::lock_guard<std::recursive_mutex> lock(*m_ingestItemsMutex);
-
+        if (m_fetchList.empty()) {
+            m_ingestItemsCondVar.wait_for(*m_ingestItemsMutex, 500ms);
+        }
         if (!m_fetchList.empty()) {
             // Make the GET request and get the number of bytes received
-	    m_ingestItemsMutex->lock();
             auto item = m_fetchList.front();
 	    m_fetchList.pop_front();
-	    m_ingestItemsMutex->unlock();
+	    m_ingestItemsMutex->unlock(); // temp unlock while we fetch
             ogs_debug("Fetching %s...", item.url().c_str());
-	    long bytesReceived = m_curl->get(item.url(), timeout);
+            const auto &deadline = item.deadline();
+            std::chrono::milliseconds timeout(10000);
+            if (deadline) {
+                timeout = std::chrono::duration_cast<std::chrono::milliseconds>(
+                                                            deadline.value() - std::chrono::system_clock::now());
+            }
+            long bytesReceived = -1;
+            if (timeout > 0s) {
+	        bytesReceived = m_curl->get(item.url(), timeout);
+            }
 
             // Check the result
             if (bytesReceived >= 0) {
@@ -136,6 +168,7 @@ void PullObjectIngester::doObjectIngest() {
                 ogs_error("An error occurred while fetching the data.");
                 // emitObjectIngestFailedEvent();
             }
+            m_ingestItemsMutex->lock();
 	}
     }
 }
