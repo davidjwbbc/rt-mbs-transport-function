@@ -33,12 +33,12 @@
 #include "PullObjectIngester.hh"
 #include "PushObjectIngester.hh"
 #include "SubscriptionService.hh"
+#include "utilities.hh"
 
 #include "ObjectListController.hh"
 
 MBSTF_NAMESPACE_START
 
-static std::string trim_slashes(const std::string &path);
 static int validate_distribution_session(DistributionSession &distributionSession);
 static bool validate_push_url(DistributionSession &distributionSession, const std::string &url);
 
@@ -184,14 +184,6 @@ std::string ObjectListController::nextObjectId()
 
 namespace {
 static const struct init { init() {ControllerFactory::registerController(new ControllerConstructor<ObjectListController>);};} g_init;
-}
-
-static std::string trim_slashes(const std::string &path)
-{
-    size_t start = path.starts_with('/') ? 1 : 0;
-    size_t end = path.ends_with('/') ? path.size() - 1 : path.size();
-
-    return path.substr(start, end - start);
 }
 
 static bool validate_push_url(DistributionSession &distributionSession, const std::string &url)

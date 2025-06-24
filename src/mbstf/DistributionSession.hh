@@ -27,6 +27,7 @@
 #include <memory>
 #include "openapi/model/ObjDistributionData.h"
 #include "common.hh"
+#include "BitRate.hh"
 //#include "Subscriber.hh"
 
 namespace fiveg_mag_reftools {
@@ -70,21 +71,20 @@ public:
     void setController(std::shared_ptr<Controller> controller) {m_controller = controller;};
 
     static bool processEvent(Open5GSEvent &event);
-    const ObjDistributionData::ObjAcquisitionIdsPullType &getObjectAcquisitionPullUrls();
-    const std::string &getObjectDistributionOperatingMode();
-    const std::optional<std::string> &getDestIpAddr();
-    const std::optional<std::string> &getTunnelAddr();
-    in_port_t getPortNumber();
-    in_port_t getTunnelPortNumber();
-    uint32_t getRateLimit();
-    const std::optional<std::string> &getObjectIngestBaseUrl();
-    const std::string &getObjectAcquisitionMethod();
+    const ObjDistributionData::ObjAcquisitionIdsPullType &getObjectAcquisitionPullUrls() const;
+    const std::string &getObjectDistributionOperatingMode() const;
+    const std::optional<std::string> &getDestIpAddr() const;
+    const std::optional<std::string> &getTunnelAddr() const;
+    in_port_t getPortNumber() const;
+    in_port_t getTunnelPortNumber() const;
+    uint32_t getRateLimit() const;
+    std::optional<BitRate> getMbr() const;
+    const std::optional<std::string> &getObjectIngestBaseUrl() const;
+    const std::string &getObjectAcquisitionMethod() const;
     void setObjectIngestBaseUrl(std::string ingestBaseUrl);
-    const std::optional<std::string> &getObjectAcquisitionPushId();
+    const std::optional<std::string> &getObjectAcquisitionPushId() const;
     bool setObjectAcquisitionIdPush(std::optional<std::string> &id);
     const std::optional<std::string> &objectDistributionBaseUrl() const;
-    std::string trimSlashes(const std::string &path);
-
 
     // TODO: Forwarding Events from the Controller to m_eventSubscriptions
     // virtual void processEvent(Event &event, SubscriptionService &event_service);

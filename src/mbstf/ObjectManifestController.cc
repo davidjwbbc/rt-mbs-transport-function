@@ -29,6 +29,7 @@
 #include "PullObjectIngester.hh"
 #include "PushObjectIngester.hh"
 #include "SubscriptionService.hh"
+#include "utilities.hh"
 
 #include "ObjectManifestController.hh"
 
@@ -45,18 +46,17 @@ ObjectManifestController::ObjectManifestController(DistributionSession &dist_ses
 	,m_scheduledPullCancel(false)
 
 {
-
     if (dist_session.getObjectAcquisitionMethod() == "PULL") validate_pull_acquisition_method(dist_session);
-
     if (dist_session.getObjectAcquisitionMethod() == "PUSH") validate_push_acquisition_method(dist_session);
+
     initObjectIngester();
 };
 
 
 void ObjectManifestController::initPullObjectIngester()
 {
-    std::optional<std::string> object_ingest_base_url = distributionSession().getObjectIngestBaseUrl();
-    std::optional<std::string> object_distribution_base_url = distributionSession().objectDistributionBaseUrl();
+    const std::optional<std::string> &object_ingest_base_url = distributionSession().getObjectIngestBaseUrl();
+    const std::optional<std::string> &object_distribution_base_url = distributionSession().objectDistributionBaseUrl();
 
     auto &pull_urls = distributionSession().getObjectAcquisitionPullUrls();
     if (pull_urls.has_value()) {
@@ -74,7 +74,7 @@ void ObjectManifestController::initPullObjectIngester()
                     } else {
                         obj_ingest_url = object_ingest_base_url.value();
                         if (!obj_ingest_url.ends_with("/")) obj_ingest_url += "/";
-                        obj_ingest_url += distributionSession().trimSlashes(url_str);
+                        obj_ingest_url += trim_slashes(url_str);
                     }
 
                 }
@@ -232,7 +232,7 @@ void ObjectManifestController::manifestUrl()
                     } else {
                         manifest_url = manifest_base_url.value();
                         if (!manifest_url.ends_with("/")) manifest_url += "/";
-                        manifest_url += distributionSession().trimSlashes(url_str);
+                        manifest_url += trim_slashes(url_str);
                     }
 
                 }

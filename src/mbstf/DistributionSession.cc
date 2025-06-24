@@ -75,7 +75,7 @@ static const NfServer::InterfaceMetadata g_nmbstf_distributionsession_api_metada
     NMBSTF_DISTSESSION_API_VERSION
 );
 
-static std::shared_ptr<ObjDistributionData> get_object_distribution_data(DistributionSession &distributionSession);
+static std::shared_ptr<ObjDistributionData> get_object_distribution_data(const DistributionSession &distributionSession);
 
 DistributionSession::DistributionSession(CJson &json, bool as_request)
     :m_createReqData(std::make_shared<CreateReqData>(json, as_request))
@@ -415,14 +415,14 @@ bool DistributionSession::processEvent(Open5GSEvent &event)
     return false;
 }
 
-const ObjDistributionData::ObjAcquisitionIdsPullType &DistributionSession::getObjectAcquisitionPullUrls()
+const ObjDistributionData::ObjAcquisitionIdsPullType &DistributionSession::getObjectAcquisitionPullUrls() const
 {
-    std::shared_ptr<CreateReqData> createReqData = distributionSessionReqData();
-    std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
-    const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = distSession->getObjDistributionData();
+    std::shared_ptr<CreateReqData> create_req_data = distributionSessionReqData();
+    std::shared_ptr<DistSession> dist_session = create_req_data->getDistSession();
+    const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = dist_session->getObjDistributionData();
     if (object_distribution_data.has_value()) {
-        std::shared_ptr<ObjDistributionData> objectDistributionDataPtr = object_distribution_data.value();
-        return objectDistributionDataPtr->getObjAcquisitionIdsPull();
+        std::shared_ptr<ObjDistributionData> object_distribution_data_ptr = object_distribution_data.value();
+        return object_distribution_data_ptr->getObjAcquisitionIdsPull();
     } else {
         ogs_error("ObjectDistributionData is not available");
         static const ObjDistributionData::ObjAcquisitionIdsPullType empty_result;
@@ -430,14 +430,14 @@ const ObjDistributionData::ObjAcquisitionIdsPullType &DistributionSession::getOb
     }
 }
 
-const std::optional<std::string> &DistributionSession::getDestIpAddr()
+const std::optional<std::string> &DistributionSession::getDestIpAddr() const
 {
-    std::shared_ptr<CreateReqData> createReqData = distributionSessionReqData();
-    std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
-    const std::optional<std::shared_ptr< UpTrafficFlowInfo > > &upTrafficFlowInfo = distSession->getUpTrafficFlowInfo();
-    if (upTrafficFlowInfo.has_value()) {
-        std::shared_ptr<UpTrafficFlowInfo> upTrafficFlow = upTrafficFlowInfo.value();
-        const std::shared_ptr<IpAddr> ipAddr = upTrafficFlow->getDestIpAddr();
+    std::shared_ptr<CreateReqData> create_req_data = distributionSessionReqData();
+    std::shared_ptr<DistSession> dist_session = create_req_data->getDistSession();
+    const std::optional<std::shared_ptr< UpTrafficFlowInfo > > &up_traffic_flow_info = dist_session->getUpTrafficFlowInfo();
+    if (up_traffic_flow_info.has_value()) {
+        std::shared_ptr<UpTrafficFlowInfo> up_traffic_flow = up_traffic_flow_info.value();
+        const std::shared_ptr<IpAddr> ipAddr = up_traffic_flow->getDestIpAddr();
         if (ipAddr) {
             return ipAddr->getIpv4Addr();
         }
@@ -447,54 +447,51 @@ const std::optional<std::string> &DistributionSession::getDestIpAddr()
     return empty;
 }
 
-const std::optional<std::string> &DistributionSession::getTunnelAddr()
+const std::optional<std::string> &DistributionSession::getTunnelAddr() const
 {
-    std::shared_ptr<CreateReqData> createReqData = distributionSessionReqData();
-    std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
-    std::optional<std::shared_ptr<TunnelAddress> > mbUpfTunAddr = distSession->getMbUpfTunAddr();
-    if (mbUpfTunAddr.has_value()) {
-        return mbUpfTunAddr.value()->getIpv4Addr();
+    std::shared_ptr<CreateReqData> create_req_data = distributionSessionReqData();
+    std::shared_ptr<DistSession> dist_session = create_req_data->getDistSession();
+    std::optional<std::shared_ptr<TunnelAddress> > mb_upf_tun_addr = dist_session->getMbUpfTunAddr();
+    if (mb_upf_tun_addr.has_value()) {
+        return mb_upf_tun_addr.value()->getIpv4Addr();
     }
 
     static const std::optional<std::string> empty = std::nullopt;
     return empty;
 }
 
-in_port_t DistributionSession::getPortNumber()
+in_port_t DistributionSession::getPortNumber() const
 {
-    in_port_t portNumber = 0;
-    std::shared_ptr<CreateReqData> createReqData = distributionSessionReqData();
-    std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
-    std::optional<std::shared_ptr<UpTrafficFlowInfo> > upTrafficFlowInfo = distSession->getUpTrafficFlowInfo();
-    if (upTrafficFlowInfo.has_value()) {
-        std::shared_ptr<UpTrafficFlowInfo> upTrafficFlow = upTrafficFlowInfo.value();
-        portNumber = static_cast<in_port_t>(upTrafficFlow->getPortNumber());
+    in_port_t port_number = 0;
+    std::shared_ptr<CreateReqData> create_req_data = distributionSessionReqData();
+    std::shared_ptr<DistSession> dist_session = create_req_data->getDistSession();
+    std::optional<std::shared_ptr<UpTrafficFlowInfo> > up_traffic_flow_info = dist_session->getUpTrafficFlowInfo();
+    if (up_traffic_flow_info.has_value()) {
+        std::shared_ptr<UpTrafficFlowInfo> up_traffic_flow = up_traffic_flow_info.value();
+        port_number = static_cast<in_port_t>(up_traffic_flow->getPortNumber());
     }
-    return portNumber;
+    return port_number;
 }
 
-in_port_t DistributionSession::getTunnelPortNumber()
+in_port_t DistributionSession::getTunnelPortNumber() const
 {
-    in_port_t portNumber = 0;
-    std::shared_ptr<CreateReqData> createReqData = distributionSessionReqData();
-    std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
-    std::optional<std::shared_ptr<TunnelAddress> > mbUpfTunAddr = distSession->getMbUpfTunAddr();
-    if (mbUpfTunAddr.has_value()) {
-        portNumber = static_cast<in_port_t>(mbUpfTunAddr.value()->getPortNumber());
+    in_port_t port_number = 0;
+    std::shared_ptr<CreateReqData> create_req_data = distributionSessionReqData();
+    std::shared_ptr<DistSession> dist_session = create_req_data->getDistSession();
+    std::optional<std::shared_ptr<TunnelAddress> > mb_upf_tun_addr = dist_session->getMbUpfTunAddr();
+    if (mb_upf_tun_addr.has_value()) {
+        port_number = static_cast<in_port_t>(mb_upf_tun_addr.value()->getPortNumber());
     }
-    return portNumber;
+    return port_number;
 }
 
-uint32_t DistributionSession::getRateLimit()
+uint32_t DistributionSession::getRateLimit() const
 {
-    std::shared_ptr<CreateReqData> createReqData = distributionSessionReqData();
-    std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
-    const std::optional<std::string> &mbr = distSession->getMbr();
+    std::optional<BitRate> mbr = getMbr();
 
     if (mbr) {
         try {
-            BitRate bit_rate(mbr.value());
-            return static_cast<uint32_t>(bit_rate.bitRate()/1000.0);
+            return static_cast<uint32_t>(mbr.value().bitRate()/1000.0);
         } catch (const std::invalid_argument &e) {
             throw std::runtime_error("Invalid MBR value");
         } catch (const std::out_of_range &e) {
@@ -505,63 +502,75 @@ uint32_t DistributionSession::getRateLimit()
     return 0;
 }
 
-const std::optional<std::string> &DistributionSession::getObjectIngestBaseUrl()
+std::optional<BitRate> DistributionSession::getMbr() const
 {
-    std::shared_ptr<CreateReqData> createReqData = distributionSessionReqData();
-    std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
-    const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = distSession->getObjDistributionData();
+    std::shared_ptr<CreateReqData> create_req_data = distributionSessionReqData();
+    std::shared_ptr<DistSession> dist_session = create_req_data->getDistSession();
+    const std::optional<std::string> &mbr = dist_session->getMbr();
+
+    if (mbr) {
+        return BitRate(mbr.value());
+    }
+    return std::nullopt;
+}
+
+const std::optional<std::string> &DistributionSession::getObjectIngestBaseUrl() const
+{
+    std::shared_ptr<CreateReqData> create_req_data = distributionSessionReqData();
+    std::shared_ptr<DistSession> dist_session = create_req_data->getDistSession();
+    const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = dist_session->getObjDistributionData();
     if (object_distribution_data.has_value()) {
-        std::shared_ptr<ObjDistributionData> objectDistributionDataPtr = object_distribution_data.value();
-        return objectDistributionDataPtr->getObjIngestBaseUrl();
+        std::shared_ptr<ObjDistributionData> object_distribution_data_ptr = object_distribution_data.value();
+        return object_distribution_data_ptr->getObjIngestBaseUrl();
     } else {
         ogs_error("ObjectDistributionData is not available");
-        static const std::optional<std::string> nullValue = std::nullopt;
-        return nullValue;
+        static const std::optional<std::string> null_value = std::nullopt;
+        return null_value;
     }
 }
 
-const std::string &DistributionSession::getObjectAcquisitionMethod()
+const std::string &DistributionSession::getObjectAcquisitionMethod() const
 {
-    std::shared_ptr<CreateReqData> createReqData = distributionSessionReqData();
-    std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
-    const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = distSession->getObjDistributionData();
+    std::shared_ptr<CreateReqData> create_req_data = distributionSessionReqData();
+    std::shared_ptr<DistSession> dist_session = create_req_data->getDistSession();
+    const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = dist_session->getObjDistributionData();
     if (object_distribution_data.has_value()) {
-        std::shared_ptr<ObjDistributionData> objectDistributionDataPtr = object_distribution_data.value();
-        std::shared_ptr< ObjAcquisitionMethod > objAcquisitionMethod = objectDistributionDataPtr->getObjAcquisitionMethod();
-        return objAcquisitionMethod->getString();
+        std::shared_ptr<ObjDistributionData> object_distribution_data_ptr = object_distribution_data.value();
+        std::shared_ptr< ObjAcquisitionMethod > obj_acquisition_method = object_distribution_data_ptr->getObjAcquisitionMethod();
+        return obj_acquisition_method->getString();
     } else {
         ogs_error("ObjectDistributionData is not available");
-        static std::string emptyObjAcquisitionMethod = std::string();
-        return emptyObjAcquisitionMethod;
+        static const std::string empty_obj_acquisition_method = std::string();
+        return empty_obj_acquisition_method;
     }
 }
 
-void DistributionSession::setObjectIngestBaseUrl(std::string ingestBaseUrl)
+void DistributionSession::setObjectIngestBaseUrl(std::string ingest_base_url)
 {
-    const std::shared_ptr<CreateReqData> createReqData = distributionSessionReqData();
-    std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
-    const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = distSession->getObjDistributionData();
+    const std::shared_ptr<CreateReqData> create_req_data = distributionSessionReqData();
+    std::shared_ptr<DistSession> dist_session = create_req_data->getDistSession();
+    const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = dist_session->getObjDistributionData();
     if (object_distribution_data.has_value()) {
-        std::shared_ptr<ObjDistributionData> objectDistributionDataPtr = object_distribution_data.value();
-        const std::optional<std::string> &baseUrl = ingestBaseUrl.empty() ? std::nullopt : std::optional<std::string>(ingestBaseUrl);
-        objectDistributionDataPtr->setObjIngestBaseUrl(baseUrl);
+        std::shared_ptr<ObjDistributionData> object_distribution_data_ptr = object_distribution_data.value();
+        const std::optional<std::string> &base_url = ingest_base_url.empty() ? std::nullopt : std::optional<std::string>(ingest_base_url);
+        object_distribution_data_ptr->setObjIngestBaseUrl(base_url);
     } else {
         ogs_error("ObjectDistributionData is not available");
     }
 }
 
-const std::optional<std::string> &DistributionSession::getObjectAcquisitionPushId()
+const std::optional<std::string> &DistributionSession::getObjectAcquisitionPushId() const
 {
-    std::shared_ptr<CreateReqData> createReqData = distributionSessionReqData();
-    std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
-    const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = distSession->getObjDistributionData();
+    std::shared_ptr<CreateReqData> create_req_data = distributionSessionReqData();
+    std::shared_ptr<DistSession> dist_session = create_req_data->getDistSession();
+    const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = dist_session->getObjDistributionData();
     if (object_distribution_data.has_value()) {
-        std::shared_ptr<ObjDistributionData> objectDistributionDataPtr = object_distribution_data.value();
-        return objectDistributionDataPtr->getObjAcquisitionIdPush();
+        std::shared_ptr<ObjDistributionData> object_distribution_data_ptr = object_distribution_data.value();
+        return object_distribution_data_ptr->getObjAcquisitionIdPush();
     } else {
         ogs_error("ObjectDistributionData is not available");
-        static const std::optional<std::string> nullValue = std::nullopt;
-        return nullValue;
+        static const std::optional<std::string> null_value = std::nullopt;
+        return null_value;
     }
 }
 
@@ -577,21 +586,22 @@ bool DistributionSession::setObjectAcquisitionIdPush(std::optional<std::string> 
 
 }
 
-static std::shared_ptr<ObjDistributionData> get_object_distribution_data(DistributionSession &distributionSession)
+static std::shared_ptr<ObjDistributionData> get_object_distribution_data(const DistributionSession &distribution_session)
 {
-    std::shared_ptr<CreateReqData> createReqData = distributionSession.distributionSessionReqData();
-    std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
-    const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = distSession->getObjDistributionData();
+    std::shared_ptr<CreateReqData> create_req_data = distribution_session.distributionSessionReqData();
+    std::shared_ptr<DistSession> dist_session = create_req_data->getDistSession();
+    const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = dist_session->getObjDistributionData();
     if (object_distribution_data.has_value()) {
-        std::shared_ptr<ObjDistributionData> objectDistributionDataPtr = object_distribution_data.value();
-        return objectDistributionDataPtr;
+        std::shared_ptr<ObjDistributionData> object_distribution_data_ptr = object_distribution_data.value();
+        return object_distribution_data_ptr;
     } else {
         return nullptr;
     }
 
 }
 
-const std::string &DistributionSession::getObjectDistributionOperatingMode() {
+const std::string &DistributionSession::getObjectDistributionOperatingMode() const
+{
     std::shared_ptr<ObjDistributionData> object_distribution_data = get_object_distribution_data(*this);
     if (object_distribution_data) {
         std::shared_ptr< ObjDistributionOperatingMode > operating_mode = object_distribution_data->getObjDistributionOperatingMode();
@@ -605,27 +615,18 @@ const std::string &DistributionSession::getObjectDistributionOperatingMode() {
 
 const std::optional<std::string> &DistributionSession::objectDistributionBaseUrl() const
 {
-    std::shared_ptr<CreateReqData> createReqData = distributionSessionReqData();
-    std::shared_ptr<DistSession> distSession = createReqData->getDistSession();
-    const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = distSession->getObjDistributionData();
+    std::shared_ptr<CreateReqData> create_req_data = distributionSessionReqData();
+    std::shared_ptr<DistSession> dist_session = create_req_data->getDistSession();
+    const std::optional<std::shared_ptr<ObjDistributionData> > &object_distribution_data = dist_session->getObjDistributionData();
     if (object_distribution_data.has_value()) {
-        std::shared_ptr<ObjDistributionData> objectDistributionDataPtr = object_distribution_data.value();
-        return objectDistributionDataPtr->getObjDistributionBaseUrl();
+        std::shared_ptr<ObjDistributionData> object_distribution_data_ptr = object_distribution_data.value();
+        return object_distribution_data_ptr->getObjDistributionBaseUrl();
     } else {
         ogs_error("ObjectDistributionData is not available");
-        static const std::optional<std::string> nullValue = std::nullopt;
-        return nullValue;
+        static const std::optional<std::string> null_value = std::nullopt;
+        return null_value;
     }
 }
-
-std::string DistributionSession::trimSlashes(const std::string &path)
-{
-    size_t start = path.starts_with('/') ? 1 : 0;
-    size_t end = path.ends_with('/') ? path.size() - 1 : path.size();
-
-    return path.substr(start, end - start);
-}
-
 
 MBSTF_NAMESPACE_STOP
 

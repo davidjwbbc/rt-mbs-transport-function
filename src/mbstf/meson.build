@@ -145,8 +145,9 @@ libmbstf_dist_sources = files('''
     SubscriptionService.hh
     Subscriber.cc
     Subscriber.hh
-
     TimerFunc.hh
+    utilities.cc
+    utilities.hh
 '''.split())
 
 api_tag = latest_apis?'REL-'+fiveg_api_release:'TSG'+fiveg_api_approval+'-Rel'+fiveg_api_release
