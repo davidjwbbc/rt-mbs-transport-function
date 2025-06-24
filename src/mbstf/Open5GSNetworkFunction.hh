@@ -65,7 +65,7 @@ public:
     bool startEventHandler();
     void stopEventHandler();
 
-    bool setNFServiceInfo(const char *serviceName, const char *supportedFeatures, const char *apiVersion, const std::vector<std::shared_ptr<Open5GSSockAddr> > &addr);
+    bool setNFServiceInfo(const char *serviceName, const char *supportedFeatures, const char *apiVersion, const std::vector<std::shared_ptr<Open5GSSockAddr> > &addr, int capacity = 100);
     int setNFService();
 
     void initialise() {ogs_sbi_context_init(nfType());};
@@ -90,6 +90,7 @@ private:
     const char *m_apiVersion;
     std::string m_serverName;
     std::vector<std::shared_ptr<Open5GSSockAddr> > m_addr;
+    int m_capacity;
 };
 
 MBSTF_NAMESPACE_STOP

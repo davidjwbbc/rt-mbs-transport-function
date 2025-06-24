@@ -69,12 +69,13 @@ public:
         unsigned int distMaxAge;
         unsigned int defaultObjectMaxAge; // Use if not given by push/pull resource Cache-Control.
     } cacheControl;
+    int totalMaxBitRateSoftLimit; // total maximum bit rate this MBSTF ought to asked to handle
 
 private:
     void parseCacheControl(Open5GSYamlIter &iter);
     void parseConfiguration(std::string &pc_key, Open5GSYamlIter &iter);
     int checkForAddr(ogs_socknode_t *node);
-
+    void updateNFLoad();
 };
 
 MBSTF_NAMESPACE_STOP

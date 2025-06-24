@@ -37,11 +37,8 @@ namespace fiveg_mag_reftools {
 namespace reftools::mbstf {
     class CreateReqData;
     class ObjDistributionData;
+    class DistSessionState;
 }
-
-using fiveg_mag_reftools::CJson;
-using reftools::mbstf::CreateReqData;
-using reftools::mbstf::ObjDistributionData;
 
 MBSTF_NAMESPACE_START
 
@@ -51,8 +48,9 @@ class Controller;
 class DistributionSession { // : public Subscriber {
 public:
     using SysTimeMS = std::chrono::system_clock::time_point;
-    DistributionSession(CJson &json, bool as_request);
-    DistributionSession(const std::shared_ptr<CreateReqData> &create_req_data);
+
+    DistributionSession(fiveg_mag_reftools::CJson &json, bool as_request);
+    DistributionSession(const std::shared_ptr<reftools::mbstf::CreateReqData> &create_req_data);
     DistributionSession() = delete;
     DistributionSession(DistributionSession &&other) = delete;
     DistributionSession(const DistributionSession &other) = delete;
@@ -61,17 +59,19 @@ public:
 
     virtual ~DistributionSession();
 
-    CJson json(bool as_request) const;
+    fiveg_mag_reftools::CJson json(bool as_request) const;
 
     static const std::shared_ptr<DistributionSession> &find(const std::string &id); // throws std::out_of_range if id does not exist
     const std::string &distributionSessionId() const { return m_distributionSessionId; };
-    const std::shared_ptr<CreateReqData> &distributionSessionReqData() const {return m_createReqData;};
+    const std::shared_ptr<reftools::mbstf::CreateReqData> &distributionSessionReqData() const {return m_createReqData;};
     const SysTimeMS &generated() const {return m_generated;};
     const std::string &hash() const {return m_hash;};
     void setController(std::shared_ptr<Controller> controller) {m_controller = controller;};
 
     static bool processEvent(Open5GSEvent &event);
-    const ObjDistributionData::ObjAcquisitionIdsPullType &getObjectAcquisitionPullUrls() const;
+
+    const reftools::mbstf::DistSessionState &getState() const;
+    const reftools::mbstf::ObjDistributionData::ObjAcquisitionIdsPullType &getObjectAcquisitionPullUrls() const;
     const std::string &getObjectDistributionOperatingMode() const;
     const std::optional<std::string> &getDestIpAddr() const;
     const std::optional<std::string> &getTunnelAddr() const;
@@ -90,7 +90,7 @@ public:
     // virtual void processEvent(Event &event, SubscriptionService &event_service);
 
 private:
-    std::shared_ptr<CreateReqData> m_createReqData;
+    std::shared_ptr<reftools::mbstf::CreateReqData> m_createReqData;
     SysTimeMS m_generated;
     SysTimeMS m_lastUsed;
     std::string m_hash;

@@ -48,6 +48,7 @@
 #include "Open5GSNetworkFunction.hh"
 #include "openapi/model/CreateReqData.h"
 #include "openapi/model/DistSession.h"
+#include "openapi/model/DistSessionState.h"
 #include "openapi/model/ObjDistributionData.h"
 #include "openapi/model/ObjAcquisitionMethod.h"
 #include "openapi/model/TunnelAddress.h"
@@ -61,6 +62,7 @@
 using fiveg_mag_reftools::CJson;
 using reftools::mbstf::CreateReqData;
 using reftools::mbstf::DistSession;
+using reftools::mbstf::DistSessionState;
 using reftools::mbstf::IpAddr;
 using reftools::mbstf::ObjDistributionData;
 using reftools::mbstf::UpTrafficFlowInfo;
@@ -413,6 +415,19 @@ bool DistributionSession::processEvent(Open5GSEvent &event)
         break;
     }
     return false;
+}
+
+const DistSessionState &DistributionSession::getState() const
+{
+    auto create_req_data = m_createReqData;
+    const auto &dist_session = create_req_data->getDistSession();
+    const DistSession::DistSessionStateType &dist_sess_state = dist_session->getDistSessionState();
+
+    if (dist_sess_state) {
+        return *dist_sess_state;
+    }
+    static const DistSessionState no_val = DistSessionState();
+    return no_val;
 }
 
 const ObjDistributionData::ObjAcquisitionIdsPullType &DistributionSession::getObjectAcquisitionPullUrls() const

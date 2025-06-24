@@ -33,14 +33,19 @@
 #include "Open5GSSockAddr.hh"
 #include "Open5GSYamlDocument.hh"
 #include "Open5GSYamlIter.hh"
+#include "openapi/model/DistSessionState.h"
 
 #include "Context.hh"
+
+using reftools::mbstf::DistSessionState;
 
 MBSTF_NAMESPACE_START
 
 Context::Context()
-    :servers()
+    :distributionSessions()
+    ,servers()
     ,cacheControl({60, 60})
+    ,totalMaxBitRateSoftLimit(100)
 {
 }
 
@@ -97,6 +102,17 @@ bool Context::parseConfig()
 
                     } while (distSess_array.type() == YAML_SEQUENCE_NODE);
 
+                } else if (mbstf_key == "totalMaxBitRateSoftLimit") {
+                    if (mbstf_iter.type() == YAML_MAPPING_NODE) {
+                        std::string limit_val(mbstf_iter.value());
+                        size_t idx = 0;
+                        totalMaxBitRateSoftLimit = std::stoi(limit_val, &idx);
+                        if (idx != limit_val.size()) {
+                            throw std::out_of_range("Bad configuration value at mbstf.totalMaxBitRateSoftLimit");
+                        }
+                    } else {
+                        throw std::out_of_range("Bad configuration node at mbstf.totalMaxBitRateSoftLimit");
+                    }
                 } else {
                     ogs_warn("Unknown key `mbstf.%s` in configuration", mbstf_key.c_str());
                 }
@@ -114,16 +130,8 @@ bool Context::parseConfig()
 void Context::addDistributionSession(const std::shared_ptr<DistributionSession> &session)
 {
     std::shared_ptr<DistributionSession> map_session(session);
-    ogs_sbi_nf_service_t *svc;
-    ogs_sbi_nf_instance_t *this_nf = ogs_sbi_self()->nf_instance;
-    int new_load = map_session->getRateLimit()/1000;
-    this_nf->load += new_load;
-    ogs_list_for_each(&this_nf->nf_service_list, svc) {
-        if (std::string(svc->name) == "nmbstf-distsession") {
-            svc->load += new_load;
-        }
-    }
     distributionSessions.insert(std::make_pair<std::string, std::shared_ptr<DistributionSession> >(std::string(map_session->distributionSessionId()), std::move(map_session)));
+    updateNFLoad();
 }
 
 
@@ -131,16 +139,8 @@ void Context::deleteDistributionSession(const std::string &distributionSessionid
 {
     auto it = distributionSessions.find(distributionSessionid);
     if (it != distributionSessions.end()) {
-        int old_load = it->second->getRateLimit()/1000;
-        ogs_sbi_nf_instance_t *this_nf = ogs_sbi_self()->nf_instance;
-        ogs_sbi_nf_service_t *svc;
-        this_nf->load -= old_load;
-        ogs_list_for_each(&this_nf->nf_service_list, svc) {
-           if (std::string(svc->name) == "nmbstf-distsession") {
-                svc->load -= old_load;
-            }
-        }
         distributionSessions.erase(it);
+        updateNFLoad();
     } else {
         throw std::out_of_range("MBST Distribution session not found");
     }
@@ -351,7 +351,29 @@ int Context::checkForAddr(ogs_socknode_t *node)
     return 0;
 }
 
+void Context::updateNFLoad()
+{
+    ogs_sbi_nf_service_t *svc;
+    ogs_sbi_nf_instance_t *this_nf = ogs_sbi_self()->nf_instance;
 
+    double total_mbr = 0.0;
+    for (const auto & [dist_sess_id, dist_sess] : distributionSessions) {
+        if (dist_sess->getState() == DistSessionState::VAL_ACTIVE) {
+            const std::optional<BitRate> &mbr = dist_sess->getMbr();
+            if (mbr) {
+                total_mbr += mbr.value().bitRate();
+            }
+        }
+    }
+    int new_load = static_cast<int>(total_mbr/1000000.0);
+
+    this_nf->load += new_load;
+    ogs_list_for_each(&this_nf->nf_service_list, svc) {
+        if (std::string(svc->name) == "nmbstf-distsession") {
+            svc->load += new_load;
+        }
+    }
+}
 
 MBSTF_NAMESPACE_STOP
 

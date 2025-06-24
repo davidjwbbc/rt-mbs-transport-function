@@ -187,6 +187,7 @@ mbstf:
     httpPushIngest:
       - addr: 127.0.0.61
         port: 0 # ephemeral
+    totalMaxBitRateSoftLimit: 1000 # 1Gbps
     serverResponseCacheControl:
       - distMaxAge: 60
         ObjectMaxAge: 60

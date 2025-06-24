@@ -107,7 +107,7 @@ void App::initialise()
     }
 
     std::vector<std::shared_ptr<Open5GSSockAddr> > addrs(m_context->DistributionSessionServerAddress());
-    m_app->setNFServiceInfo(serviceName, supportedFeatures, apiVersion, addrs);
+    m_app->setNFServiceInfo(serviceName, supportedFeatures, apiVersion, addrs, m_context->totalMaxBitRateSoftLimit);
 
     std::string nf_name("MBSTF-");
     nf_name += m_app->serverName();

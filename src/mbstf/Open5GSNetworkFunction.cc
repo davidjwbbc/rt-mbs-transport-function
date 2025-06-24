@@ -53,6 +53,7 @@ Open5GSNetworkFunction::Open5GSNetworkFunction()
     ,m_apiVersion(nullptr)
     ,m_serverName()
     ,m_addr()
+    ,m_capacity(100)
 {
     if (ogs_env_set("TZ", "UTC") != OGS_OK) {
         throw std::runtime_error("Failed to set clock to UTC");
@@ -179,12 +180,13 @@ static int server_cb(ogs_sbi_request_t *request, void *data)
     return OGS_OK;
 }
 
-bool Open5GSNetworkFunction::setNFServiceInfo(const char *serviceName, const char *supportedFeatures, const char *apiVersion, const std::vector<std::shared_ptr<Open5GSSockAddr> > &addr)
+bool Open5GSNetworkFunction::setNFServiceInfo(const char *serviceName, const char *supportedFeatures, const char *apiVersion, const std::vector<std::shared_ptr<Open5GSSockAddr> > &addr, int capacity)
 {
     m_serviceName = serviceName;
     m_supportedFeatures = supportedFeatures;
     m_apiVersion = apiVersion;
     m_addr = addr;
+    m_capacity = capacity;
     return true;
 
 }
@@ -203,6 +205,8 @@ int Open5GSNetworkFunction::setNFService() {
                                         ogs_app()->sbi.server.no_tls == false ? OpenAPI_uri_scheme_https : OpenAPI_uri_scheme_http);
     ogs_assert(nf_service);
 
+    nf_service->capacity = m_capacity;
+    ogs_sbi_self()->nf_instance->capacity = m_capacity;
     addAddressesToNFService(nf_service, m_addr);
     ogs_sbi_nf_service_add_version(nf_service, OGS_SBI_API_V1, m_apiVersion, NULL);
     nf_service->supported_features = ogs_strdup(m_supportedFeatures);
