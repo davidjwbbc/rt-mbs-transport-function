@@ -62,6 +62,7 @@ protected:
     const std::shared_ptr<PullObjectIngester> &addPullObjectIngester(PullObjectIngester*);
     bool removePullObjectIngester(std::shared_ptr<PullObjectIngester> &);
     const std::shared_ptr<PushObjectIngester> &setPushIngester(PushObjectIngester* pushIngester);
+    const std::shared_ptr<ObjectPackager> &packager() const { return m_packager; };
     const std::shared_ptr<ObjectPackager> &setPackager(ObjectPackager*);
 
 private:

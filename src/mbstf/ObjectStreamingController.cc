@@ -58,7 +58,8 @@ ObjectStreamingController::~ObjectStreamingController()
     abort();
 }
 
-std::shared_ptr<ObjectListPackager> &ObjectStreamingController::setObjectListPackager() {
+std::shared_ptr<ObjectListPackager> ObjectStreamingController::setObjectListPackager()
+{
     const std::optional<std::string> &dest_ip_addr = distributionSession().getDestIpAddr();
     const std::optional<std::string> &tunnel_addr = distributionSession().getTunnelAddr();
     uint32_t rate_limit = distributionSession().getRateLimit();
@@ -66,12 +67,17 @@ std::shared_ptr<ObjectListPackager> &ObjectStreamingController::setObjectListPac
     in_port_t tunnel_port = distributionSession().getTunnelPortNumber();
     //TODO: get the MTU for the dest_ip_addr
     unsigned short mtu = 1490; // 1500 - GTP overhead; need to bodge this so that there's enough room in downstream gNodeB packets
-    m_objectListPackager.reset(new ObjectListPackager(objectStore(), *this, dest_ip_addr, rate_limit, mtu, port, tunnel_addr, tunnel_port));
-    return m_objectListPackager;
+    setPackager(new ObjectListPackager(objectStore(), *this, dest_ip_addr, rate_limit, mtu, port, tunnel_addr, tunnel_port));
+    return getObjectListPackager();
 }
 
+std::shared_ptr<ObjectListPackager> ObjectStreamingController::getObjectListPackager() const
+{
+    return std::dynamic_pointer_cast<ObjectListPackager>(packager());
+}
 
-void ObjectStreamingController::processEvent(Event &event, SubscriptionService &event_service) {
+void ObjectStreamingController::processEvent(Event &event, SubscriptionService &event_service)
+{
     if (event.eventName() == "ObjectAdded") {
         ObjectStore::ObjectAddedEvent &objAddedEvent = dynamic_cast<ObjectStore::ObjectAddedEvent&>(event);
         std::string objectId = objAddedEvent.objectId();
@@ -88,12 +94,12 @@ void ObjectStreamingController::processEvent(Event &event, SubscriptionService &
 		    }
 		    startWorker();
 
-                    if (!m_objectListPackager) {
+                    if (!packager()) {
                         setObjectListPackager();
                     }
 
 		    ObjectListPackager::PackageItem item(objectId);
-		    m_objectListPackager->add(item);
+		    getObjectListPackager()->add(item);
 	        } catch (std::exception &ex) {
                     ogs_error("Invalid Manifest update: %s", ex.what());
 		    unsetObjectListPackager();
@@ -114,20 +120,20 @@ void ObjectStreamingController::processEvent(Event &event, SubscriptionService &
                     return;
                 }
                 */
-                if (!m_objectListPackager) {
+                if (!packager()) {
                     setObjectListPackager();
                 }
 
 		ObjectListPackager::PackageItem item(objectId);
-		m_objectListPackager->add(item);
+		getObjectListPackager()->add(item);
             }
 	} else {
-            if (!m_objectListPackager) {
-                    setObjectListPackager();
+            if (!packager()) {
+                setObjectListPackager();
             }
 
 	    ObjectListPackager::PackageItem item(objectId);
-            m_objectListPackager->add(item);
+            getObjectListPackager()->add(item);
         }
     }
     ObjectManifestController::processEvent(event, event_service);

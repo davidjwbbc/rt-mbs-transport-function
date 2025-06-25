@@ -47,8 +47,8 @@ public:
 
 
     void fetchItems();
-    std::shared_ptr<ObjectListPackager> &setObjectListPackager();
-    std::shared_ptr<ObjectListPackager> &setObjectListPackager(ObjectListPackager&&);
+    std::shared_ptr<ObjectListPackager> setObjectListPackager();
+    std::shared_ptr<ObjectListPackager> getObjectListPackager() const;
 
     // Subscriber virtual methods
     virtual void processEvent(Event &event, SubscriptionService &event_service);
@@ -65,8 +65,6 @@ public:
 
 private:
     std::string generateUUID();
-
-    std::shared_ptr<ObjectListPackager> m_objectListPackager;
 };
 
 MBSTF_NAMESPACE_STOP

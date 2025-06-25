@@ -62,7 +62,7 @@ ObjectListController::~ObjectListController()
 {
 }
 
-std::shared_ptr<ObjectListPackager> &ObjectListController::setObjectListPackager() {
+std::shared_ptr<ObjectListPackager> ObjectListController::setObjectListPackager() {
     std::optional<std::string> dest_ip_addr = distributionSession().getDestIpAddr();
     std::optional<std::string> tunnel_addr = distributionSession().getTunnelAddr();
     uint32_t rate_limit = distributionSession().getRateLimit();
@@ -70,10 +70,14 @@ std::shared_ptr<ObjectListPackager> &ObjectListController::setObjectListPackager
     in_port_t tunnel_port = distributionSession().getTunnelPortNumber();
     //TODO: get the MTU for the dest_ip_addr or tunnel_addr
     unsigned short mtu = 1490; // 1500 - GTP overhead; to allow for downstream encapsulation to the gNodeB
-    m_objectListPackager.reset(new ObjectListPackager(objectStore(), *this, dest_ip_addr, rate_limit, mtu, port, tunnel_addr, tunnel_port));
-    return m_objectListPackager;
+    setPackager(new ObjectListPackager(objectStore(), *this, dest_ip_addr, rate_limit, mtu, port, tunnel_addr, tunnel_port));
+    return getObjectListPackager();
 }
 
+std::shared_ptr<ObjectListPackager> ObjectListController::getObjectListPackager() const
+{
+    return std::dynamic_pointer_cast<ObjectListPackager>(packager());
+}
 
 void ObjectListController::processEvent(Event &event, SubscriptionService &event_service) {
     if (event.eventName() == "ObjectAdded") {
@@ -82,8 +86,9 @@ void ObjectListController::processEvent(Event &event, SubscriptionService &event
         ogs_info("Object added with ID: %s", objectId.c_str());
 
         ObjectListPackager::PackageItem item(objectId);
-        if (m_objectListPackager) {
-            m_objectListPackager->add(item);
+        std::shared_ptr<ObjectListPackager> packager(getObjectListPackager());
+        if (packager) {
+            packager->add(item);
         } else {
             ogs_error("ObjectListPackager is not initialized.");
         }
