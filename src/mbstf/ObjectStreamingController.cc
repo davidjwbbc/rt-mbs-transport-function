@@ -59,8 +59,8 @@ ObjectStreamingController::~ObjectStreamingController()
 }
 
 std::shared_ptr<ObjectListPackager> &ObjectStreamingController::setObjectListPackager() {
-    std::optional<std::string> dest_ip_addr = distributionSession().getDestIpAddr();
-    std::optional<std::string> tunnel_addr = distributionSession().getTunnelAddr();
+    const std::optional<std::string> &dest_ip_addr = distributionSession().getDestIpAddr();
+    const std::optional<std::string> &tunnel_addr = distributionSession().getTunnelAddr();
     uint32_t rate_limit = distributionSession().getRateLimit();
     in_port_t port = distributionSession().getPortNumber();
     in_port_t tunnel_port = distributionSession().getTunnelPortNumber();
@@ -102,7 +102,7 @@ void ObjectStreamingController::processEvent(Event &event, SubscriptionService &
                 }
 
 	    } else {
-		std::unique_ptr<ManifestHandler> manifest_handler(ManifestHandlerFactory::makeManifestHandler(object, distributionSession().getObjectAcquisitionMethod() == "PULL"));
+		std::unique_ptr<ManifestHandler> manifest_handler(ManifestHandlerFactory::makeManifestHandler(object, this, distributionSession().getObjectAcquisitionMethod() == "PULL"));
                 manifestHandler(std::move(manifest_handler));
                 /*
                 const ObjectStore::Metadata &metadata = objectStore().getMetadata(objectId);

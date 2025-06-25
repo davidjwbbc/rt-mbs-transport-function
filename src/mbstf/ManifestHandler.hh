@@ -20,6 +20,8 @@
 
 MBSTF_NAMESPACE_START
 
+class ObjectController;
+
 class ManifestHandler {
 public:
     using time_type = std::chrono::system_clock::time_point;
@@ -27,19 +29,37 @@ public:
     using ingest_list = std::list<PullObjectIngester::IngestItem>;
 
     ManifestHandler() = delete;
-    ManifestHandler(bool pull_distribution):m_pullDistribution(pull_distribution) {};
-    ManifestHandler(const ManifestHandler &other):m_pullDistribution(other.m_pullDistribution) {};
-    ManifestHandler(ManifestHandler &&other):m_pullDistribution(other.m_pullDistribution) {};
+    ManifestHandler(ObjectController *controller, bool pull_distribution)
+        :m_controller(controller)
+        ,m_pullDistribution(pull_distribution)
+    {};
+    ManifestHandler(const ManifestHandler &other)
+        :m_controller(other.m_controller)
+        ,m_pullDistribution(other.m_pullDistribution)
+    {};
+    ManifestHandler(ManifestHandler &&other)
+        :m_controller(other.m_controller)
+        ,m_pullDistribution(other.m_pullDistribution)
+    {};
     virtual ~ManifestHandler() {};
-    ManifestHandler &operator=(const ManifestHandler &other){m_pullDistribution = other.m_pullDistribution; return *this;};
+    ManifestHandler &operator=(const ManifestHandler &other) {
+        m_controller = other.m_controller;
+        m_pullDistribution = other.m_pullDistribution;
+        return *this;
+    };
 
-    ManifestHandler &operator=(ManifestHandler &&other){m_pullDistribution = other.m_pullDistribution; return *this;};
+    ManifestHandler &operator=(ManifestHandler &&other) {
+        m_controller = other.m_controller;
+        m_pullDistribution = other.m_pullDistribution;
+        return *this;
+    };
 
     virtual std::pair<time_type, ingest_list> nextIngestItems() = 0;
     virtual durn_type getDefaultDeadline() = 0;
     virtual bool update(const ObjectStore::Object &new_manifest) = 0;
 
 protected:
+   ObjectController *m_controller;
    bool m_pullDistribution;
 };
 

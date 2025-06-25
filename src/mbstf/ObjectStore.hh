@@ -161,6 +161,8 @@ public:
     bool isStale(const std::string& object_id) const;
     std::map<std::string, const Object&> getStale() const;
 
+    const ObjectController &objectController() const { return m_controller; };
+
 private:
     void checkExpiredObjects();
     mutable std::recursive_mutex m_mutex;

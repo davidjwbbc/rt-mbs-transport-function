@@ -46,8 +46,8 @@ ObjectManifestController::ObjectManifestController(DistributionSession &dist_ses
 	,m_scheduledPullCancel(false)
 
 {
-    if (dist_session.getObjectAcquisitionMethod() == "PULL") validate_pull_acquisition_method(dist_session);
-    if (dist_session.getObjectAcquisitionMethod() == "PUSH") validate_push_acquisition_method(dist_session);
+    validate_pull_acquisition_method(dist_session);
+    validate_push_acquisition_method(dist_session);
 
     initObjectIngester();
 };
@@ -156,7 +156,6 @@ void ObjectManifestController::workerLoop(ObjectManifestController *controller) 
 
         std::list<std::shared_ptr<PullObjectIngester>> &ingesters = controller->getPullObjectIngesters();
 	while(ingesters.size() < next_ingest_items.second.size()) {
-
 	    controller->addPullObjectIngester(new PullObjectIngester(controller->objectStore(), *controller, urls));
 	}
 
@@ -273,7 +272,6 @@ static bool validate_push_acquisition_method(DistributionSession &distributionSe
         }
     }
     return false;
-
 }
 
 static bool validate_push_url(DistributionSession &distributionSession, const std::string &url)

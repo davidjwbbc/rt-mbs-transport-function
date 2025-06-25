@@ -18,11 +18,13 @@
 MBSTF_NAMESPACE_START
 
 class ManifestHandler;
+class ObjectController;
 
 class ManifestHandlerConstructor {
 public:
     virtual unsigned int priority() = 0;
-    virtual ManifestHandler *makeManifestHandler(const ObjectStore::Object &object, bool pull_distribution) = 0;
+    virtual ManifestHandler *makeManifestHandler(const ObjectStore::Object &object, ObjectController *controller,
+                                                 bool pull_distribution) = 0;
 };
 
 template <class H>
@@ -31,15 +33,17 @@ public:
     using manifest_handler = H;
 
     virtual unsigned int priority() { return manifest_handler::factoryPriority(); };
-    virtual ManifestHandler *makeManifestHandler(const ObjectStore::Object &object, bool pull_distribution) {
-        return new manifest_handler(object, pull_distribution);
+    virtual ManifestHandler *makeManifestHandler(const ObjectStore::Object &object, ObjectController *controller,
+                                                 bool pull_distribution) {
+        return new manifest_handler(object, controller, pull_distribution);
     }
 };
 
 class ManifestHandlerFactory {
 public:
     static bool registerManifestHandler(const std::string &content_type, ManifestHandlerConstructor *manifest_handler_constructor);
-    static ManifestHandler *makeManifestHandler(const ObjectStore::Object &object, bool pull_distribution);
+    static ManifestHandler *makeManifestHandler(const ObjectStore::Object &object, ObjectController *controller,
+                                                bool pull_distribution);
 };
 
 MBSTF_NAMESPACE_STOP

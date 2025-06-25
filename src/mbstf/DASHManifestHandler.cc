@@ -24,8 +24,10 @@
 
 #include "ogs-app.h"
 #include "common.hh"
+#include "DistributionSession.hh"
 #include "ManifestHandler.hh"
 #include "ManifestHandlerFactory.hh"
+#include "ObjectController.hh"
 #include "ObjectStore.hh"
 #include "PullObjectIngester.hh"
 
@@ -41,8 +43,8 @@ using time_type = std::chrono::system_clock::time_point;
 
 static LIBMPDPP_NAMESPACE_CLASS(MPD) ingest_manifest(const ObjectStore::Object &new_manifest);
 
-DASHManifestHandler::DASHManifestHandler(const ObjectStore::Object &object, bool pull_distribution)
-    :ManifestHandler(pull_distribution)
+DASHManifestHandler::DASHManifestHandler(const ObjectStore::Object &object, ObjectController *controller, bool pull_distribution)
+    :ManifestHandler(controller, pull_distribution)
     ,m_mpd(ingest_manifest(object))
     ,m_manifest(&object)
     ,m_refreshMpd(false)
@@ -105,7 +107,9 @@ std::pair<ManifestHandler::time_type, ManifestHandler::ingest_list> DASHManifest
         fetch_time = first_media_segment.availabilityStartTime();
 
         ingest_items.emplace_back(nextObjectId(), first_media_segment.segmentURL(), empty,
-				    std::nullopt, std::nullopt, first_media_segment.availabilityEndTime());
+                                    m_controller->distributionSession().getObjectIngestBaseUrl(),
+				    m_controller->distributionSession().objectDistributionBaseUrl(),
+                                    first_media_segment.availabilityEndTime());
         removeExtraPullObjectsEntry(first_media_segment);
 
 	try {
@@ -120,7 +124,10 @@ std::pair<ManifestHandler::time_type, ManifestHandler::ingest_list> DASHManifest
 
             if(it->availabilityStartTime() != fetch_time) break;
 	    removeExtraPullObjectsEntry(*it);
-	    ingest_items.emplace_back(nextObjectId(), it->segmentURL(), empty, std::nullopt, std::nullopt, it->availabilityEndTime());
+	    ingest_items.emplace_back(nextObjectId(), it->segmentURL(), empty,
+                                      m_controller->distributionSession().getObjectIngestBaseUrl(),
+                                      m_controller->distributionSession().objectDistributionBaseUrl(),
+                                      it->availabilityEndTime());
 
              if(it->segmentURL()  == manifest_url) m_refreshMpd = true;
 
@@ -209,7 +216,7 @@ static LIBMPDPP_NAMESPACE_CLASS(MPD) ingest_manifest(const ObjectStore::Object &
     if ( new_manifest.second.mediaType() != "application/dash+xml" ){
          throw std::invalid_argument("Does not look like a DASH Manifest as the media type is invalid. Expected media type: application/dash+xml");
     }
-    return LIBMPDPP_NAMESPACE_CLASS(MPD) (new_manifest.first);
+    return LIBMPDPP_NAMESPACE_CLASS(MPD) (new_manifest.first, new_manifest.second.getFetchedUrl());
 
 
 }

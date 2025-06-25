@@ -24,7 +24,7 @@ MBSTF_NAMESPACE_START
 class DASHManifestHandler : public ManifestHandler {
 public:
     DASHManifestHandler() = delete;
-    DASHManifestHandler(const ObjectStore::Object &object, bool pull_distribution);
+    DASHManifestHandler(const ObjectStore::Object &object, ObjectController *controller, bool pull_distribution);
     DASHManifestHandler(const DASHManifestHandler &) = delete;
     DASHManifestHandler(DASHManifestHandler &&) = delete;
 

@@ -49,7 +49,7 @@ bool ManifestHandlerFactory::registerManifestHandler(const std::string &content_
     return true;
 }
 
-ManifestHandler *ManifestHandlerFactory::makeManifestHandler(const ObjectStore::Object &object, bool pull_distribution)
+ManifestHandler *ManifestHandlerFactory::makeManifestHandler(const ObjectStore::Object &object, ObjectController *controller, bool pull_distribution)
 {
     std::string media_type = object.second.mediaType();
     // Try manifest handlers for the media type of the object, fallback to any media type (empty string)
@@ -59,7 +59,7 @@ ManifestHandler *ManifestHandlerFactory::makeManifestHandler(const ObjectStore::
             std::list<std::unique_ptr<ManifestHandlerConstructor> > &list = it->second;
             for (const auto &mhc : list) {
                 try {
-                    return mhc->makeManifestHandler(object, pull_distribution);
+                    return mhc->makeManifestHandler(object, controller, pull_distribution);
                 } catch (std::runtime_error &ex) {
                     // manifest recognised but there was a parsing error, rethrow so caller can handle
                     throw ex;
