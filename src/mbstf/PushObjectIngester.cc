@@ -207,15 +207,15 @@ PushObjectIngester::ObjectPushEvent::ObjectPushEvent(const std::string &typ, con
 
 PushObjectIngester::~PushObjectIngester()
 {
-    stop();
-    abort();
+    abort(); // Stop the worker thread first
+    stop();  // Then stop the HTTP daemon
 }
 
 bool PushObjectIngester::start()
 {
     if (m_mhdDaemon) return false;
 
-    ogs_info("PushObjectIngester::start(): Starting MHD");
+    ogs_info("PushObjectIngester[%p]::start(): Starting MHD", this);
     m_sockaddr.ss_family = AF_INET;
     struct sockaddr_in *sockaddr = reinterpret_cast<struct sockaddr_in *>(&m_sockaddr);
     sockaddr->sin_addr.s_addr = INADDR_ANY; // TODO: get this from a configuration file variable (default: INADDR_ANY)
@@ -235,7 +235,7 @@ bool PushObjectIngester::start()
         m_condVar.notify_all();
         // emitObjectPushListeningEvent();
     }
-    ogs_debug("PushObjectIngester::start(): Started MHD (%p)", m_mhdDaemon);
+    ogs_debug("PushObjectIngester[%p]::start(): Started MHD (%p)", this, m_mhdDaemon);
 
     return m_mhdDaemon != 0;
 }
@@ -244,7 +244,7 @@ bool PushObjectIngester::stop()
 {
     std::lock_guard<std::recursive_mutex> lock(m_mtx);
 
-    ogs_debug("PushObjectIngester::stop(): Stopping MHD");
+    ogs_debug("PushObjectIngester[%p]::stop(): Stopping MHD (%p)", this, m_mhdDaemon);
 
     if (m_mhdDaemon == 0) return false;
 
@@ -291,7 +291,7 @@ void PushObjectIngester::removeRequest(const std::shared_ptr<PushObjectIngester:
 }
 
 void PushObjectIngester::doObjectIngest() {
-    start();
+    if (!workerCancelled()) start();
 }
 
 void PushObjectIngester::addedBodyBlock(const std::shared_ptr<Request> &request, std::vector<unsigned char>::size_type block_size,
@@ -305,9 +305,12 @@ const std::string &PushObjectIngester::getIngestServerPrefix()
 {
     if (m_urlPrefix.empty()) {
         {
+            // Wait for microhttpd to start up
             std::lock_guard<std::recursive_mutex> lock(m_mtx);
             while(!m_mhdDaemon) m_condVar.wait(m_mtx);
         }
+
+        // Get the server details from microhttpd
         const union MHD_DaemonInfo *daemon_info = MHD_get_daemon_info(m_mhdDaemon, MHD_DAEMON_INFO_LISTEN_FD);
         if (daemon_info != nullptr && daemon_info->listen_fd != -1) {
             int sock_fd = daemon_info->listen_fd;
@@ -379,10 +382,12 @@ const std::string &PushObjectIngester::getIngestServerPrefix()
                     m_urlPrefix = "http://" + m_domain + ":" + std::to_string(m_port) + "/";
                 } else if (!m_IPAddress.empty()) {
                     m_urlPrefix = "http://" + m_IPAddress + ":" + std::to_string(m_port) + "/";
+                } else {
+                    ogs_error("getnameinfo error: %d", errno);
                 }
             }
-            ogs_info("GETSOCKNAME FAILED");
-            ogs_info("getsockname error: %d", errno);
+        } else {
+            ogs_error("Failed to get daemon info from microhttpd");
         }
     }
 
