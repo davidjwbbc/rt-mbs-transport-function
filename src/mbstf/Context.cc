@@ -129,8 +129,9 @@ bool Context::parseConfig()
 
 void Context::addDistributionSession(const std::shared_ptr<DistributionSession> &session)
 {
-    std::shared_ptr<DistributionSession> map_session(session);
-    distributionSessions.insert(std::make_pair<std::string, std::shared_ptr<DistributionSession> >(std::string(map_session->distributionSessionId()), std::move(map_session)));
+    std::string id(session->distributionSessionId());
+    std::shared_ptr<DistributionSession> sess_ptr(session);
+    distributionSessions.insert(std::make_pair(std::move(id), std::move(sess_ptr)));
     updateNFLoad();
 }
 
