@@ -65,7 +65,7 @@ std::shared_ptr<ObjectListPackager> &ObjectStreamingController::setObjectListPac
     in_port_t port = distributionSession().getPortNumber();
     in_port_t tunnel_port = distributionSession().getTunnelPortNumber();
     //TODO: get the MTU for the dest_ip_addr
-    unsigned short mtu = 1500;
+    unsigned short mtu = 1490; // 1500 - GTP overhead; need to bodge this so that there's enough room in downstream gNodeB packets
     m_objectListPackager.reset(new ObjectListPackager(objectStore(), *this, dest_ip_addr, rate_limit, mtu, port, tunnel_addr, tunnel_port));
     return m_objectListPackager;
 }
