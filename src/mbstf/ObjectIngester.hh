@@ -40,6 +40,8 @@ public:
 	abort();
     }
 
+    bool workerCancelled() const { return m_workerCancel; };
+
 protected:
     ObjectStore &objectStore() { return m_objectStore; }
     const ObjectStore &objectStore() const { return m_objectStore; }
