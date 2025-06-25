@@ -59,10 +59,10 @@ public:
     virtual std::string nextObjectId();
 
 protected:
-    std::shared_ptr<PullObjectIngester> &addPullObjectIngester(PullObjectIngester*);
+    const std::shared_ptr<PullObjectIngester> &addPullObjectIngester(PullObjectIngester*);
     bool removePullObjectIngester(std::shared_ptr<PullObjectIngester> &);
-    std::shared_ptr<PushObjectIngester> &setPushIngester(PushObjectIngester* pushIngester);
-    std::shared_ptr<ObjectPackager> &setPackager(ObjectPackager&&);
+    const std::shared_ptr<PushObjectIngester> &setPushIngester(PushObjectIngester* pushIngester);
+    const std::shared_ptr<ObjectPackager> &setPackager(ObjectPackager*);
 
 private:
     ObjectStore m_objectStore;
