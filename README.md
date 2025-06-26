@@ -49,17 +49,16 @@ ninja -C build
 
 **Note:** Errors during the `meson build` command are often caused by missing dependencies or a network issue while trying to retrieve the API files and `openapi-generator` JAR file. See the `~/rt-mbs-transport-function/build/meson-logs/meson-log.txt` log file for the errors in greater detail. Search for `generator-libspdc` to find the start of the API fetch sequence.
 
-## Regression tests (optional)
+## Unit tests (optional)
 
-There are some regression tests that can be run using:
+There are some unit tests that can be run using:
 
 ```bash
 cd ~/rt-mbs-transport-function
-meson test -C build regression
+meson test -C build --suite rt-mbs-transport-function
 ```
 
-This will build the MBSTF (if not already built) and then will start an Open5GS NRF and the MBSTF, run the regression tests and shutdown the Open5GS NRF and
-MBSTF. The results of the testing are displayed.
+This will build the MBSTF (if not already built) and then will run the unit tests. The results of the testing are displayed.
 
 ## Installing
 
