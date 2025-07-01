@@ -34,7 +34,7 @@ jobs:
                     (echo ${{ secrets.USERPWD }} | sudo -S apt update) && \
                     (echo ${{ secrets.USERPWD }} | sudo -S apt -y install git ninja-build build-essential flex bison libglibmm-2.4-dev libsctp-dev libgnutls28-dev libgcrypt-dev libssl-dev libidn11-dev libmongoc-dev libbson-dev libyaml-dev libnghttp2-dev libmicrohttpd-dev libcurl4-gnutls-dev libtins-dev libtalloc-dev libpcre2-dev libboost-system-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libspdlog-dev libtinyxml2-dev libconfig++-dev uuid-dev libxml2-dev gcc-14 g++-14 curl wget default-jdk cmake jq util-linux-extra mm-common python3-pip) && \
                     (echo ${{ secrets.USERPWD }} | sudo -S python3 -m pip install --break-system-packages --upgrade meson) && \
-                    (echo ${{ secrets.USERPWD }} | sudo -S sh -c 'for i in cpp g++ gcc gcc-ar gcc-nm gcc-ranlib gcov gcov-dump gcov-tool lto-dump; do rm -f /usr/bin/$i; ln -s $i-14 /usr/bin/$i; done' && \
+                    (echo ${{ secrets.USERPWD }} | sudo -S sh -c 'for i in cpp g++ gcc gcc-ar gcc-nm gcc-ranlib gcov gcov-dump gcov-tool lto-dump; do rm -f /usr/bin/$i; ln -s $i-14 /usr/bin/$i; done' ) && \
                     meson setup build
                     meson introspect --projectinfo build | jq '.version' | sed 's/^"/version=/;s/"$//' >> "$GITHUB_OUTPUT"
                     rm -rf build
