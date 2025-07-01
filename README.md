@@ -7,7 +7,7 @@
 
 ## Introduction
 
-This repository provides a 5G MBS Transport Function which forms part of the MBS User Services. This NF provides the interfaces designated as Nmb2, Nmb8 and Nmb9 in the [3GPP TS 29.581](https://www.3gpp.org/DynaReport/29581.htm) specification.
+This repository provides a 5G MBS Transport Function which forms part of the MBS User Services. This NF provides the interfaces designated as Nmb2, Nmb8 and Nmb9 in the [3GPP TS 29.581 V18.5.0](https://www.3gpp.org/DynaReport/29581.htm) specification.
 
 Additional information can be found at: https://5g-mag.github.io/Getting-Started/pages/5g-multicast-broadcast-services/
 
@@ -18,8 +18,8 @@ Please use a linux distribution with GCC 14 or later (e.g. Ubuntu 24.04 or later
 ```bash
 sudo add-apt-repository universe
 sudo apt update
-sudo apt install git ninja-build build-essential flex bison libsctp-dev libgnutls28-dev libgcrypt-dev libssl-dev libidn11-dev libmongoc-dev libbson-dev libyaml-dev libnghttp2-dev libmicrohttpd-dev libcurl4-gnutls-dev libtins-dev libtalloc-dev libpcre2-dev curl wget default-jdk cmake jq util-linux-extra
-sudo python3 -m pip install --upgrade meson
+sudo apt install git ninja-build build-essential flex bison libsctp-dev libgnutls28-dev libgcrypt-dev libssl-dev libidn11-dev libmongoc-dev libbson-dev libyaml-dev libnghttp2-dev libmicrohttpd-dev libcurl4-gnutls-dev libtins-dev libtalloc-dev libpcre2-dev libboost-system-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libspdlog-dev libtinyxml2-dev libconfig++-dev uuid-dev gcc-14 curl wget default-jdk cmake jq util-linux-extra
+sudo python3 -m pip install --break-system-packages --upgrade meson
 ```
 
 ## Downloading
