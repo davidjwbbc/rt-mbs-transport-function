@@ -9,7 +9,7 @@
 
 This repository provides a 5G MBS Transport Function which forms part of the MBS User Services. This NF provides the interfaces designated as Nmb2, Nmb8 and Nmb9 in the [3GPP TS 29.581](https://www.3gpp.org/DynaReport/29581.htm) specification.
 
-Additional information can be found at: https://5g-mag.github.io/Getting-Started/pages/
+Additional information can be found at: https://5g-mag.github.io/Getting-Started/pages/5g-multicast-broadcast-services/
 
 ## Install dependencies
 
