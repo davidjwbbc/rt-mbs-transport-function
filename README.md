@@ -15,10 +15,12 @@ Additional information can be found at: https://5g-mag.github.io/Getting-Started
 
 Please use a linux distribution with GCC 14 or later (e.g. Ubuntu 24.04 or later) as this release requires C++ features that were initially implemented in GCC version 14.
 
+For builds on Ubuntu 24.04, the following commands will ensure the dependencies and correct GCC version are available:
 ```bash
 sudo add-apt-repository universe
 sudo apt update
-sudo apt install git ninja-build build-essential flex bison libsctp-dev libgnutls28-dev libgcrypt-dev libssl-dev libidn11-dev libmongoc-dev libbson-dev libyaml-dev libnghttp2-dev libmicrohttpd-dev libcurl4-gnutls-dev libtins-dev libtalloc-dev libpcre2-dev libboost-system-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libspdlog-dev libtinyxml2-dev libconfig++-dev uuid-dev gcc-14 curl wget default-jdk cmake jq util-linux-extra
+sudo apt install git ninja-build build-essential flex bison libsctp-dev libgnutls28-dev libgcrypt-dev libssl-dev libidn11-dev libmongoc-dev libbson-dev libyaml-dev libnghttp2-dev libmicrohttpd-dev libcurl4-gnutls-dev libtins-dev libtalloc-dev libpcre2-dev libboost-system-dev libboost-thread-dev libboost-program-options-dev libboost-test-dev libspdlog-dev libtinyxml2-dev libconfig++-dev uuid-dev libxml2-dev gcc-14 g++-14 curl wget default-jdk cmake jq util-linux-extra mm-common
+sudo sh -c 'for i in cpp g++ gcc gcc-ar gcc-nm gcc-ranlib gcov gcov-dump gcov-tool lto-dump; do rm -f /usr/bin/$i; ln -s $i-14 /usr/bin/$i; done'
 sudo python3 -m pip install --break-system-packages --upgrade meson
 ```
 
