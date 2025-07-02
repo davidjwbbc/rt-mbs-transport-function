@@ -15,6 +15,7 @@ RUN apt-get update && \
     python3 -m pip install --break-system-packages --upgrade meson
 
 COPY . /source/rt-mbs-transport-function
+COPY docker/local/mbstf.yaml.in /source/rt-mbs-transport-function/src/mbstf/mbstf.yaml.in
 WORKDIR /source/rt-mbs-transport-function
 
 RUN rm -rf build
