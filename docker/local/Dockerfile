@@ -22,6 +22,7 @@ RUN rm -rf build
 RUN meson setup --prefix /usr --sysconfdir /etc --localstatedir /var build
 RUN meson compile -C build
 RUN DESTDIR=/install meson install -C build
+RUN mkdir -p /install/etc/open5gs && cp build/src/mbstf/mbstf.yaml /install/etc/open5gs/mbstf.yaml
 
 # Default configuration for container
 RUN rm -f /install/usr/bin/open5gs-[a-ln-z]*
