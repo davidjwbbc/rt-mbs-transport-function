@@ -36,6 +36,9 @@ RUN apt update && \
 # Copy built files from the builder stage
 COPY --from=building /install/ /
 
+# Update dynamic library links and cache for the image
+RUN ldconfig -v
+
 # Container entrypoint
 ENTRYPOINT ["/usr/bin/open5gs-mbstfd"]
 
