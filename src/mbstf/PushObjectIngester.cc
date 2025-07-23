@@ -291,7 +291,10 @@ void PushObjectIngester::removeRequest(const std::shared_ptr<PushObjectIngester:
 }
 
 void PushObjectIngester::doObjectIngest() {
-    if (!workerCancelled()) start();
+    if (!workerCancelled() && start()) {
+        // Once we've started the Push server we don't need this thread anymore
+        abort();
+    }
 }
 
 void PushObjectIngester::addedBodyBlock(const std::shared_ptr<Request> &request, std::vector<unsigned char>::size_type block_size,

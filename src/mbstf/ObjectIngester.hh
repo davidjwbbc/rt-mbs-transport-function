@@ -30,10 +30,9 @@ public:
 
     void abort() {
 	m_workerCancel = true;
-        if (m_workerThread.joinable()) {
+        if (m_workerThread.get_id() != std::this_thread::get_id() && m_workerThread.joinable()) {
 	    m_workerThread.join();
         }
-
     }
 
     virtual ~ObjectIngester() {
