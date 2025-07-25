@@ -1,0 +1,22 @@
+{
+    "distSession": {
+        "distSessionId": "541ebbd2-ebf9-496b-a3b8-dcd1c17fbc9d",
+        "distSessionState": "ACTIVE",
+        "mbUpfTunAddr": {
+            "ipv4Addr": "127.0.0.7",
+            "portNumber": 5678
+        },
+        "upTrafficFlowInfo": {
+            "destIpAddr": { "ipv4Addr": "232.0.0.1" },
+            "portNumber": 5000
+        },
+        "mbr": "10 Mbps",
+        "objDistributionData": {
+            "objDistributionOperatingMode": "STREAMING",
+            "objAcquisitionMethod": "PULL",
+            "objIngestBaseUrl": "https://pub-c4-b6-thdow-bbc.live.bidi.net.uk/vs-cmaf-pushb-uk/x=4/i=urn:bbc:pips:service:bbc_one_north_west/",
+            "objAcquisitionIdsPull": ["pc_hd_abr_v2.mpd"],
+            "objDistributionBaseUrl": "http://127.0.0.2/"
+        }
+    }
+}

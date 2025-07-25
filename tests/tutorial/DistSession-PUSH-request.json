@@ -1,0 +1,20 @@
+{
+    "distSession": {
+        "distSessionId": "3e3dc3fb-0677-42a3-86c6-bc44e3544b0f",
+        "distSessionState": "ACTIVE",
+        "mbUpfTunAddr": {
+            "ipv4Addr": "127.0.0.7",
+            "portNumber": 5678
+        },
+        "upTrafficFlowInfo": {
+            "destIpAddr": { "ipv4Addr": "232.0.0.1" },
+            "portNumber": 5000
+        },
+        "mbr": "10 Mbps",
+        "objDistributionData": {
+            "objDistributionOperatingMode": "SINGLE",
+            "objAcquisitionMethod": "PUSH",
+            "objDistributionBaseUrl": "http://127.0.0.2/"
+        }
+    }
+}
