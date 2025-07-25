@@ -79,7 +79,7 @@ void PushObjectIngester::Request::completed(struct MHD_Connection *connection,
 {
     std::lock_guard<std::recursive_mutex> lock(*m_mutex);
 
-    ogs_info("PushObjectIngester::Request::terminated(%p, %u)", connection, term_code);
+    ogs_debug("PushObjectIngester::Request::terminated(%p, %u)", connection, term_code);
     ogs_info("End of request for %s", std::string(m_urlPath).c_str());
     m_noMoreBodyData = true;
     m_condVar.notify_all();
@@ -121,8 +121,8 @@ void PushObjectIngester::Request::processRequest()
 
     std::optional<std::string> object_distrib_base_url = std::nullopt;
     try {
-        ObjectListController &list_control(dynamic_cast<ObjectListController&>(m_pushObjectIngester.controller()));
-        object_distrib_base_url = list_control.getObjectDistributionBaseUrl();
+        ObjectController &control(dynamic_cast<ObjectController&>(m_pushObjectIngester.controller()));
+        object_distrib_base_url = control.getObjectDistributionBaseUrl();
     } catch (std::bad_cast &ex) {
         // Ignore bad cast, we just won't set the distribution base url if this happens
     }
@@ -418,7 +418,7 @@ static void request_completion_callback(void *cls, struct MHD_Connection *connec
     // Convert *con_cls into a shared pointer
     std::shared_ptr<PushObjectIngester::Request> &req = *reinterpret_cast<std::shared_ptr<PushObjectIngester::Request>*>(*con_cls);
 
-    ogs_info("request_completion_callback[%u])", termination_code);
+    ogs_debug("request_completion_callback[%u]", termination_code);
 
     req->completed(connection, termination_code);
 

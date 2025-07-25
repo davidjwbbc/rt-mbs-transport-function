@@ -115,7 +115,8 @@ std::string ObjectManifestController::nextObjectId()
     return generateUUID();
 }
 
-std::string ObjectManifestController::generateUUID() {
+std::string ObjectManifestController::generateUUID()
+{
     uuid_t uuid;
     uuid_generate_random(uuid);
     char uuid_str[37];
@@ -123,7 +124,8 @@ std::string ObjectManifestController::generateUUID() {
     return std::string(uuid_str);
 }
 
-void ObjectManifestController::workerLoop(ObjectManifestController *controller) {
+void ObjectManifestController::workerLoop(ObjectManifestController *controller)
+{
 
     while (true) {
         {
@@ -181,16 +183,15 @@ void ObjectManifestController::workerLoop(ObjectManifestController *controller) 
     }
 }
 
-void ObjectManifestController::startWorker() {
+void ObjectManifestController::startWorker()
+{
     if(m_scheduledPullThread.get_id() == std::thread::id()) {
         m_scheduledPullThread = std::thread(&ObjectManifestController::workerLoop, this);
     }
-
 }
 
-
-
-void ObjectManifestController::processEvent(Event &event, SubscriptionService &event_service) {
+void ObjectManifestController::processEvent(Event &event, SubscriptionService &event_service)
+{
     if (event.eventName() == "ObjectPushStart") {
         PushObjectIngester::ObjectPushEvent &obj_push_event = dynamic_cast<PushObjectIngester::ObjectPushEvent&>(event);
         const PushObjectIngester::Request &request(obj_push_event.request());
@@ -207,7 +208,8 @@ void ObjectManifestController::processEvent(Event &event, SubscriptionService &e
 
 }
 
-std::string &ObjectManifestController::getManifestUrl() {
+std::string &ObjectManifestController::getManifestUrl()
+{
     manifestUrl();
     return m_manifestUrl;
 }
@@ -236,6 +238,19 @@ void ObjectManifestController::manifestUrl()
 
                 }
 
+            }
+        }
+    }
+    auto push_url = distributionSession().getObjectAcquisitionPushId();
+    if (push_url) {
+        const std::string &url_str = push_url.value();
+        if (manifest_base_url) {
+            if (url_str.starts_with("https:") || url_str.starts_with("http:") || url_str.starts_with("//")) {
+                ogs_error("Invalid absolute objAcquisitionIdPush is set: %s", url_str.c_str());
+            } else {
+                manifest_url = manifest_base_url.value();
+                if (!manifest_url.ends_with("/")) manifest_url += "/";
+                manifest_url += trim_slashes(url_str);
             }
         }
     }

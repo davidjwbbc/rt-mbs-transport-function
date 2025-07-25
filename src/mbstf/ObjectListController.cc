@@ -178,10 +178,6 @@ void ObjectListController::initObjectIngester()
     }
 }
 
-const std::optional<std::string> &ObjectListController::getObjectDistributionBaseUrl() const {
-    return distributionSession().objectDistributionBaseUrl();
-}
-
 std::string ObjectListController::nextObjectId()
 {
     return generateUUID();

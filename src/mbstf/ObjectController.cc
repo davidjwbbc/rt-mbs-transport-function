@@ -77,6 +77,10 @@ const std::shared_ptr<ObjectPackager> &ObjectController::setPackager(ObjectPacka
     return m_packager;
 }
 
+const std::optional<std::string> &ObjectController::getObjectDistributionBaseUrl() const {
+    return distributionSession().objectDistributionBaseUrl();
+}
+
 MBSTF_NAMESPACE_STOP
 
 /* vim:ts=8:sts=4:sw=4:expandtab:

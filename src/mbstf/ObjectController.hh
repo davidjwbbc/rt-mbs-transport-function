@@ -58,6 +58,8 @@ public:
 
     virtual std::string nextObjectId();
 
+    const std::optional<std::string> &getObjectDistributionBaseUrl() const;
+
 protected:
     const std::shared_ptr<PullObjectIngester> &addPullObjectIngester(PullObjectIngester*);
     bool removePullObjectIngester(std::shared_ptr<PullObjectIngester> &);
