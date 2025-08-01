@@ -14,8 +14,8 @@
         "objDistributionData": {
             "objDistributionOperatingMode": "STREAMING",
             "objAcquisitionMethod": "PULL",
-            "objIngestBaseUrl": "https://pub-c4-b6-thdow-bbc.live.bidi.net.uk/vs-cmaf-pushb-uk/x=4/i=urn:bbc:pips:service:bbc_one_north_west/",
-            "objAcquisitionIdsPull": ["pc_hd_abr_v2.mpd"],
+            "objIngestBaseUrl": "https://livesim2.dashif.org/livesim2/WAVE/vectors/cfhd_sets/12.5_25_50/t1/2022-10-17/",
+            "objAcquisitionIdsPull": ["stream.mpd"],
             "objDistributionBaseUrl": "http://127.0.0.2/"
         }
     }
