@@ -3,3 +3,5 @@ directory=libmpdpp
 url=https://github.com/bbc/libmpdpp.git
 revision=main
 
+[provide]
+mpd++ = libmpdpp_dep

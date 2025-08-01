@@ -18,6 +18,7 @@
  * See the License for the specific language governing permissions and limitations
  * under the License.
  */
+#include <chrono>
 #include <string>
 
 #include "common.hh"
@@ -25,6 +26,8 @@
 MBSTF_NAMESPACE_START
 
 std::string trim_slashes(const std::string &path);
+
+std::string time_point_to_http_datetime_str(const std::chrono::system_clock::time_point &datetime);
 
 MBSTF_NAMESPACE_STOP
 

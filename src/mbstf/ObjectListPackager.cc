@@ -31,6 +31,8 @@
 
 #include "ObjectListPackager.hh"
 
+using namespace std::literals::chrono_literals;
+
 MBSTF_NAMESPACE_START
 
 // ObjectListPackager::PackageItem
@@ -127,29 +129,24 @@ void ObjectListPackager::doObjectPackage() {
         {
             if (!m_transmitter) {
                 m_transmitter = new LibFlute::Transmitter(
-                    destAddr.value(),
-                    static_cast<short>(port()),
-                    0,
-                    mtu(),
-                    rateLimit(),
-                    m_io,
-                    m_tunnelEndpoint,
-                    LibFlute::FileDeliveryTable::FDT_NS_DRAFT_2005);
+                        destAddr.value(),
+                        static_cast<short>(port()),
+                        0,
+                        mtu(),
+                        rateLimit(),
+                        m_io,
+                        m_tunnelEndpoint,
+                        LibFlute::FileDeliveryTable::FDT_NS_DRAFT_2005);
                 m_transmitter->register_completion_callback(
-                    [this](uint32_t toi) {
-                        if (m_queuedToi == toi) {
-
-                            m_queued = false;
-			    objectSendCompletion(m_queuedObjectId);
-                            ogs_info("Transmitted: Object with TOI: %d", toi);
-                        } else {
-                            ogs_error("Unscheduled completion of Object with TOI: %d", toi);
-                        }
-
-                    }
-
-
-                );
+                        [this](uint32_t toi) {
+                            if (m_queuedToi == toi) {
+                                m_queued = false;
+                                objectSendCompletion(m_queuedObjectId);
+                                ogs_info("Transmitted: Object with TOI: %d", toi);
+                            } else {
+                                ogs_error("Unscheduled completion of Object with TOI: %d", toi);
+                            }
+                        });
 
                 // emitFluteSessionStartedEvent();
             }
@@ -157,13 +154,12 @@ void ObjectListPackager::doObjectPackage() {
                 std::lock_guard<std::recursive_mutex> lock(*m_packageItemsMutex);
 
                 if (!m_packageItems.empty() && !m_queued) {
-
                     auto &item = m_packageItems.front();
 	            m_packageItemsMutex->unlock();
                     std::string location;
 		    m_queuedObjectId = item.objectId();
                     std::vector<unsigned char> &objData = objectStore().getObjectData(item.objectId());
-                    const ObjectStore::Metadata &metadata = objectStore().getMetadata(item.objectId());
+                    ObjectStore::Metadata &metadata = objectStore().getMetadata(item.objectId());
                     std::string obj_ingest_base_url = metadata.objIngestBaseUrl().value_or(std::string());
                     std::string obj_distribution_base_url = metadata.objDistributionBaseUrl().value_or(std::string());
 
@@ -175,20 +171,37 @@ void ObjectListPackager::doObjectPackage() {
                         // Just use the fetched URL
                         location = metadata.getFetchedUrl();
                     }
-
+                    std::shared_ptr<LibFlute::Transmitter::FileDescription> file_desc(metadata.fluteFileDescription());
+                    if (!file_desc) {
+                        ogs_debug("New FileDescription(%s, ...)", location.c_str());
+                        file_desc.reset(new LibFlute::Transmitter::FileDescription(location, objData));
+                        metadata.fluteFileDescription(file_desc);
+                    } else {
+                        ogs_debug("Existing FileDescription(%s, ...)", file_desc->file_entry().content_location.c_str());
+                        file_desc->set_content_location(location);
+                        ogs_debug("Set FileDescription location to %s", location.c_str());
+                        file_desc->set_content(objData);
+                    }
+                        
                     m_queued = true;
-                    uint64_t expires_in;
+                    LibFlute::Transmitter::FileDescription::date_time_type expires_at;
                     const auto &cache_expires = metadata.cacheExpires();
                     if (cache_expires) {
-                        expires_in = std::chrono::duration_cast<std::chrono::seconds>(cache_expires.value().time_since_epoch()).count() + 2208988800;
+                        expires_at = cache_expires.value();
                     } else {
-                        expires_in = m_transmitter->seconds_since_epoch() + 60;
+                        expires_at = LibFlute::Transmitter::FileDescription::date_time_type::clock::now() + 60s;
                     }
-                    m_queuedToi = m_transmitter->send(location, metadata.mediaType(),
-                            expires_in,
-                            reinterpret_cast<char*>(objData.data()),
-                            objData.size()
-                    );
+                    file_desc->set_expiry_time(expires_at);
+
+                    file_desc->set_content_type(metadata.mediaType());
+
+                    const auto &entity_tag = metadata.entityTag();
+                    if (entity_tag) {
+                        file_desc->set_etag(entity_tag.value());
+                    }
+
+                    m_queuedToi = m_transmitter->send(file_desc);
+
                     m_packageItemsMutex->lock();
                     m_packageItems.pop_front();
                 }

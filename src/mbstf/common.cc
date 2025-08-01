@@ -17,6 +17,7 @@
  * under the License.
  */
 
+#include <spdlog/spdlog.h>
 #include "ogs-core.h"
 
 int __mbstf_log_domain;
@@ -24,6 +25,7 @@ int __mbstf_log_domain;
 void initialise_logging(void)
 {
     ogs_log_install_domain(&__mbstf_log_domain, "MBSTF", ogs_core()->log.level);
+    //spdlog::set_level(spdlog::level::debug);
 }
 
 /* vim:ts=8:sts=4:sw=4:expandtab:

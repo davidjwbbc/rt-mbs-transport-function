@@ -150,14 +150,14 @@ void ObjectManifestController::workerLoop(ObjectManifestController *controller)
 	    ogs_error("Next Ingest Item: %s", err.what());
 	}
 
-	if(next_ingest_items.second.empty()) break;
+	if (next_ingest_items.second.empty()) break;
 
 	auto fetch_time = next_ingest_items.first; // Get fetch_time using .first
 
 	std::list<PullObjectIngester::IngestItem> urls;
 
         std::list<std::shared_ptr<PullObjectIngester>> &ingesters = controller->getPullObjectIngesters();
-	while(ingesters.size() < next_ingest_items.second.size()) {
+	while (ingesters.size() < next_ingest_items.second.size()) {
 	    controller->addPullObjectIngester(new PullObjectIngester(controller->objectStore(), *controller, urls));
 	}
 
@@ -171,10 +171,10 @@ void ObjectManifestController::workerLoop(ObjectManifestController *controller)
 
         // Add the URLs to the PullObjectIngester instances
         for (auto ingester_it = ingesters.begin(); ingester_it!= ingesters.end(); ++ingester_it) {
-            if(next_ingest_items.second.empty()) break;
+            if (next_ingest_items.second.empty()) break;
             auto ingest_item = next_ingest_items.second.front();
             next_ingest_items.second.pop_front();  // remove the item
-	    ingest_item.deadline(std::nullopt);
+	    //ingest_item.deadline(std::nullopt);
             ingest_item.deadline(std::chrono::system_clock::now() + controller->manifestHandler()->getDefaultDeadline());
             if (!(*ingester_it)->fetch(ingest_item)) {
                 ogs_debug("Failed to fetch item: %s", ingest_item.url().c_str());

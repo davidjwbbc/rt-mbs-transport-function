@@ -32,6 +32,12 @@ std::string trim_slashes(const std::string &path)
     return path.substr(start, end - start);
 }
 
+std::string time_point_to_http_datetime_str(const std::chrono::system_clock::time_point &datetime)
+{
+    return std::format("%b, %d %b %Y %T GMT", datetime);
+}
+
+
 MBSTF_NAMESPACE_STOP
 
 /* vim:ts=8:sts=4:sw=4:expandtab:

@@ -34,7 +34,6 @@
 #include "PushObjectIngester.hh"
 #include "SubscriptionService.hh"
 #include "ObjectListPackager.hh"
-#include "DASHManifestHandler.hh"
 
 #include "ObjectStreamingController.hh"
 
@@ -110,16 +109,6 @@ void ObjectStreamingController::processEvent(Event &event, SubscriptionService &
 	    } else {
 		std::unique_ptr<ManifestHandler> manifest_handler(ManifestHandlerFactory::makeManifestHandler(object, this, distributionSession().getObjectAcquisitionMethod() == "PULL"));
                 manifestHandler(std::move(manifest_handler));
-                /*
-                const ObjectStore::Metadata &metadata = objectStore().getMetadata(objectId);
-                try {
-                    manifestHandler()->validateManifest(object, object_data, metadata);
-                }  catch (std::exception &ex) {
-                    ogs_info("InVALID Manifest Validation: %s", ex.what());
-                    unsetObjectListPackager();
-                    return;
-                }
-                */
                 if (!packager()) {
                     setObjectListPackager();
                 }
@@ -138,27 +127,17 @@ void ObjectStreamingController::processEvent(Event &event, SubscriptionService &
     }
     ObjectManifestController::processEvent(event, event_service);
 }
-/*
-std::string ObjectStreamingController::generateUUID() {
-    uuid_t uuid;
-    uuid_generate_random(uuid);
-    char uuid_str[37];
-    uuid_unparse(uuid, uuid_str);
-    return std::string(uuid_str);
-}
-
-std::string ObjectStreamingController::nextObjectId()
-{
-    return generateUUID();
-}
-*/
 
 const std::optional<std::string> &ObjectStreamingController::getObjectDistributionBaseUrl() const {
     return distributionSession().objectDistributionBaseUrl();
 }
 
 namespace {
-static const struct init { init() {ControllerFactory::registerController(new ControllerConstructor<ObjectStreamingController>);};} g_init;
+static const struct init {
+    init() {
+        ControllerFactory::registerController(new ControllerConstructor<ObjectStreamingController>);
+    };
+} g_init;
 }
 
 static void validate_distribution_session(DistributionSession &distributionSession)
@@ -174,11 +153,6 @@ static bool check_if_object_added_is_manifest(std::string &objectId, ObjectStore
         metadata.keepAfterSend(true);
         return true;
     }
-    /*
-    if (metadata.mediaType() == "application/dash+xml" ){
-	 return true;
-
-    } */
     return false;
 
 }

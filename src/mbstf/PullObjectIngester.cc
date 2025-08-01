@@ -99,17 +99,29 @@ bool PullObjectIngester::fetch(const std::string &object_id, const std::optional
 
 bool PullObjectIngester::fetch(const IngestItem &item) {
     std::lock_guard<std::recursive_mutex> lock(*m_ingestItemsMutex);
-    m_fetchList.push_back(item);
-    sortListByPolicy();
-    m_ingestItemsCondVar.notify_all();
+    try {
+        objectStore().getMetadata(item.objectId());
+        return fetch(item.objectId(), item.deadline());
+    } catch (const std::out_of_range &ex) {
+        // No previous version, this isn't a refresh
+        m_fetchList.push_back(item);
+        sortListByPolicy();
+        m_ingestItemsCondVar.notify_all();
+    }
     return true;
 }
 
 bool PullObjectIngester::fetch(IngestItem &&item) {
     std::lock_guard<std::recursive_mutex> lock(*m_ingestItemsMutex);
-    m_fetchList.push_back(std::move(item));
-    sortListByPolicy();
-    m_ingestItemsCondVar.notify_all();
+    try {
+        objectStore().getMetadata(item.objectId());
+        return fetch(item.objectId(), item.deadline());
+    } catch (const std::out_of_range &ex) {
+        // No previous version, this isn't a refresh
+        m_fetchList.push_back(std::move(item));
+        sortListByPolicy();
+        m_ingestItemsCondVar.notify_all();
+    }
     return true;
 }
 
@@ -134,7 +146,15 @@ void PullObjectIngester::doObjectIngest() {
             auto item = m_fetchList.front();
 	    m_fetchList.pop_front();
 	    m_ingestItemsMutex->unlock(); // temp unlock while we fetch
-            ogs_debug("Fetching %s...", item.url().c_str());
+            ObjectStore::Metadata *old_meta = nullptr;
+            try {
+                auto &meta = objectStore().getMetadata(item.objectId());
+                old_meta = &meta;
+                ogs_debug("Refetching %s (TOI %u)...", item.url().c_str(), meta.fluteFileDescription()->toi());
+            } catch (const std::out_of_range &ex) {
+                ogs_debug("Fetching %s...", item.url().c_str());
+            }
+           
             const auto &deadline = item.deadline();
             std::chrono::milliseconds timeout(10000);
             if (deadline) {
@@ -143,7 +163,14 @@ void PullObjectIngester::doObjectIngest() {
             }
             long bytesReceived = -1;
             if (timeout > 0s) {
-	        bytesReceived = m_curl->get(item.url(), timeout);
+                if (old_meta) {
+                    bytesReceived = m_curl->get(item.url(), timeout, old_meta->modified(), old_meta->entityTag());
+                } else {
+                    bytesReceived = m_curl->get(item.url(), timeout);
+                }
+            } else {
+                // Already missed the deadline, act as though timed out
+                bytesReceived = -1;
             }
 
             // Check the result
@@ -153,6 +180,7 @@ void PullObjectIngester::doObjectIngest() {
                 std::string fetched_url = m_curl->getPermanentRedirectUrl();
                 if (fetched_url.empty()) fetched_url = item.url();
 	        ObjectStore::Metadata metadata(item.objectId(), m_curl->getContentType(), item.url(), fetched_url, item.acquisitionId(), lastModified, item.objIngestBaseUrl(), item.objDistributionBaseUrl());
+                if (old_meta) metadata.fluteFileDescription(old_meta->fluteFileDescription());
                 unsigned long max_age = m_curl->getCacheControlMaxAge();
 	        metadata.cacheExpires(max_age ? std::chrono::system_clock::now() + std::chrono::seconds(max_age) : std::chrono::system_clock::now() + std::chrono::seconds(ObjectStore::Metadata::cacheExpiry()));
                 const std::string& etag = m_curl->getEtag();

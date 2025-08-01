@@ -10,6 +10,7 @@
  * https://drive.google.com/file/d/1cinCiA778IErENZ3JN52VFW-1ffHpx7Z/view
  */
 
+#include <algorithm>
 #include <memory>
 #include <stdexcept>
 #include <utility>
@@ -28,6 +29,10 @@
 
 MBSTF_NAMESPACE_START
 
+/*****************************************************************************
+ * ObjectStore::Metadata class
+ *****************************************************************************/
+
 ObjectStore::Metadata::Metadata()
     :m_objectId()
     ,m_mediaType()
@@ -41,6 +46,7 @@ ObjectStore::Metadata::Metadata()
     ,m_receivedTime(std::chrono::system_clock::now())
     ,m_created(std::chrono::system_clock::now())
     ,m_modified(std::chrono::system_clock::now())
+    ,m_fileDescription()
 {
 }
 
@@ -62,6 +68,7 @@ ObjectStore::Metadata::Metadata(const std::string &object_id, const std::string 
     ,m_receivedTime(std::chrono::system_clock::now())
     ,m_created(std::chrono::system_clock::now())
     ,m_modified(last_modified)
+    ,m_fileDescription()
 {
 }
 
@@ -78,6 +85,7 @@ ObjectStore::Metadata::Metadata(const Metadata &other)
     ,m_receivedTime(other.m_receivedTime)
     ,m_created(other.m_created)
     ,m_modified(other.m_modified)
+    ,m_fileDescription(other.m_fileDescription)
 {
 }
 
@@ -94,9 +102,69 @@ ObjectStore::Metadata::Metadata(Metadata &&other)
     ,m_receivedTime(std::move(other.m_receivedTime))
     ,m_created(std::move(other.m_created))
     ,m_modified(std::move(other.m_modified))
+    ,m_fileDescription(std::move(other.m_fileDescription))
 {
 }
 
+ObjectStore::Metadata &ObjectStore::Metadata::operator=(const ObjectStore::Metadata &other)
+{
+    m_objectId = other.m_objectId;
+    m_mediaType = other.m_mediaType;
+    m_originalUrl = other.m_originalUrl;
+    m_fetchedUrl = other.m_fetchedUrl;
+    m_acquisitionId = other.m_acquisitionId;
+    m_keepAfterSend = other.m_keepAfterSend;
+    m_objIngestBaseUrl = other.m_objIngestBaseUrl;
+    m_objDistributionBaseUrl = other.m_objDistributionBaseUrl;
+    m_cacheExpires = other.m_cacheExpires;
+    m_receivedTime = other.m_receivedTime;
+    m_created = other.m_created;
+    m_modified = other.m_modified;
+    m_fileDescription = other.m_fileDescription;
+
+    return *this;
+}
+
+ObjectStore::Metadata &ObjectStore::Metadata::operator=(ObjectStore::Metadata &&other)
+{
+    m_objectId = std::move(other.m_objectId);
+    m_mediaType = std::move(other.m_mediaType);
+    m_originalUrl = std::move(other.m_originalUrl);
+    m_fetchedUrl = std::move(other.m_fetchedUrl);
+    m_acquisitionId = std::move(other.m_acquisitionId);
+    m_keepAfterSend = std::move(other.m_keepAfterSend);
+    m_objIngestBaseUrl = std::move(other.m_objIngestBaseUrl);
+    m_objDistributionBaseUrl = std::move(other.m_objDistributionBaseUrl);
+    m_cacheExpires = std::move(other.m_cacheExpires);
+    m_receivedTime = std::move(other.m_receivedTime);
+    m_created = std::move(other.m_created);
+    m_modified = std::move(other.m_modified);
+    m_fileDescription = std::move(other.m_fileDescription);
+
+    return *this;
+}
+
+bool ObjectStore::Metadata::operator==(const ObjectStore::Metadata& other) const
+{
+    return m_keepAfterSend == other.m_keepAfterSend &&
+           m_cacheExpires == other.m_cacheExpires &&
+           m_receivedTime == other.m_receivedTime &&
+           m_created == other.m_created &&
+           m_modified == other.m_modified &&
+           m_objectId == other.m_objectId &&
+           m_mediaType == other.m_mediaType &&
+           m_originalUrl == other.m_originalUrl &&
+           m_fetchedUrl == other.m_fetchedUrl &&
+           m_acquisitionId == other.m_acquisitionId &&
+           m_objIngestBaseUrl == other.m_objIngestBaseUrl &&
+           m_objDistributionBaseUrl == other.m_objDistributionBaseUrl &&
+           m_entityTag == other.m_entityTag &&
+           m_fileDescription.get() == other.m_fileDescription.get();
+}
+
+/*****************************************************************************
+ * ObjectStore class
+ *****************************************************************************/
 
 ObjectStore::ObjectStore(ObjectController &controller)
     :SubscriptionService()
@@ -218,6 +286,16 @@ bool ObjectStore::removeObjects(const std::list<std::string>& objectIds) {
         } */
     }
     return true;
+}
+
+const ObjectStore::Metadata *ObjectStore::findMetadataByURL(const std::string &url) const
+{
+    auto it = std::find_if(m_store.begin(), m_store.end(), [&url](const decltype(m_store)::value_type &obj){
+            auto &metadata = obj.second.second;
+            return metadata.getOriginalUrl() == url || metadata.getFetchedUrl() == url;
+        });
+    if (it != m_store.end()) return &it->second.second;
+    return nullptr;
 }
 
 MBSTF_NAMESPACE_STOP

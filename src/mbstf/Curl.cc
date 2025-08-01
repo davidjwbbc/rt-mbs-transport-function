@@ -11,12 +11,15 @@
  * https://drive.google.com/file/d/1cinCiA778IErENZ3JN52VFW-1ffHpx7Z/view
  */
 
+#include <chrono>
 #include <iostream>
+#include <map>
 
 #include "ogs-app.h"
 
 #include "common.hh"
 #include "mbstf-version.h"
+#include "utilities.hh"
 
 #include "Curl.hh"
 
@@ -68,7 +71,8 @@ Curl::~Curl() {
     }
 }
 
-long Curl::get(const std::string& url, std::chrono::milliseconds timeout) {
+long Curl::__get(const std::string& url, std::chrono::milliseconds timeout, const std::map<std::string, std::string> &request_headers)
+{
     m_etag.clear(); // Clear the ETag before making a new request
     m_receivedData.clear(); // Clear the received data before making a new request
 
@@ -87,6 +91,11 @@ long Curl::get(const std::string& url, std::chrono::milliseconds timeout) {
         } else {
             curl_easy_setopt(m_curl, CURLOPT_USERAGENT, m_userAgent.c_str());
         }
+        struct curl_slist *hdrs_list = nullptr;
+        for (const auto &[field, val] : request_headers) {
+            hdrs_list = curl_slist_append(hdrs_list, std::format("{}: {}", field, val).c_str());
+        }
+        curl_easy_setopt(m_curl, CURLOPT_HTTPHEADER, hdrs_list);
 
         // reset values collected during redirects
         m_hdrState = HEADER_START;
@@ -95,6 +104,11 @@ long Curl::get(const std::string& url, std::chrono::milliseconds timeout) {
         m_permanentRedirectUrl.clear();
 
         CURLcode res = curl_easy_perform(m_curl);
+
+        if (hdrs_list) {
+            curl_slist_free_all(hdrs_list);
+            hdrs_list = nullptr;
+        }
         if (res == CURLE_OK) {
 	    struct curl_header *type;
             CURLHcode h;
@@ -128,6 +142,18 @@ long Curl::get(const std::string& url, std::chrono::milliseconds timeout) {
         }
     }
     return -2; // Indicate error if m_curl is not initialized
+}
+
+long Curl::get(const std::string& url, std::chrono::milliseconds timeout, const std::optional<date_time_type> &last_modified, const std::optional<std::string> &etag)
+{
+    std::map<std::string, std::string> req_hdrs;
+
+    if (etag) {
+        req_hdrs.insert(std::make_pair(std::string("If-Not-Exist"), std::string(etag.value())));
+    } else if (last_modified) {
+        req_hdrs.insert(std::make_pair(std::string("If-Modified-Since"), time_point_to_http_datetime_str(last_modified.value())));
+    }
+    return __get(url, timeout, req_hdrs);
 }
 
 std::vector<unsigned char>& Curl::getData()

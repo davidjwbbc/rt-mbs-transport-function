@@ -34,9 +34,10 @@ fiveg_api_release = get_option('fiveg_api_release')
 
 fs = import('fs')
 
-boost_dep = dependency('boost')
-uuid_dep = dependency('uuid')
-libmpdpp_dep = dependency('mpd++', fallback: ['libmpdpp', 'libmpdpp_dep'])
+boost_dep = dependency('boost', required: true)
+uuid_dep = dependency('uuid', required: true)
+zlib_dep = dependency('zlib', required: true)
+libmpdpp_dep = dependency('mpd++', fallback: ['libmpdpp'])
 
 test_source_subscriber_subscription = files('''
   SubscriptionService.cc

@@ -28,10 +28,12 @@ MBSTF_NAMESPACE_START
 
 class Curl {
 public:
+    using date_time_type = std::chrono::system_clock::time_point;
+
     Curl();
     ~Curl();
 
-    long get(const std::string& url, std::chrono::milliseconds timeout);
+    long get(const std::string& url, std::chrono::milliseconds timeout, const std::optional<date_time_type> &last_modified = std::nullopt, const std::optional<std::string> &etag = std::nullopt);
     std::vector<unsigned char> &getData();
     const std::vector<unsigned char> &getData() const;
     const std::string &getEtag() const;
@@ -44,6 +46,7 @@ public:
     Curl &setUserAgent(const std::string &user_agent);
 
 private:
+    long __get(const std::string& url, std::chrono::milliseconds timeout, const std::map<std::string,std::string> &request_headers);
     bool extractProtocolAndStatusCode(std::string_view &status_line);
     void processHeaderLine(std::string_view &header_line);
     static size_t headerCallback(char* buffer, size_t size, size_t numberOfItems, void* userData);

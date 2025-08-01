@@ -105,15 +105,20 @@ std::pair<ManifestHandler::time_type, ManifestHandler::ingest_list> DASHManifest
 
         auto first_media_segment = media_segments.front();
         fetch_time = first_media_segment.availabilityStartTime();
+        auto segment_url = first_media_segment.segmentURL();
 
-        ingest_items.emplace_back(nextObjectId(), first_media_segment.segmentURL(), empty,
+        // Find existing object in the ObjectStore for same URL
+        const auto &object_store = m_controller->objectStore();
+        auto existing_obj = object_store.findMetadataByURL(segment_url);
+
+        ingest_items.emplace_back(existing_obj?existing_obj->objectId():nextObjectId(), first_media_segment.segmentURL(), empty,
                                     m_controller->distributionSession().getObjectIngestBaseUrl(),
 				    m_controller->distributionSession().objectDistributionBaseUrl(),
                                     first_media_segment.availabilityEndTime());
         removeExtraPullObjectsEntry(first_media_segment);
 
 	try {
-            if(first_media_segment.segmentURL()  == manifest_url) m_refreshMpd = true;
+            if (first_media_segment.segmentURL() == manifest_url) m_refreshMpd = true;
         } catch (std::domain_error &err) {
             ogs_error("Invalid Segment URL: %s", err.what());
 	    throw;
@@ -121,16 +126,16 @@ std::pair<ManifestHandler::time_type, ManifestHandler::ingest_list> DASHManifest
         auto it = media_segments.begin();
         // Iterate from second element.
         for ( ++it; it != media_segments.end(); ++it ) {
-
-            if(it->availabilityStartTime() != fetch_time) break;
+            if (it->availabilityStartTime() != fetch_time) break;
+            segment_url = it->segmentURL();
+            existing_obj = object_store.findMetadataByURL(segment_url);
 	    removeExtraPullObjectsEntry(*it);
-	    ingest_items.emplace_back(nextObjectId(), it->segmentURL(), empty,
+	    ingest_items.emplace_back(existing_obj?existing_obj->objectId():nextObjectId(), segment_url, empty,
                                       m_controller->distributionSession().getObjectIngestBaseUrl(),
                                       m_controller->distributionSession().objectDistributionBaseUrl(),
                                       it->availabilityEndTime());
 
-             if(it->segmentURL()  == manifest_url) m_refreshMpd = true;
-
+            if (it->segmentURL() == manifest_url) m_refreshMpd = true;
         }
     }
 
