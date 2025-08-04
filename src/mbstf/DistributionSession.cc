@@ -60,6 +60,7 @@
 #include "DistributionSession.hh"
 
 using fiveg_mag_reftools::CJson;
+using fiveg_mag_reftools::ModelException;
 using reftools::mbstf::CreateReqData;
 using reftools::mbstf::DistSession;
 using reftools::mbstf::DistSessionState;
@@ -78,6 +79,9 @@ static const NfServer::InterfaceMetadata g_nmbstf_distributionsession_api_metada
 );
 
 static std::shared_ptr<ObjDistributionData> get_object_distribution_data(const DistributionSession &distributionSession);
+static void send_model_error(const ModelException &err, Open5GSSBIStream &stream, Open5GSSBIMessage &message,
+                             const NfServer::AppMetadata &app_meta, const std::optional<NfServer::InterfaceMetadata> &api,
+                             const std::string &no_cause_reason, const std::string &log_prefix);
 
 DistributionSession::DistributionSession(CJson &json, bool as_request)
     :m_createReqData(std::make_shared<CreateReqData>(json, as_request))
@@ -138,6 +142,8 @@ bool DistributionSession::processEvent(Open5GSEvent &event)
                 message.parseHeader(request);
             } catch (std::exception &ex) {
                 ogs_error("Failed to parse request headers");
+                ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST, 0, message, app_meta,
+                                                           api, "Failed to parse request headers"));
                 break;
             }
 
@@ -210,6 +216,10 @@ bool DistributionSession::processEvent(Open5GSEvent &event)
                                 CJson distSession(CJson::Null);
                                 try {
                                     distSession = CJson::parse(request.content());
+                                } catch (ModelException &ex) {
+                                    send_model_error(ex, stream, message, app_meta, api, "Bad Request",
+                                                     "Unable to parse MBSTF Distribution Session as JSON");
+                                    return true;
                                 } catch (std::exception &ex) {
                                     static const char *err = "Unable to parse MBSTF Distribution Session as JSON.";
                                     ogs_error("%s", err);
@@ -225,10 +235,13 @@ bool DistributionSession::processEvent(Open5GSEvent &event)
 
                                 try {
                                     distributionSession.reset(new DistributionSession(distSession, true));
+                                } catch (ModelException &err) {
+                                    send_model_error(err, stream, message, app_meta, api, "Bad Request",
+                                                     "Error while populating MBSTF Distribution Session");
+                                    return true;
                                 } catch (std::exception &err) {
                                     ogs_error("Error while populating MBSTF Distribution Session: %s", err.what());
-                                    char *error = ogs_msprintf("Bad request [%s]", err.what());
-                                    ogs_error("%s", error);
+                                    char *error = ogs_msprintf("Bad request: %s", err.what());
                                     ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST, 1, message,
                                                                            app_meta, api, "Bad Request", error));
                                     ogs_free(error);
@@ -641,6 +654,34 @@ const std::optional<std::string> &DistributionSession::objectDistributionBaseUrl
         static const std::optional<std::string> null_value = std::nullopt;
         return null_value;
     }
+}
+
+static void send_model_error(const ModelException &err, Open5GSSBIStream &stream, Open5GSSBIMessage &message,
+                             const NfServer::AppMetadata &app_meta, const std::optional<NfServer::InterfaceMetadata> &api,
+                             const std::string &no_cause_reason, const std::string &log_prefix)
+{
+    std::ostringstream error_oss;
+    std::ostringstream oss;
+    std::optional<std::map<std::string,std::string> > invalid_params = std::nullopt;
+
+    if (!err.parameter.empty()) {
+        invalid_params = std::map<std::string,std::string>{ {err.parameter, err.what()} };
+        error_oss << err.parameter << ": ";
+    }
+    error_oss << err.what();
+    const std::string &error = error_oss.str();
+
+    if (err.cause) {
+        auto cause = err.cause.value();
+        oss << cause.reason() << ": " << error;
+        ogs_assert(true == NfServer::sendError(stream, cause, 1, message, app_meta, api, cause.reason(), error, std::nullopt,
+                                               invalid_params));
+    } else {
+        oss << no_cause_reason << ": " << error;
+        ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST, 1, message, app_meta, api, no_cause_reason,
+                                               error));
+    }
+    ogs_error("%s: %s", log_prefix.c_str(), oss.str().c_str());
 }
 
 MBSTF_NAMESPACE_STOP

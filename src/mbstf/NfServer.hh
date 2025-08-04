@@ -25,6 +25,7 @@
 
 #include "common.hh"
 #include "openapi/model/CJson.hh"
+#include "openapi/model/ProblemCause.hh"
 
 using fiveg_mag_reftools::CJson;
 
@@ -106,6 +107,15 @@ public:
                           const std::optional<std::map<std::string,std::string> > &invalid_params = std::nullopt,
                           const std::optional<std::string> &problem_type = std::nullopt);
 
+    static bool sendError(Open5GSSBIStream &stream, const fiveg_mag_reftools::ProblemCause &cause, size_t number_of_components,
+                          const Open5GSSBIMessage &message, const AppMetadata &app,
+                          const std::optional<InterfaceMetadata> &interface = std::nullopt,
+                          const std::optional<std::string> &title = std::nullopt,
+                          const std::optional<std::string> &detail = std::nullopt,
+                          const std::optional<CJson> &problem_detail_json = std::nullopt,
+                          const std::optional<std::map<std::string,std::string> > &invalid_params = std::nullopt,
+                          const std::optional<std::string> &problem_type = std::nullopt);
+
     static std::shared_ptr<Open5GSSBIResponse> newResponse(const std::optional<std::string> &location,
                                                            const std::optional<std::string> &content_type,
                                                            const std::optional<time_type> &last_modified,
@@ -117,6 +127,17 @@ public:
     static std::shared_ptr<Open5GSSBIResponse> populateResponse(std::shared_ptr<Open5GSSBIResponse> &response, const std::string &content, int status);
 
     static std::map<std::string, std::string> makeInvalidParams(const std::string &param, const std::string &reason);
+
+private:
+    static bool __sendError(Open5GSSBIStream &stream, int status, const std::optional<fiveg_mag_reftools::ProblemCause> &cause,
+                            size_t number_of_components,
+                            const Open5GSSBIMessage &message, const AppMetadata &app,
+                            const std::optional<InterfaceMetadata> &interface = std::nullopt,
+                            const std::optional<std::string> &title = std::nullopt,
+                            const std::optional<std::string> &detail = std::nullopt,
+                            const std::optional<CJson> &problem_detail_json = std::nullopt,
+                            const std::optional<std::map<std::string,std::string> > &invalid_params = std::nullopt,
+                            const std::optional<std::string> &problem_type = std::nullopt);
 };
 
 MBSTF_NAMESPACE_STOP

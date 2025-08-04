@@ -113,6 +113,28 @@ bool NfServer::sendError(Open5GSSBIStream &stream, int status, size_t number_of_
                          const std::optional<std::map<std::string,std::string> > &invalid_params,
                          const std::optional<std::string> &problem_type)
 {
+    return __sendError(stream, status, std::nullopt, number_of_components, message, app, interface, title, detail, problem_detail_json, invalid_params, problem_type);
+}
+
+bool NfServer::sendError(Open5GSSBIStream &stream, const fiveg_mag_reftools::ProblemCause &cause, size_t number_of_components,
+                         const Open5GSSBIMessage &message, const AppMetadata &app,
+                         const std::optional<InterfaceMetadata> &interface,
+                         const std::optional<std::string> &title, const std::optional<std::string> &detail,
+                         const std::optional<CJson> &problem_detail_json,
+                         const std::optional<std::map<std::string,std::string> > &invalid_params,
+                         const std::optional<std::string> &problem_type)
+{
+    return __sendError(stream, cause.statusCode(), cause, number_of_components, message, app, interface, title?title:cause.reason(), detail, problem_detail_json, invalid_params, problem_type);
+}
+
+bool NfServer::__sendError(Open5GSSBIStream &stream, int status, const std::optional<fiveg_mag_reftools::ProblemCause> &cause, size_t number_of_components,
+                         const Open5GSSBIMessage &message, const AppMetadata &app,
+                         const std::optional<InterfaceMetadata> &interface,
+                         const std::optional<std::string> &title, const std::optional<std::string> &detail,
+                         const std::optional<CJson> &problem_detail_json,
+                         const std::optional<std::map<std::string,std::string> > &invalid_params,
+                         const std::optional<std::string> &problem_type)
+{
     OpenAPI_problem_details_t *problem = OpenAPI_problem_details_create(nullptr, nullptr, false, 0, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr);
     OpenAPI_problem_details_t *problem_details = NULL;
 
@@ -126,6 +148,10 @@ bool NfServer::sendError(Open5GSSBIStream &stream, int status, size_t number_of_
 	problem_details->invalid_params = NULL;
 	OpenAPI_problem_details_free(problem_details);
         cJSON_Delete(copy_impl);
+    }
+
+    if (cause) {
+        problem->cause = ogs_strdup(cause->cause().c_str());
     }
 
     if (message) {
