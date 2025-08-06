@@ -30,7 +30,11 @@
 #include "Open5GSSBIServer.hh"
 #include "Open5GSSBIStream.hh"
 
+#include "openapi/model/ProblemCause.hh"
+
 #include "MBSTFEventHandler.hh"
+
+using fiveg_mag_reftools::ProblemCause;
 
 MBSTF_NAMESPACE_START
 
@@ -59,10 +63,10 @@ void MBSTFEventHandler::dispatch(Open5GSFSM &fsm, Open5GSEvent &event)
             try {
                 message.parseHeader(request);
             } catch (std::exception &ex) {
-                ogs_error("ogs_sbi_parse_header() failed");
+                ogs_error("ogs_sbi_parse_header() failed: %s", ex.what());
                 ogs_assert(true == Open5GSSBIServer::sendError(
-                                stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST,
-                                message, "cannot parse HTTP message", nullptr));
+                                stream, ProblemCause::INVALID_MSG_FORMAT.statusCode(),
+                                message, "Cannot parse HTTP message", ProblemCause::INVALID_MSG_FORMAT.cause().c_str()));
                 break;
             }
 
@@ -72,8 +76,8 @@ void MBSTFEventHandler::dispatch(Open5GSFSM &fsm, Open5GSEvent &event)
                 if (api_version != OGS_SBI_API_V1) {
                     ogs_error("Not supported version [%s]", api_version.c_str());
                     ogs_assert(true == Open5GSSBIServer::sendError(
-                                stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST,
-                                message, "Not supported version", nullptr));
+                                stream, ProblemCause::INVALID_API.statusCode(),
+                                message, "Not supported version", ProblemCause::INVALID_API.cause().c_str()));
                     break;
                 }
                 std::string resource(message.resourceComponent(0));
@@ -84,21 +88,21 @@ void MBSTFEventHandler::dispatch(Open5GSFSM &fsm, Open5GSEvent &event)
                     } else {
                         ogs_error("Invalid HTTP method [%s]", method.c_str());
                         ogs_assert(true == Open5GSSBIServer::sendError(stream,
-                                        OGS_SBI_HTTP_STATUS_FORBIDDEN, message,
-                                        "Invalid HTTP method", method.c_str()));
+                                        OGS_SBI_HTTP_STATUS_MEHTOD_NOT_ALLOWED, message,
+                                        "Invalid HTTP method", "METHOD_NOT_ALLOWED"));
                     }
                 } else {
                     ogs_error("Invalid resource name [%s]", resource.c_str());
                     ogs_assert(true == Open5GSSBIServer::sendError(stream,
-                                    OGS_SBI_HTTP_STATUS_BAD_REQUEST, message,
+                                    ProblemCause::RESOURCE_URI_STRUCTURE_NOT_FOUND.statusCode(), message,
                                     "Invalid resource name",
-                                    resource.c_str()));
+                                    ProblemCause::RESOURCE_URI_STRUCTURE_NOT_FOUND.cause().c_str()));
                 }
             } else {
                 ogs_error("Invalid API name [%s]", service_name.c_str());
                 ogs_assert(true == Open5GSSBIServer::sendError(stream,
-                                        OGS_SBI_HTTP_STATUS_BAD_REQUEST, message,
-                                        "Invalid API name.", message.method()));
+                                        ProblemCause::INVALID_API.statusCode(), message,
+                                        "Invalid API name.", ProblemCause::INVALID_API.cause().c_str()));
             }
         }
         break;
@@ -222,8 +226,8 @@ void MBSTFEventHandler::dispatch(Open5GSFSM &fsm, Open5GSEvent &event)
                     ogs_error("Cannot receive SBI message");
                     if (stream) {
                         ogs_assert(true == Open5GSSBIServer::sendError(stream,
-                                    OGS_SBI_HTTP_STATUS_GATEWAY_TIMEOUT, nullptr,
-                                    "Cannot receive SBI message", nullptr));
+                                    ProblemCause::TIMED_OUT_REQUEST.statusCode(), nullptr,
+                                    "Cannot receive SBI message", ProblemCause::TIMED_OUT_REQUEST.cause().c_str()));
                     }
                 }
                 break;
