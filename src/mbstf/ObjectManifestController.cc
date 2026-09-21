@@ -228,14 +228,23 @@ void ObjectManifestController::reconfigurePullObjectIngesters()
     std::lock_guard<std::recursive_mutex> lock(this->m_pullObjectIngestersMutex);
     const auto &pull_ingesters = getPullObjectIngesters();
     if (distributionSession().getObjectAcquisitionMethod() == "PULL" &&
-        distributionSession().getState() != DistSessionState::VAL_INACTIVE) {
+        distributionSession().getState() != DistSessionState::VAL_INACTIVE &&
+        distributionSession().getState() != DistSessionState::VAL_DEACTIVATING) {
         if (pull_ingesters.empty()) {
             initPullObjectIngesters();
         } else {
+            /* pull the acquisition list with the first pull ingester and remove fetches for acquisition list items from others */
             auto pull_ingest_items = getPullAcquisitionIngestList();
-            auto &pull_ingester = pull_ingesters.front();
-            for (auto &item : pull_ingest_items) {
-                pull_ingester->fetch(item);
+            bool first = true;
+            for (auto &pull_ingester : pull_ingesters) {
+                for (auto &item : pull_ingest_items) {
+                    if (first) {
+                        pull_ingester->fetch(item);
+                    } else {
+                        pull_ingester->abortFetch(item);
+                    }
+                }
+                first = false;
             }
         }
     }

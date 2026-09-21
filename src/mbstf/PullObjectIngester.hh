@@ -175,6 +175,8 @@ public:
     bool fetch(const std::string &object_id, const std::optional<time_type> &download_deadline, bool force_recache,
                bool keep_after_send, bool send_compressed, unsigned fetch_failures = 0);
 
+    bool abortFetch(const IngestItem &item);
+
     std::shared_ptr<Curl> curl() {return m_curl;};
     //static int client_notify_cb(int status, ogs_sbi_response_t *response, void *data);
 
@@ -186,11 +188,10 @@ protected:
 private:
     void sortListByPolicy();
     std::list<IngestItem> m_fetchList;
-    bool m_fetchInProgress = false; //< an item taken from m_fetchList is being fetched; guarded by m_ingestItemsMutex
     std::unique_ptr<std::recursive_mutex> m_ingestItemsMutex;
     std::condition_variable_any m_ingestItemsCondVar;
     std::shared_ptr<Curl> m_curl;
-
+    std::optional<IngestItem> m_currentFetchItem;
 };
 
 MBSTF_NAMESPACE_STOP
