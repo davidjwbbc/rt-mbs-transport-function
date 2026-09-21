@@ -155,7 +155,7 @@ bool PullObjectIngester::fetch(const std::string &object_id, const std::optional
 
 bool PullObjectIngester::hasPendingFetches() const {
     std::lock_guard<std::recursive_mutex> lock(*m_ingestItemsMutex);
-    return m_fetchInProgress || !m_fetchList.empty();
+    return m_currentFetchItem || !m_fetchList.empty();
 }
 
 bool PullObjectIngester::fetch(const IngestItem &item) {
@@ -196,7 +196,28 @@ bool PullObjectIngester::fetch(IngestItem &&item) {
     return true;
 }
 
-void PullObjectIngester::sortListByPolicy() {
+bool PullObjectIngester::abortFetch(const IngestItem &item)
+{
+    std::lock_guard<std::recursive_mutex> lock(*m_ingestItemsMutex);
+    /* If the item is currently being fetched, abort the CURL session */
+    if (m_currentFetchItem && m_currentFetchItem.value().objectId() == item.objectId() && m_curl) {
+        m_curl->abortFetch();
+        return true;
+    }
+    /* If the item is in the pending queue, just remove it */
+    for (auto it = m_fetchList.begin(); it != m_fetchList.end();) {
+        if (it->objectId() == item.objectId()) {
+            m_fetchList.erase(it);
+            return true;
+        } else {
+            it++;
+        }
+    }
+    return false;
+}
+
+void PullObjectIngester::sortListByPolicy()
+{
     m_fetchList.sort([](const IngestItem &a, const IngestItem &b) {
         if (a.deadline().has_value() && b.deadline().has_value()) {
             return a.deadline() < b.deadline();
@@ -217,42 +238,41 @@ void PullObjectIngester::doObjectIngest() {
         }
         if (!m_fetchList.empty()) {
             // Make the GET request and get the number of bytes received
-            auto item = m_fetchList.front();
+            m_currentFetchItem.emplace(m_fetchList.front());
             m_fetchList.pop_front();
-            m_fetchInProgress = true;
             m_ingestItemsMutex->unlock(); // temp unlock while we fetch
             /* A copy taken under the store lock, not a reference into the store. This is read
                again further down, after the fetch below has run with the ingest list unlocked, and a
                store entry can be replaced by updateMetadata() or erased entirely while that is in
                flight. See ObjectStore::tryGetMetadata(). */
-            std::optional<ObjectStore::Metadata> old_meta = objectStore()->tryGetMetadata(item.objectId());
+            std::optional<ObjectStore::Metadata> old_meta = objectStore()->tryGetMetadata(m_currentFetchItem.value().objectId());
             if (old_meta) {
-                if (!item.forceRecache() && old_meta->hasExpiryTime() && old_meta->ExpiryTime() > ObjectStore::datetime_type::clock::now()) {
+                if (!m_currentFetchItem.value().forceRecache() && old_meta->hasExpiryTime() && old_meta->ExpiryTime() > ObjectStore::datetime_type::clock::now()) {
                     // Existing store item is still fresh
-                    ogs_debug("Reusing cached object for %s instead of fetching again", item.url().c_str());
+                    ogs_debug("Reusing cached object for %s instead of fetching again", m_currentFetchItem.value().url().c_str());
                     // "Update" (using same metadata) in the ObjectStore to set last used timestamps and trigger update event
                     ObjectStore::Metadata metadata(*old_meta);
                     try {
                         this->objectStore()->updateMetadata(old_meta->objectId(), std::move(metadata), true);
                     } catch (std::runtime_error &ex) {
-                        ogs_warn("While reusing cached object %s: %s", item.url().c_str(), ex.what());
-                        emitObjectPullIngestFailedEvent(item, item.url(), ObjectIngester::IngestFailedEvent::GENERAL_ERROR);
+                        ogs_warn("While reusing cached object %s: %s", m_currentFetchItem.value().url().c_str(), ex.what());
+                        emitObjectPullIngestFailedEvent(m_currentFetchItem.value(), m_currentFetchItem.value().url(), ObjectIngester::IngestFailedEvent::GENERAL_ERROR);
                     }
                     m_ingestItemsMutex->lock(); // lock so that the lock_guard can release properly
-                    m_fetchInProgress = false;
+                    m_currentFetchItem = std::nullopt;
                     return;
                 }
                 const auto &file_desc = old_meta->fluteFileDescription();
                 if (file_desc) {
-                    ogs_debug("Refetching %s (TOI %u)...", item.url().c_str(), file_desc->toi());
+                    ogs_debug("Refetching %s (TOI %u)...", m_currentFetchItem.value().url().c_str(), file_desc->toi());
                 } else {
-                    ogs_debug("Refetching %s...", item.url().c_str());
+                    ogs_debug("Refetching %s...", m_currentFetchItem.value().url().c_str());
                 }
             } else {
-                ogs_debug("Fetching %s...", item.url().c_str());
+                ogs_debug("Fetching %s...", m_currentFetchItem.value().url().c_str());
             }
 
-            const auto &deadline = item.deadline();
+            const auto &deadline = m_currentFetchItem.value().deadline();
             std::chrono::milliseconds timeout(10000);
             if (deadline) {
                 timeout = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -261,9 +281,9 @@ void PullObjectIngester::doObjectIngest() {
             long bytesReceived = -1;
             if (timeout > 0s) {
                 if (old_meta) {
-                    bytesReceived = m_curl->get(item.url(), timeout, old_meta->modified(), old_meta->entityTag());
+                    bytesReceived = m_curl->get(m_currentFetchItem.value().url(), timeout, old_meta->modified(), old_meta->entityTag());
                 } else {
-                    bytesReceived = m_curl->get(item.url(), timeout);
+                    bytesReceived = m_curl->get(m_currentFetchItem.value().url(), timeout);
                 }
             } else {
                 // Already missed the deadline, act as though timed out
@@ -273,8 +293,8 @@ void PullObjectIngester::doObjectIngest() {
             // Check the result
             if (bytesReceived >= 0) {
                 ogs_debug("Received %ld bytes of data", bytesReceived);
-                std::string fetched_url = URI(m_curl->getPermanentRedirectUrl()).resolveUsingBaseURLs(std::list<BaseURL>{BaseURL(item.url())}).str();
-                if (fetched_url.empty()) fetched_url = item.url();
+                std::string fetched_url = URI(m_curl->getPermanentRedirectUrl()).resolveUsingBaseURLs(std::list<BaseURL>{BaseURL(m_currentFetchItem.value().url())}).str();
+                if (fetched_url.empty()) fetched_url = m_currentFetchItem.value().url();
 
                 /* An object with no media type cannot be described conformantly: TS 26.517 V18.6.0
                    clause 6.2.1 binds the MBSTF to the MBMS Download Profile, and TS 26.346 V18.2.0
@@ -296,30 +316,30 @@ void PullObjectIngester::doObjectIngest() {
                 if (media_type.empty() && content_response_code >= 200 && content_response_code <= 299) {
                     ogs_warn("Ingest of [%s] failed: the origin sent no Content-Type; an object with "
                              "no media type cannot be carried in a conformant FDT",
-                             item.url().c_str());
-                    emitObjectPullIngestFailedEvent(item, item.url(),
+                             m_currentFetchItem.value().url().c_str());
+                    emitObjectPullIngestFailedEvent(m_currentFetchItem.value(), m_currentFetchItem.value().url(),
                                                     ObjectIngester::IngestFailedEvent::GENERAL_ERROR);
                     m_ingestItemsMutex->lock(); // lock so that the lock_guard can release properly
-                    m_fetchInProgress = false;
+                    m_currentFetchItem = std::nullopt;
                     return;
                 }
 
-                ObjectStore::Metadata metadata(item.objectId(), media_type, item.url(), fetched_url, item.acquisitionId(), m_curl->getLastModified(), item.objIngestBaseUrl(), item.objDistributionBaseUrl());
+                ObjectStore::Metadata metadata(m_currentFetchItem.value().objectId(), media_type, m_currentFetchItem.value().url(), fetched_url, m_currentFetchItem.value().acquisitionId(), m_curl->getLastModified(), m_currentFetchItem.value().objIngestBaseUrl(), m_currentFetchItem.value().objDistributionBaseUrl());
                 /* re-get metadata from ObjectStore as it may have changed, again as a copy taken
                    under the store lock rather than a reference it has stopped guarding */
-                old_meta = objectStore()->tryGetMetadata(item.objectId());
+                old_meta = objectStore()->tryGetMetadata(m_currentFetchItem.value().objectId());
                 if (old_meta) {
                     metadata.fluteFileDescription(old_meta->fluteFileDescription());
-                    metadata.keepAfterSend(old_meta->keepAfterSend() || item.markAsKeepAfterSend());
+                    metadata.keepAfterSend(old_meta->keepAfterSend() || m_currentFetchItem.value().markAsKeepAfterSend());
                 } else {
-                    metadata.keepAfterSend(item.markAsKeepAfterSend());
+                    metadata.keepAfterSend(m_currentFetchItem.value().markAsKeepAfterSend());
                 }
                 // TS 26.517 V18.6.0 clause 6.2.3.5 requires the object's availability start and end
                 // times to be maintained per object in the object list. They reach the ingester on the
                 // IngestItem and are stored here so ObjectListPackager can set File@Expires and
                 // Cache-Control@Expires from them.
-                metadata.availabilityStartTime(item.availabilityStartTime());
-                metadata.availabilityEndTime(item.availabilityEndTime());
+                metadata.availabilityStartTime(m_currentFetchItem.value().availabilityStartTime());
+                metadata.availabilityEndTime(m_currentFetchItem.value().availabilityEndTime());
 
                 unsigned long max_age = m_curl->getCacheControlMaxAge();
                 unsigned long current_age = m_curl->getAge();
@@ -332,39 +352,39 @@ void PullObjectIngester::doObjectIngest() {
                 if (response_code >= 200 && response_code <= 299) {
                     /* received object - store it */
                     try {
-                        this->objectStore()->addObject(item.objectId(), std::move(m_curl->getData()), std::move(metadata), true);
+                        this->objectStore()->addObject(m_currentFetchItem.value().objectId(), std::move(m_curl->getData()), std::move(metadata), true);
                     } catch (std::runtime_error &ex) {
                         // Add to ObjectStore failed, send error
                         ogs_warn("While adding a new object: %s", ex.what());
-                        emitObjectPullIngestFailedEvent(item, item.url(), ObjectIngester::IngestFailedEvent::GENERAL_ERROR);
+                        emitObjectPullIngestFailedEvent(m_currentFetchItem.value(), m_currentFetchItem.value().url(), ObjectIngester::IngestFailedEvent::GENERAL_ERROR);
                     }
                 } else if (response_code == 304) {
                     /* Not Modified - just update metadata */
                     if (old_meta) {
                         metadata.mediaType(old_meta->mediaType()); // 304 may not have Content-Type due to no content
                         try {
-                            this->objectStore()->updateMetadata(item.objectId(), std::move(metadata), true);
+                            this->objectStore()->updateMetadata(m_currentFetchItem.value().objectId(), std::move(metadata), true);
                         } catch (std::runtime_error &ex) {
                             // Update in ObjectStore failed, send error
                             ogs_warn("While updating object metadata: %s", ex.what());
-                            emitObjectPullIngestFailedEvent(item, item.url(), ObjectIngester::IngestFailedEvent::GENERAL_ERROR);
+                            emitObjectPullIngestFailedEvent(m_currentFetchItem.value(), m_currentFetchItem.value().url(), ObjectIngester::IngestFailedEvent::GENERAL_ERROR);
                         }
                     }
                 } else {
                     /* error response - do we throw the object away? */
                     ogs_debug("Fetch error %i", response_code);
-                    emitObjectPullIngestFailedEvent(item, fetched_url, (response_code >= 400 && response_code <= 499)?ObjectIngester::IngestFailedEvent::CLIENT_ERROR:ObjectIngester::IngestFailedEvent::SERVER_ERROR);
-                    this->objectStore()->updateError(item.objectId(), response_code, item.url(), false);
+                    emitObjectPullIngestFailedEvent(m_currentFetchItem.value(), fetched_url, (response_code >= 400 && response_code <= 499)?ObjectIngester::IngestFailedEvent::CLIENT_ERROR:ObjectIngester::IngestFailedEvent::SERVER_ERROR);
+                    this->objectStore()->updateError(m_currentFetchItem.value().objectId(), response_code, m_currentFetchItem.value().url(), false);
                 }
             } else if (bytesReceived == -1) {
                 ogs_error("Request timed out.");
-                emitObjectPullIngestFailedEvent(item, item.url(), ObjectIngester::IngestFailedEvent::TIMED_OUT);
+                emitObjectPullIngestFailedEvent(m_currentFetchItem.value(), m_currentFetchItem.value().url(), ObjectIngester::IngestFailedEvent::TIMED_OUT);
             } else {
                 ogs_error("An error occurred while fetching the data.");
-                emitObjectPullIngestFailedEvent(item, item.url(), ObjectIngester::IngestFailedEvent::GENERAL_ERROR);
+                emitObjectPullIngestFailedEvent(m_currentFetchItem.value(), m_currentFetchItem.value().url(), ObjectIngester::IngestFailedEvent::GENERAL_ERROR);
             }
             m_ingestItemsMutex->lock();
-            m_fetchInProgress = false;
+            m_currentFetchItem = std::nullopt;
             if (m_fetchList.empty()) sendEventAsynchronous(new ObjectPullQueueExhaustedEvent);
         }
     }
