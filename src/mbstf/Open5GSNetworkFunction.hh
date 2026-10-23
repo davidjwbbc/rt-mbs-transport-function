@@ -47,8 +47,8 @@ public:
     Open5GSNetworkFunction &operator=(const Open5GSNetworkFunction &other) = delete;
     virtual ~Open5GSNetworkFunction();
 
-    bool noIPv4() const { return ogs_app()->parameter.no_ipv4; };
-    bool noIPv6() const { return ogs_app()->parameter.no_ipv6; };
+    bool noIPv4() const { return ogs_global_conf()->parameter.no_ipv4; };
+    bool noIPv6() const { return ogs_global_conf()->parameter.no_ipv6; };
 
     std::shared_ptr<Open5GSTimer> addTimer(TimerFunc &timer_func);
     void removeTimer(const std::shared_ptr<Open5GSTimer> &timer);
@@ -68,7 +68,7 @@ public:
     bool setNFServiceInfo(const char *serviceName, const char *supportedFeatures, const char *apiVersion, const std::vector<std::shared_ptr<Open5GSSockAddr> > &addr, int capacity = 100);
     int setNFService();
 
-    void initialise() {ogs_sbi_context_init(nfType());};
+    void initialise();
 
     virtual OpenAPI_nf_type_e nfType() const { return OpenAPI_nf_type_AF; };
     const std::string &serverName();

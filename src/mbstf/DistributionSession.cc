@@ -218,7 +218,7 @@ bool DistributionSession::processEvent(Open5GSEvent &event)
             Open5GSSBIRequest request(event.sbiRequest());
             ogs_assert(request);
             Open5GSSBIMessage message;
-            Open5GSSBIStream stream(reinterpret_cast<ogs_sbi_stream_t*>(event.sbiData()));
+            Open5GSSBIStream stream(OGS_POINTER_TO_UINT(event.sbiData()));
             ogs_assert(stream);
             Open5GSSBIServer server(stream.server());
             ogs_assert(server);
@@ -362,7 +362,7 @@ bool DistributionSession::processEvent(Open5GSEvent &event)
                                                     << "] not allowed for this resource";
                                                 ogs_error("%s", err.str().c_str());
                                                 ogs_assert(true == NfServer::sendError(stream,
-                                                                        OGS_SBI_HTTP_STATUS_MEHTOD_NOT_ALLOWED,
+                                                                        OGS_SBI_HTTP_STATUS_METHOD_NOT_ALLOWED,
                                                                         4, message, app_meta, api, std::nullopt, err.str(),
                                                                         std::nullopt, std::nullopt, std::nullopt,
                                                                         OGS_SBI_HTTP_METHOD_PATCH ", " OGS_SBI_HTTP_METHOD_DELETE ", " OGS_SBI_HTTP_METHOD_OPTIONS));
@@ -385,7 +385,7 @@ bool DistributionSession::processEvent(Open5GSEvent &event)
                                                 << method << "] not allowed for this resource";
                                             ogs_error("%s", err.str().c_str());
                                             ogs_assert(true == NfServer::sendError(stream,
-                                                                        OGS_SBI_HTTP_STATUS_MEHTOD_NOT_ALLOWED,
+                                                                        OGS_SBI_HTTP_STATUS_METHOD_NOT_ALLOWED,
                                                                         3, message, app_meta, api, std::nullopt, err.str(),
                                                                         std::nullopt, std::nullopt, std::nullopt,
                                                                         OGS_SBI_HTTP_METHOD_POST ", " OGS_SBI_HTTP_METHOD_OPTIONS));
@@ -420,7 +420,7 @@ bool DistributionSession::processEvent(Open5GSEvent &event)
                                     err << "Distribution Session [" << ptr_resource1 << "], method [" << method
                                         << "] is not allowed for a Distribution Session";
                                     ogs_error("%s", err.str().c_str());
-                                    ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_MEHTOD_NOT_ALLOWED,
+                                    ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_METHOD_NOT_ALLOWED,
                                                                         2, message, app_meta, api, std::nullopt, err.str(),
                                                                         std::nullopt, std::nullopt, std::nullopt,
                                                                         OGS_SBI_HTTP_METHOD_GET ", " OGS_SBI_HTTP_METHOD_PATCH ", " OGS_SBI_HTTP_METHOD_DELETE ", " OGS_SBI_HTTP_METHOD_OPTIONS));
@@ -442,7 +442,7 @@ bool DistributionSession::processEvent(Open5GSEvent &event)
                                 std::ostringstream err;
                                 err << "Distribution Sessions method [" << method << "] is not allowed for a Distribution Session";
                                 ogs_error("%s", err.str().c_str());
-                                ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_MEHTOD_NOT_ALLOWED,
+                                ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_METHOD_NOT_ALLOWED,
                                                                           2, message, app_meta, api, std::nullopt, err.str(),
                                                                           std::nullopt, std::nullopt, std::nullopt,
                                                                           OGS_SBI_HTTP_METHOD_POST ", " OGS_SBI_HTTP_METHOD_OPTIONS));
