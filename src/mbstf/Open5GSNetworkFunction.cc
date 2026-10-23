@@ -103,6 +103,16 @@ Open5GSNetworkFunction::~Open5GSNetworkFunction()
     ogs_sbi_context_final();
 }
 
+void Open5GSNetworkFunction::initialise()
+{
+    ogs_sbi_context_init(nfType());
+    /* initialise local settings */
+    int rv = ogs_app_parse_local_conf("mbstf");
+    if (rv != OGS_OK) {
+        ogs_fatal("Unable to parse local configuration");
+    }
+}
+
 static void timer_function(void *real_fn)
 {
     TimerFunc *timer_func = reinterpret_cast<TimerFunc*>(real_fn);
@@ -201,8 +211,7 @@ int Open5GSNetworkFunction::setNFService() {
 
     ogs_info("NF UUID: %s", id);
 
-    nf_service = ogs_sbi_nf_service_add(ogs_sbi_self()->nf_instance, id, m_serviceName,
-                                        ogs_app()->sbi.server.no_tls == false ? OpenAPI_uri_scheme_https : OpenAPI_uri_scheme_http);
+    nf_service = ogs_sbi_nf_service_add(ogs_sbi_self()->nf_instance, id, m_serviceName, ogs_sbi_self()->tls.server.scheme);
     ogs_assert(nf_service);
 
     nf_service->capacity = m_capacity;

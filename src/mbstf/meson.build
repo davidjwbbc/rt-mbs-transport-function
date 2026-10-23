@@ -24,7 +24,7 @@ libdir = open5gs_project.get_variable('libdir')
 python3_exe = open5gs_project.get_variable('python3_exe')
 mkdir_p = open5gs_project.get_variable('mkdir_p')
 install_conf = open5gs_project.get_variable('install_conf')
-sbi_openapi_inc = open5gs_project.get_variable('libsbi_openapi_model_inc')
+sbi_openapi_inc = open5gs_project.get_variable('libsbi_openapi_inc')
 libinc = open5gs_project.get_variable('libinc')
 app_type = 'MBSTF'
 

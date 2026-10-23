@@ -63,7 +63,7 @@ void MBSTFEventHandler::dispatch(Open5GSFSM &fsm, Open5GSEvent &event)
                so taking ownership here double-frees it and talloc aborts the process.
                There is no leak to close on this path. */
             auto request = event.sbiRequest();
-            Open5GSSBIStream stream(reinterpret_cast<ogs_sbi_stream_t*>(event.sbiData()));
+            Open5GSSBIStream stream(OGS_POINTER_TO_UINT(event.sbiData()));
 
             Open5GSSBIMessage message;
 
@@ -71,9 +71,8 @@ void MBSTFEventHandler::dispatch(Open5GSFSM &fsm, Open5GSEvent &event)
                 message.parseHeader(request);
             } catch (std::exception &ex) {
                 ogs_error("ogs_sbi_parse_header() failed: %s", ex.what());
-                ogs_assert(true == Open5GSSBIServer::sendError(
-                                stream, ProblemCause::INVALID_MSG_FORMAT.statusCode(),
-                                message, "Cannot parse HTTP message", ProblemCause::INVALID_MSG_FORMAT.cause().c_str()));
+                ogs_assert(true == Open5GSSBIServer::sendError(stream, message, ProblemCause::INVALID_MSG_FORMAT,
+                                "Cannot parse HTTP message"));
                 break;
             }
 
@@ -82,9 +81,8 @@ void MBSTFEventHandler::dispatch(Open5GSFSM &fsm, Open5GSEvent &event)
                 std::string api_version(message.apiVersion());
                 if (api_version != OGS_SBI_API_V1) {
                     ogs_error("Not supported version [%s]", api_version.c_str());
-                    ogs_assert(true == Open5GSSBIServer::sendError(
-                                stream, ProblemCause::INVALID_API.statusCode(),
-                                message, "Not supported version", ProblemCause::INVALID_API.cause().c_str()));
+                    ogs_assert(true == Open5GSSBIServer::sendError(stream, message, ProblemCause::INVALID_API,
+                                "Not supported version"));
                     break;
                 }
                 std::string resource(message.resourceComponent(0));
@@ -106,7 +104,7 @@ void MBSTFEventHandler::dispatch(Open5GSFSM &fsm, Open5GSEvent &event)
 
                            This resource is the NRF's status notification callback, which serves POST
                            and nothing else. */
-                        ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_MEHTOD_NOT_ALLOWED, 0,
+                        ogs_assert(true == NfServer::sendError(stream, OGS_SBI_HTTP_STATUS_METHOD_NOT_ALLOWED, 0,
                                         message, App::self().mbstfAppMetadata(), std::nullopt,
                                         "Method Not Allowed", "Invalid HTTP method in NRF status notification",
                                         std::nullopt, std::nullopt, std::nullopt,
@@ -114,16 +112,12 @@ void MBSTFEventHandler::dispatch(Open5GSFSM &fsm, Open5GSEvent &event)
                     }
                 } else {
                     ogs_error("Invalid resource name [%s]", resource.c_str());
-                    ogs_assert(true == Open5GSSBIServer::sendError(stream,
-                                    ProblemCause::RESOURCE_URI_STRUCTURE_NOT_FOUND.statusCode(), message,
-                                    "Invalid resource name",
-                                    ProblemCause::RESOURCE_URI_STRUCTURE_NOT_FOUND.cause().c_str()));
+                    ogs_assert(true == Open5GSSBIServer::sendError(stream, message, ProblemCause::RESOURCE_URI_STRUCTURE_NOT_FOUND,
+                                    "Invalid resource name"));
                 }
             } else {
                 ogs_error("Invalid API name [%s]", service_name.c_str());
-                ogs_assert(true == Open5GSSBIServer::sendError(stream,
-                                        ProblemCause::INVALID_API.statusCode(), message,
-                                        "Invalid API name.", ProblemCause::INVALID_API.cause().c_str()));
+                ogs_assert(true == Open5GSSBIServer::sendError(stream, message, ProblemCause::INVALID_API, "Invalid API name."));
             }
         }
         break;
@@ -237,17 +231,22 @@ void MBSTFEventHandler::dispatch(Open5GSFSM &fsm, Open5GSEvent &event)
 
             case OGS_TIMER_SBI_CLIENT_WAIT:
                 {
-                    ogs_sbi_xact_t *sbi_xact(reinterpret_cast<ogs_sbi_xact_t*>(event.sbiData()));
-                    ogs_assert(sbi_xact);
-                    Open5GSSBIStream stream(sbi_xact->assoc_stream);
+                    ogs_pool_id_t sbi_xact_id = OGS_POINTER_TO_UINT(reinterpret_cast<ogs_sbi_xact_t*>(event.sbiData()));
+                    ogs_assert(sbi_xact_id >= OGS_MIN_POOL_ID && sbi_xact_id <= OGS_MAX_POOL_ID);
+                    ogs_sbi_xact_t *sbi_xact = ogs_sbi_xact_find_by_id(sbi_xact_id);
+                    if (!sbi_xact) {
+                        ogs_error("SBI transaction has already been removed [%d]", sbi_xact_id);
+                          break;
+                    }
+                    ogs_sbi_stream_t *ogs_stream = reinterpret_cast<ogs_sbi_stream_t*>(ogs_sbi_stream_find_by_id(sbi_xact->assoc_stream_id));
+                    Open5GSSBIStream stream(ogs_stream);
 
                     ogs_sbi_xact_remove(sbi_xact);
 
                     ogs_error("Cannot receive SBI message");
                     if (stream) {
-                        ogs_assert(true == Open5GSSBIServer::sendError(stream,
-                                    ProblemCause::TIMED_OUT_REQUEST.statusCode(), nullptr,
-                                    "Cannot receive SBI message", ProblemCause::TIMED_OUT_REQUEST.cause().c_str()));
+                        ogs_assert(true == Open5GSSBIServer::sendError(stream, nullptr, ProblemCause::TIMED_OUT_REQUEST,
+                                    "Cannot receive SBI message"));
                     }
                 }
                 break;
